@@ -235,23 +235,35 @@ class KnowledgeHandler:
         """构造提示词"""
         # 如果有 InsertBlock 过滤结果，优先使用
         if filtered_results:
-            # 使用关键段落和答案构建上下文
+            # 同时使用关键段落和完整内容构建上下文
             context_blocks = []
             for i, result in enumerate(filtered_results):
                 file_name = result['file_name']
                 key_passage = result.get('key_passage', '')
-                answer = result.get('answer', '')
+                full_content = result['node'].node.text.strip()
 
-                # 优先使用 key_passage，如果没有则使用原始内容
-                content = key_passage if key_passage else result['node'].node.get_content().strip()
+                # 构建包含关键段落和完整内容的块
+                if key_passage:
+                    # 如果有关键段落，先展示关键段落，再展示完整内容
+                    block = (
+                        f"### 来源 {i + 1} - {file_name}:\n"
+                        f"**【关键段落】**\n> {key_passage}\n\n"
+                        f"**【完整内容】**\n> {full_content}"
+                    )
+                else:
+                    # 如果没有关键段落，只展示完整内容
+                    block = f"### 来源 {i + 1} - {file_name}:\n> {full_content}"
+                    logger.warning(f"节点通过筛选但没有关键段落: {file_name}")
 
-                block = f"### 来源 {i + 1} - {file_name}:\n> {content}"
-                if answer:
-                    block += f"\n\n**分析**: {answer}"
                 context_blocks.append(block)
 
-            formatted_context = "\n\n".join(context_blocks)
-            has_rag = True
+            formatted_context = "\n\n".join(context_blocks) if context_blocks else None
+            has_rag = bool(context_blocks)
+
+            logger.info(
+                f"使用 InsertBlock 结果构建上下文: {len(context_blocks)} 个段落 "
+                f"(包含关键段落+完整内容)"
+            )
         elif final_nodes:
             # 格式化上下文 - 直接显示文件名，并为每个来源编号
             context_blocks = []
