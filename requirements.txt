@@ -1,0 +1,29 @@
+# Core web framework
+flask
+flask-cors
+
+# HTTP & streaming
+httpx
+
+# Chinese tokenization
+jieba
+
+# LlamaIndex (RAG framework) - 固定主版本以减少 API 变动影响
+llama-index==0.10.68
+
+# Embedding & rerank
+sentence-transformers
+transformers
+
+# Deep learning backend (根据硬件选择合适版本/加速包)
+torch
+
+# Progress & utilities
+tqdm
+
+# Optional (按需启用)
+# numpy
+# pandas
+# faiss-cpu    # 如果后续接入向量库
+# elasticsearch # 如果接入外部检索
+
