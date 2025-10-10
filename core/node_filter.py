@@ -58,12 +58,14 @@ class InsertBlockFilter:
         logger.info(f"开始使用 InsertBlock 过滤器处理 {len(nodes)} 个节点")
 
         # 获取 LLM 实例
-        llm = self.llm_service.get_llm(llm_id)
+        llm = self.llm_service.get_client(llm_id)
         if not llm:
             logger.error("无法获取 LLM 实例，返回空结果")
             return []
 
         filtered_results = []
+        rejected_nodes = []  # 记录被拒绝的节点
+        file_stats = {}  # 统计每个文件的节点数
 
         # 使用线程池并发处理
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -83,25 +85,49 @@ class InsertBlockFilter:
                 node = future_to_node[future]
                 try:
                     result = future.result()
-                    if result and result.get("can_answer"):
-                        filtered_results.append(result)
-                        logger.info(
-                            f"节点可回答: {result['file_name']} | "
-                            f"关键段落长度: {len(result.get('key_passage', ''))}"
-                        )
+                    if result:
+                        file_name = result['file_name']
+                        # 统计文件
+                        file_stats[file_name] = file_stats.get(file_name, 0) + 1
+
+                        if result.get("can_answer"):
+                            filtered_results.append(result)
+                            logger.info(
+                                f"✓ 节点通过 [{file_stats[file_name]}] {file_name} | "
+                                f"关键段落: {len(result.get('key_passage', ''))} 字符 | "
+                                f"推理: {result['reasoning'][:50]}..."
+                            )
+                        else:
+                            rejected_nodes.append(result)
+                            logger.info(
+                                f"✗ 节点拒绝 [{file_stats[file_name]}] {file_name} | "
+                                f"推理: {result['reasoning'][:50]}..."
+                            )
                     else:
-                        logger.debug(
-                            f"节点不可回答: {node.node.metadata.get('file_name', '未知')}"
-                        )
+                        file_name = node.node.metadata.get('file_name', '未知')
+                        logger.debug(f"节点处理返回 None: {file_name}")
                 except Exception as e:
                     logger.error(
                         f"处理节点失败: {node.node.metadata.get('file_name', '未知')} | "
                         f"错误: {e}"
                     )
 
-        logger.info(
-            f"InsertBlock 过滤完成: {len(nodes)} 个节点 -> {len(filtered_results)} 个可回答节点"
-        )
+        # 输出详细统计
+        logger.info("=" * 60)
+        logger.info(f"InsertBlock 过滤完成统计:")
+        logger.info(f"  总节点数: {len(nodes)}")
+        logger.info(f"  通过筛选: {len(filtered_results)} 个节点")
+        logger.info(f"  被拒绝: {len(rejected_nodes)} 个节点")
+        logger.info(f"  处理失败: {len(nodes) - len(filtered_results) - len(rejected_nodes)} 个节点")
+        logger.info(f"\n  涉及文件数: {len(file_stats)}")
+
+        # 按文件输出统计
+        for file_name, count in sorted(file_stats.items()):
+            passed = sum(1 for r in filtered_results if r['file_name'] == file_name)
+            rejected = sum(1 for r in rejected_nodes if r['file_name'] == file_name)
+            logger.info(f"    - {file_name}: {count} 个节点 (通过:{passed}, 拒绝:{rejected})")
+
+        logger.info("=" * 60)
 
         return filtered_results
 
@@ -144,11 +170,25 @@ class InsertBlockFilter:
             )
 
             # 拼接提示词（system 和 user 都是列表）
-            system_prompt = "\n".join(system_template).format(
-                question=question,
-                regulations=regulations
-            )
-            user_prompt = "\n".join(user_template)
+            # 先对模板进行 format，再 join
+            # 注意：只对包含占位符的模板进行 format
+            system_prompt_parts = []
+            for template in system_template:
+                # 检查是否包含占位符
+                if "{question}" in template or "{regulations}" in template:
+                    system_prompt_parts.append(template.format(question=question, regulations=regulations))
+                else:
+                    system_prompt_parts.append(template)
+            system_prompt = "\n".join(system_prompt_parts)
+
+            # user_template 通常不包含需要 format 的占位符
+            user_prompt_parts = []
+            for template in user_template:
+                if "{question}" in template or "{regulations}" in template:
+                    user_prompt_parts.append(template.format(question=question, regulations=regulations))
+                else:
+                    user_prompt_parts.append(template)
+            user_prompt = "\n".join(user_prompt_parts)
 
             # 组合为单一 prompt
             full_prompt = f"{system_prompt}\n\n{user_prompt}"

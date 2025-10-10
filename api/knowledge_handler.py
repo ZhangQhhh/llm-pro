@@ -69,6 +69,8 @@ class KnowledgeHandler:
 
             # 2. 如果启用 InsertBlock 模式，进行智能过滤
             filtered_results = None
+            nodes_for_prompt = final_nodes  # 默认使用原始检索结果
+
             if use_insert_block and final_nodes and self.insert_block_filter:
                 yield "CONTENT:正在使用 InsertBlock 智能过滤..."
                 full_response += "正在使用 InsertBlock 智能过滤...\n"
@@ -82,15 +84,19 @@ class KnowledgeHandler:
                 if filtered_results:
                     yield f"CONTENT:找到 {len(filtered_results)} 个可回答的节点"
                     full_response += f"找到 {len(filtered_results)} 个可回答的节点\n"
+                    # InsertBlock 成功：只使用过滤后的节点
+                    nodes_for_prompt = None  # 不再传入原始节点
                 else:
                     yield "CONTENT:未找到可直接回答的节点，将使用原始检索结果"
                     full_response += "未找到可直接回答的节点，将使用原始检索结果\n"
+                    # InsertBlock 失败：继续使用原始节点，清空过滤结果
+                    filtered_results = None
 
             # 3. 构造提示词
             prompt_parts = self._build_prompt(
                 question,
                 enable_thinking,
-                final_nodes,
+                nodes_for_prompt,  # 根据 InsertBlock 结果决定传入哪些节点
                 filtered_results=filtered_results
             )
 
@@ -110,19 +116,46 @@ class KnowledgeHandler:
 
             # 6. 输出参考来源
             if use_insert_block and filtered_results:
-                # InsertBlock 模式：显示过滤后的结果
-                yield "CONTENT:\n\n**参考来源（经 InsertBlock 过滤）:**"
-                full_response += "\n\n参考来源（经 InsertBlock 过滤）:"
+                # InsertBlock 模式：返回所有原始节点，但标注哪些被选中
+                yield "CONTENT:\n\n**参考来源（全部检索结果）:**"
+                full_response += "\n\n参考来源（全部检索结果）:"
 
-                for source_msg in self._format_filtered_sources(filtered_results):
-                    yield source_msg
-                    if source_msg.startswith("SOURCE:"):
-                        data = json.loads(source_msg[7:])
-                        full_response += (
-                            f"\n[{data['id']}] 文件: {data['fileName']}, "
-                            f"重排分: {data['rerankedScore']}, "
-                            f"可回答: {data['canAnswer']}"
-                        )
+                # 构建过滤结果的映射（用于快速查找）
+                filtered_map = {}
+                for result in filtered_results:
+                    # 通过文件名和内容匹配原始节点
+                    key = f"{result['file_name']}_{result['reranked_score']}"
+                    filtered_map[key] = result
+
+                # 遍历所有原始节点，标注哪些被选中
+                for i, node in enumerate(final_nodes):
+                    file_name = node.node.metadata.get('file_name', '未知')
+                    initial_score = node.node.metadata.get('initial_score', 0.0)
+                    key = f"{file_name}_{node.score}"
+
+                    # 检查该节点是否在过滤结果中
+                    filtered_info = filtered_map.get(key)
+
+                    source_data = {
+                        "id": i + 1,
+                        "fileName": file_name,
+                        "initialScore": f"{initial_score:.4f}",
+                        "rerankedScore": f"{node.score:.4f}",
+                        "content": node.node.text.strip(),
+                        # 新增字段
+                        "canAnswer": filtered_info is not None,
+                        "reasoning": filtered_info.get('reasoning', '') if filtered_info else '',
+                        "keyPassage": filtered_info.get('key_passage', '') if filtered_info else ''
+                    }
+
+                    yield f"SOURCE:{json.dumps(source_data, ensure_ascii=False)}"
+
+                    full_response += (
+                        f"\n[{source_data['id']}] 文件: {source_data['fileName']}, "
+                        f"重排分: {source_data['rerankedScore']}, "
+                        f"可回答: {source_data['canAnswer']}"
+                    )
+
             elif final_nodes:
                 # 普通模式：显示所有检索结果
                 yield "CONTENT:\n\n**参考来源:**"
