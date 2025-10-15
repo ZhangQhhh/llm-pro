@@ -79,7 +79,8 @@ class Settings:
     TEMPERATURE_REDUCTION = 0.0
 
     # ==================== 服务器配置 ====================
-    SERVER_HOST = "0.0.0.0"
+    # SERVER_HOST = "0.0.0.0"
+    SERVER_HOST = "127.0.0.1" # 只能监听本机，通过nginx代理访问
     SERVER_PORT = 5000
     SERVER_DEBUG_MODE = False
 

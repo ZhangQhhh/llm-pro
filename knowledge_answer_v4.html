@@ -268,7 +268,6 @@
                     <input type="number" id="rerankTopNInput" value="10" min="1" max="15" style="width: 45px; border-radius: 5px; border: 1px solid #ccc; text-align: center;">
                 </div>
 
-                <!-- 新增：精准检索模式开关 -->
                 <div class="switch-container">
                     <label class="switch">
                         <input type="checkbox" id="insertBlockToggle">
@@ -337,7 +336,7 @@
     const questionInput = document.getElementById("questionInput");
     const submitBtn = document.getElementById("submitBtn");
     const thinkingModeToggle = document.getElementById("thinkingModeToggle");
-    const insertBlockToggle = document.getElementById("insertBlockToggle"); // 新增
+    const insertBlockToggle = document.getElementById("insertBlockToggle");
     const loader = document.getElementById("loader");
     const answerBox = document.getElementById("answerBox");
     const answerTitle = document.getElementById("answerTitle");
@@ -358,14 +357,16 @@
     const scrollToFeedbackBtn = document.getElementById("scrollToFeedbackBtn");
 
     const API_ENDPOINT = "/api/knowledge_chat";
-    const API_A_ENDPOINT = "/api/like";
-    const API_B_ENDPOINT = "/api/dislike";
+    const API_A_ENDPOINT = "/api/feedback/like";
+    const API_B_ENDPOINT = "/api/feedback/dislike";
 
+    // --- 全局变量定义 ---
     let lastQuestion = "";
     let lastAnswer = "";
-    let selectedNodeIds = new Set(); // 新增：存储被选中的节点ID
+    let selectedNodeIds = new Set();
+    let lastSources = []; // <-- 修改点 1: 新增全局变量来存储参考来源
 
-    function renderApp(currentAnswer, sources, filteredSources) {
+    function renderApp(currentAnswer, sources) {
         let html = '';
         const thinkingRegex = /<think>(.*?)<\/think>/gs;
         const thinkMatch = thinkingRegex.exec(currentAnswer);
@@ -385,45 +386,34 @@
             }
         }
 
-        // 显示所有参考来源（无论是否启用精准检索）
         if (sources.length > 0) {
             html += `<div class="reference-section"><div class="reference-header"><div class="reference-icon">📚</div><h3 class="reference-title">参考内容（全部检索结果）</h3></div><div class="reference-content">`;
-
             sources.forEach(item => {
                 const isSelected = selectedNodeIds.has(item.id);
                 const selectedClass = isSelected ? 'selected' : '';
                 const selectedBadge = isSelected ? '<span class="selected-badge">✓ 已选中</span>' : '';
-
                 let itemHtml = `<div class="reference-item ${selectedClass}">
                     <div class="reference-filename">[${item.id}] ${item.fileName} ${selectedBadge}</div>
                     <div class="reference-similarity">
                         <span>初始检索分: ${item.initialScore}</span> |
                         <span>重排序分: ${item.rerankedScore}</span>`;
-
-                // 如果有 canAnswer 字段，显示更多信息
                 if (item.canAnswer !== undefined) {
                     itemHtml += ` | <span style="color: ${item.canAnswer ? '#059669' : '#dc2626'};">
                         ${item.canAnswer ? '✓ 可回答' : '✗ 不可回答'}
                     </span>`;
                 }
-
                 itemHtml += `</div><div class="reference-text">"${item.content.replace(/\n/g, "<br>")}"</div>`;
-
-                // 如果有关键段落，显示
                 if (item.keyPassage) {
                     itemHtml += `<div class="key-passage">
                         <div class="key-passage-label">🔍 关键段落：</div>
                         ${item.keyPassage.replace(/\n/g, "<br>")}
                     </div>`;
                 }
-
                 itemHtml += `</div>`;
                 html += itemHtml;
             });
-
             html += `</div></div>`;
         }
-
         answerText.innerHTML = html;
     }
 
@@ -435,9 +425,17 @@
             const response = await fetch(API_A_ENDPOINT, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ question: lastQuestion, answer: lastAnswer }),
+                // <-- 修改点 2: 在请求体中添加 source 字段
+                body: JSON.stringify({
+                    question: lastQuestion,
+                    answer: lastAnswer,
+                    source: JSON.stringify(lastSources) // 将source数组转为JSON字符串
+                }),
             });
-            if (!response.ok) throw new Error(`服务器响应错误: ${response.status}`);
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || `服务器响应错误: ${response.status}`);
+            }
             alert("感谢您的反馈！");
         } catch (error) {
             console.error("提交点赞反馈失败:", error);
@@ -449,40 +447,38 @@
 
     const handleDislikeSubmit = async (event) => {
         event.preventDefault();
-
         const reason = reasonInput.value.trim();
         const reporterName = reporterNameInput.value.trim();
         const reporterUnit = reporterUnitInput.value.trim();
-
         if (!reason) {
             alert("请填写具体的错误原因。");
             return;
         }
-
         submitFeedbackBtn.disabled = true;
         submitFeedbackBtn.textContent = "提交中...";
-
         try {
             const response = await fetch(API_B_ENDPOINT, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                // <-- 修改点 3: 在请求体中添加 source 字段
                 body: JSON.stringify({
                     question: lastQuestion,
                     answer: lastAnswer,
                     reason: reason,
                     reporterName: reporterName,
-                    reporterUnit: reporterUnit
+                    reporterUnit: reporterUnit,
+                    source: JSON.stringify(lastSources) // 将source数组转为JSON字符串
                 }),
             });
-
-            if (!response.ok) throw new Error(`服务器响应错误: ${response.status}`);
-
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || `服务器响应错误: ${response.status}`);
+            }
             alert("反馈提交成功，感谢您！");
             feedbackModal.classList.add("hidden");
             likeBtn.disabled = true;
             dislikeBtn.disabled = true;
             scrollToFeedbackBtn.classList.add("hidden");
-
         } catch (error) {
             console.error("提交点踩反馈失败:", error);
             alert(`提交反馈失败: ${error.message}`);
@@ -498,31 +494,27 @@
             alert("问题不能为空！");
             return;
         }
-
         feedbackActions.classList.add("hidden");
         scrollToFeedbackBtn.classList.add("hidden");
         likeBtn.disabled = false;
         dislikeBtn.disabled = false;
         feedbackForm.reset();
-
         submitBtn.disabled = true;
         loader.classList.remove("hidden");
         answerBox.classList.add("hidden");
 
         let currentAnswer = "";
-        let sources = [];
-        let filteredSources = [];
-        selectedNodeIds.clear(); // 清空选中节点
+        lastSources = []; // <-- 在提交时清空上次的参考来源
+        selectedNodeIds.clear();
         lastQuestion = question;
         lastAnswer = "";
 
-        renderApp(currentAnswer, sources, filteredSources);
+        renderApp(currentAnswer, lastSources);
 
         const enableThinking = thinkingModeToggle.checked;
-        const enableInsertBlock = insertBlockToggle.checked; // 新增
+        const enableInsertBlock = insertBlockToggle.checked;
         const rerankTopN = rerankTopNInput.value;
         const selectedModelId = modelSelector.value;
-
         try {
             const response = await fetch(API_ENDPOINT, {
                 method: "POST",
@@ -532,30 +524,25 @@
                     thinking: enableThinking,
                     rerank_top_n: rerankTopN,
                     model_id: selectedModelId,
-                    use_insert_block: enableInsertBlock, // 新增
-                    insert_block_llm_id: selectedModelId // 使用相同的模型进行过滤
+                    use_insert_block: enableInsertBlock,
+                    insert_block_llm_id: selectedModelId
                 }),
             });
 
             if (!response.ok) throw new Error(`服务器错误: ${response.status}`);
-
             const reader = response.body.getReader();
             const decoder = new TextDecoder("utf-8");
             let buffer = "";
             let isFirstChunk = true;
-
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-
                 buffer += decoder.decode(value, { stream: true });
                 let parts = buffer.split("\n\n");
                 buffer = parts.pop();
-
                 for (const part of parts) {
                     if (part.startsWith("data: ")) {
                         const rawData = part.substring(6);
-
                         if (rawData.startsWith("CONTENT:")) {
                             if (isFirstChunk) {
                                 answerBox.classList.remove("hidden");
@@ -568,9 +555,7 @@
                             const jsonString = rawData.substring(7);
                             try {
                                 const sourceData = JSON.parse(jsonString);
-                                sources.push(sourceData);
-
-                                // 如果有 canAnswer 且为 true，标记为选中
+                                lastSources.push(sourceData); // <-- 填充全局变量
                                 if (sourceData.canAnswer === true) {
                                     selectedNodeIds.add(sourceData.id);
                                 }
@@ -586,8 +571,7 @@
                         } else if (rawData.startsWith("ERROR:")) {
                             throw new Error(rawData.substring(6));
                         }
-
-                        renderApp(currentAnswer, sources, filteredSources);
+                        renderApp(currentAnswer, lastSources);
                     }
                 }
             }
@@ -609,7 +593,6 @@
             handleSubmit();
         }
     });
-
     likeBtn.addEventListener("click", handleLikeClick);
     dislikeBtn.addEventListener("click", () => {
         feedbackModal.classList.remove("hidden");
@@ -618,16 +601,13 @@
     cancelFeedbackBtn.addEventListener("click", () => {
         feedbackModal.classList.add("hidden");
     });
-
     scrollToFeedbackBtn.addEventListener('click', () => {
         feedbackActions.scrollIntoView({
             behavior: 'smooth',
             block: 'center'
         });
     });
-
 </script>
 
 </body>
 </html>
-
