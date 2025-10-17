@@ -91,6 +91,19 @@ class KnowledgeService:
         if not os.path.exists(storage_path) or not os.path.exists(hashes_file):
             return True
 
+        # 检查 Qdrant 集合是否存在
+        try:
+            collections = self.qdrant_client.get_collections().collections
+            collection_exists = any(
+                c.name == AppSettings.QDRANT_COLLECTION for c in collections
+            )
+            if not collection_exists:
+                logger.info(f"Qdrant 集合 {AppSettings.QDRANT_COLLECTION} 不存在，需要重建索引")
+                return True
+        except Exception as e:
+            logger.warning(f"无法检查 Qdrant 集合状态: {e}，将重建索引")
+            return True
+
         logger.info("检查知识库文件变化...")
         current_hashes = DocumentProcessor.compute_file_hashes(kb_dir)
         current_hashes_str = json.dumps(current_hashes, sort_keys=True)
@@ -207,150 +220,80 @@ class KnowledgeService:
             logger.error(f"加载索引失败: {e}", exc_info=True)
             return None, None
 
-# 弃用
-#     def _build_index(
-#         self,
-#         storage_path: str,
-#         kb_dir: str,
-#         hashes_file: str
-#     ) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
-#         """构建新索引"""
-#         logger.info("开始构建新索引...")
-#
-#         # 清理旧索引
-#         if os.path.exists(storage_path):
-#             shutil.rmtree(storage_path)
-#         os.makedirs(storage_path)
-#
-#         # 读取文档
-#         file_metadata_fn = lambda x: {
-#             "file_name": os.path.basename(x),
-#             "file_path": x
-#         }
-#
-#         docs = SimpleDirectoryReader(
-#             kb_dir,
-#             recursive=True,
-#             file_metadata=file_metadata_fn,
-#             exclude=["*.doc", "*.tmp"]
-#         ).load_data(show_progress=True)
-#
-#         if not docs:
-#             logger.warning("未找到可加载的文档")
-#             return None, None
-#
-#         # 切分文档
-#         all_nodes = self.doc_processor.split_documents(docs)
-#         if not all_nodes:
-#             logger.warning("文档切分后未产生有效节点")
-#             return None, None
-#
-#         # 构建索引
-#         logger.info("生成 Embeddings...")
-#         storage_context = StorageContext.from_defaults()
-#         storage_context.docstore.add_documents(all_nodes)
-#
-#         service_context = ServiceContext.from_defaults(
-#             llm=self.llm,
-#             embed_model=Settings.embed_model
-#         )
-#
-#         index = VectorStoreIndex(
-#             all_nodes,
-#             storage_context=storage_context,
-#             service_context=service_context,
-#             show_progress=True
-#         )
-#
-#         # 持久化
-#         logger.info("持久化索引...")
-#         index.storage_context.persist(persist_dir=storage_path)
-#
-#         # 保存哈希
-#         current_hashes = DocumentProcessor.compute_file_hashes(kb_dir)
-#         with open(hashes_file, "w", encoding="utf-8") as f:
-#             json.dump(current_hashes, f, sort_keys=True)
-#
-#         logger.info(f"索引构建完成，共 {len(all_nodes)} 个节点")
-#         self.index = index
-#         self.all_nodes = all_nodes
-#         return index, all_nodes
-
-def _build_index(
+    def _build_index(
         self,
         storage_path: str,
         kb_dir: str,
         hashes_file: str
-) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
-    """构建新索引到 Qdrant"""
-    logger.info("开始构建新索引...")
+    ) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
+        """构建新索引到 Qdrant"""
+        logger.info("开始构建新索引...")
 
-    # 删除旧集合
-    try:
-        self.qdrant_client.delete_collection(
+        # 删除旧集合
+        try:
+            self.qdrant_client.delete_collection(
+                collection_name=AppSettings.QDRANT_COLLECTION
+            )
+            logger.info(f"已删除旧集合 {AppSettings.QDRANT_COLLECTION}")
+        except Exception as e:
+            logger.info(f"无旧集合需要删除: {e}")
+
+        # 读取文档
+        file_metadata_fn = lambda x: {
+            "file_name": os.path.basename(x),
+            "file_path": x
+        }
+
+        docs = SimpleDirectoryReader(
+            kb_dir,
+            recursive=True,
+            file_metadata=file_metadata_fn,
+            exclude=["*.doc", "*.tmp"]
+        ).load_data(show_progress=True)
+
+        if not docs:
+            logger.warning("未找到可加载的文档")
+            return None, None
+
+        # 切分文档
+        all_nodes = self.doc_processor.split_documents(docs)
+        if not all_nodes:
+            logger.warning("文档切分后未产生有效节点")
+            return None, None
+
+        # 创建向量存储
+        vector_store = QdrantVectorStore(
+            client=self.qdrant_client,
             collection_name=AppSettings.QDRANT_COLLECTION
         )
-        logger.info(f"已删除旧集合 {AppSettings.QDRANT_COLLECTION}")
-    except Exception as e:
-        logger.info(f"无旧集合需要删除: {e}")
 
-    # 读取文档
-    file_metadata_fn = lambda x: {
-        "file_name": os.path.basename(x),
-        "file_path": x
-    }
+        # 构建索引
+        logger.info("生成 Embeddings 并存储到 Qdrant...")
 
-    docs = SimpleDirectoryReader(
-        kb_dir,
-        recursive=True,
-        file_metadata=file_metadata_fn,
-        exclude=["*.doc", "*.tmp"]
-    ).load_data(show_progress=True)
+        storage_context = StorageContext.from_defaults(
+            vector_store=vector_store
+        )
 
-    if not docs:
-        logger.warning("未找到可加载的文档")
-        return None, None
+        service_context = ServiceContext.from_defaults(
+            llm=self.llm,
+            embed_model=Settings.embed_model
+        )
 
-    # 切分文档
-    all_nodes = self.doc_processor.split_documents(docs)
-    if not all_nodes:
-        logger.warning("文档切分后未产生有效节点")
-        return None, None
+        index = VectorStoreIndex(
+            all_nodes,
+            storage_context=storage_context,
+            service_context=service_context,
+            show_progress=True
+        )
 
-    # 创建向量存储
-    vector_store = QdrantVectorStore(
-        client=self.qdrant_client,
-        collection_name=AppSettings.QDRANT_COLLECTION
-    )
+        # 保存哈希文件(用于检测文件变化)
+        os.makedirs(storage_path, exist_ok=True)
+        current_hashes = DocumentProcessor.compute_file_hashes(kb_dir)
+        with open(hashes_file, "w", encoding="utf-8") as f:
+            json.dump(current_hashes, f, sort_keys=True)
 
-    # 构建索引
-    logger.info("生成 Embeddings 并存储到 Qdrant...")
-
-    storage_context = StorageContext.from_defaults(
-        vector_store=vector_store
-    )
-
-    service_context = ServiceContext.from_defaults(
-        llm=self.llm,
-        embed_model=Settings.embed_model
-    )
-
-    index = VectorStoreIndex(
-        all_nodes,
-        storage_context=storage_context,
-        service_context=service_context,
-        show_progress=True
-    )
-
-    # 保存哈希文件(用于检测文件变化)
-    os.makedirs(storage_path, exist_ok=True)
-    current_hashes = DocumentProcessor.compute_file_hashes(kb_dir)
-    with open(hashes_file, "w", encoding="utf-8") as f:
-        json.dump(current_hashes, f, sort_keys=True)
-
-    logger.info(f"索引构建完成,共 {len(all_nodes)} 个节点")
-    self.index = index
-    self.all_nodes = all_nodes
-    return index, all_nodes
-
+        logger.info(f"索引构建完成,共 {len(all_nodes)} 个节点")
+        self.index = index
+        self.all_nodes = all_nodes
+        return index, all_nodes
 
