@@ -24,16 +24,18 @@ class CustomOpenAILike(OpenAI):
         )
 
     def _get_completion_kwargs(self, **kwargs: Any) -> Dict[str, Any]:
-        """重写以强制设置 max_tokens 并移除 stop 参数"""
+        """重写以强制设置 max_tokens、top_p 并移除 stop 参数"""
         completion_kwargs = super()._get_completion_kwargs(**kwargs)
         completion_kwargs["max_tokens"] = Settings.LLM_MAX_TOKENS
+        completion_kwargs["top_p"] = Settings.TOP_P
         completion_kwargs.pop("stop", None)
         return completion_kwargs
 
     def _get_chat_kwargs(self, **kwargs: Any) -> Dict[str, Any]:
-        """重写以强制设置 max_tokens 并移除 stop 参数"""
+        """重写以强制设置 max_tokens、top_p 并移除 stop 参数"""
         chat_kwargs = super()._get_chat_kwargs(**kwargs)
         chat_kwargs["max_tokens"] = Settings.LLM_MAX_TOKENS
+        chat_kwargs["top_p"] = Settings.TOP_P
         chat_kwargs.pop("stop", None)
         return chat_kwargs
 
@@ -106,4 +108,3 @@ class LLMService:
             model_id = Settings.DEFAULT_LLM_ID
 
         return self.clients[model_id]
-

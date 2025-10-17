@@ -77,6 +77,7 @@ class Settings:
     TEMPERATURE_ANALYSIS_ON = 0.3
     TEMPERATURE_ANALYSIS_OFF = 0.0
     TEMPERATURE_REDUCTION = 0.0
+    TOP_P = 0.95  # 添加top_p参数，默认值0.95
 
     # ==================== 服务器配置 ====================
     # SERVER_HOST = "0.0.0.0"
@@ -130,6 +131,7 @@ class Settings:
             "temperature_analysis_on": cls.TEMPERATURE_ANALYSIS_ON,
             "temperature_analysis_off": cls.TEMPERATURE_ANALYSIS_OFF,
             "temperature_reduction": cls.TEMPERATURE_REDUCTION,
+            "top_p": cls.TOP_P,
             "server_host": cls.SERVER_HOST,
             "server_port": cls.SERVER_PORT,
             "server_debug_mode": cls.SERVER_DEBUG_MODE,

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反馈记录查看器</title>
+    <style>
+        @font-face {
+          font-family: 'Noto Sans SC'; font-style: normal; font-weight: 400;
+          src: url('../static/fonts/SourceHanSansSC-Regular.otf') format('opentype');
+        }
+        @font-face {
+          font-family: 'Noto Sans SC'; font-style: normal; font-weight: 500;
+          src: url('../static/fonts/SourceHanSansSC-Medium.otf') format('opentype');
+        }
+        @font-face {
+          font-family: 'Noto Serif SC'; font-style: normal; font-weight: 700;
+          src: url('../static/fonts/SourceHanSerifCN-Bold.otf') format('opentype');
+        }
+        body, html { margin: 0; font-family: "Noto Sans SC", sans-serif; background-color: #fafbfc; }
+        .main-container { max-width: 960px; margin: 40px auto; padding: 20px; box-sizing: border-box; }
+        h1 { font-family: "Noto Serif SC", serif; font-size: 36px; font-weight: 700; color: #1f2937; margin-bottom: 30px; text-align: center; }
+        .info-bar { background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 12px; padding: 15px 25px; margin-bottom: 30px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center; font-size: 14px; color: #4b5563; }
+        .info-bar strong { color: #1f2937; font-weight: 500; }
+        .prompt-box, .answer-box { text-align: left; border: 1px solid #e5e7eb; border-radius: 12px; padding: 25px; background-color: #fff; margin-top: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; }
+        .box-title { margin-top: 0; font-size: 18px; color: #374151; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb; }
+        #questionDisplay { width: 100%; border-radius: 8px; border: 1px solid #d1d5db; background-color: #f9fafb; padding: 15px; font-size: 16px; color: #374151; resize: none; box-sizing: border-box; line-height: 1.6; font-family: "Noto Sans SC", sans-serif; }
+        #answerText { width: 100%; box-sizing: border-box; white-space: pre-wrap; overflow-wrap: break-word; font-size: 15px; line-height: 1.7; color: #374151; min-height: 50px; }
+        .thinking-section, .reference-section, .feedback-details-section { margin: 20px 0; border-radius: 12px; padding: 20px; position: relative; }
+        .section-header { display: flex; align-items: center; margin-bottom: 15px; padding-bottom: 10px; }
+        .section-icon { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; color: white; font-size: 14px; font-weight: bold; }
+        .section-title { font-size: 16px; font-weight: 600; margin: 0; }
+        .thinking-section { background: #f0f9ff; border: 1px solid #bae6fd; }
+        .thinking-header { border-bottom: 1px solid #7dd3fc; }
+        .thinking-icon { background: #3b82f6; }
+        .thinking-title { color: #1e40af; }
+        .thinking-content { color: #1e3a8a; font-size: 14px; line-height: 1.6; font-style: italic; background: rgba(255, 255, 255, 0.7); padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; }
+        .reference-section { background: #f0fdf4; border: 1px solid #bbf7d0; }
+        .reference-header { border-bottom: 1px solid #86efac; }
+        .reference-icon { background: #10b981; }
+        .reference-title { color: #047857; }
+        .reference-content { color: #064e3b; }
+        .reference-item { margin-bottom: 20px; padding: 15px; background: rgba(255, 255, 255, 0.8); border-radius: 8px; border: 1px solid #a7f3d0; }
+        .reference-item.selected { border: 2px solid #10b981; background: rgba(16, 185, 129, 0.05); }
+        .reference-filename { font-weight: 600; color: #065f46; margin-bottom: 8px; font-size: 15px; }
+        .reference-similarity { font-size: 13px; color: #6b7280; margin-bottom: 10px; font-style: italic; }
+        .reference-text { color: #374151; font-size: 14px; line-height: 1.6; background: #f9fafb; padding: 12px; border-radius: 6px; border-left: 3px solid #10b981; }
+        .key-passage { background: #fef3c7; border-left: 3px solid #f59e0b; padding: 12px; margin-top: 10px; border-radius: 6px; font-size: 13px; color: #92400e; }
+        .key-passage-label { font-weight: 600; color: #b45309; margin-bottom: 5px; }
+        .normal-content { color: #374151; font-size: 15px; line-height: 1.7; margin: 10px 0; }
+        .feedback-details-section { background: #fefce8; border: 1px solid #fde047; }
+        .feedback-details-header { border-bottom: 1px solid #facc15; }
+        .feedback-details-icon { background: #ca8a04; }
+        .feedback-details-title { color: #854d0e; }
+        .feedback-details-content p { margin: 0 0 10px 0; font-size: 14px; color: #854d0e; }
+        .feedback-details-content p strong { font-weight: 600; min-width: 80px; display: inline-block; }
+        .hidden { display: none; }
+        .message-container { text-align: center; padding: 50px; font-size: 18px; color: #6b7280; }
+    </style>
+</head>
+<body>
+   <div id="appContainer" class="main-container hidden">
+        <h1>反馈记录查看器</h1>
+        <div class="info-bar">
+            <div><strong>反馈ID:</strong> <span id="infoId"></span></div>
+            <div><strong>模型ID:</strong> <span id="infoModelId"></span></div>
+            <div><strong>反馈类型:</strong> <span id="infoFeedbackType"></span></div>
+            <div><strong>反馈时间:</strong> <span id="infoCreatedAt"></span></div>
+        </div>
+        <div class="prompt-box">
+            <h2 class="box-title">用户问题</h2>
+            <textarea id="questionDisplay" readonly rows="5"></textarea>
+        </div>
+        <div id="answerBox" class="answer-box">
+            <h2 class="box-title">模型回答</h2>
+            <div id="answerText"></div>
+        </div>
+        <div id="dislikeDetailsContainer" class="hidden">
+             <div class="feedback-details-section">
+                <div class="section-header feedback-details-header">
+                    <div class="section-icon">⚠️</div>
+                    <h3 class="section-title">差评详情</h3>
+                </div>
+                <div class="feedback-details-content">
+                    <p><strong>错误原因:</strong> <span id="dislikeReason"></span></p>
+                    <p><strong>反&nbsp;&nbsp;映&nbsp;&nbsp;人:</strong> <span id="dislikeReporterName"></span></p>
+                    <p><strong>反映单位:</strong> <span id="dislikeReporterUnit"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageContainer" class="message-container"></div>
+
+<script src="/static/marked.min.js"></script>
+
+<script>
+    /**
+     * 根据传入的反馈数据，渲染整个页面
+     * @param {object} data - 从数据库查询到的一条记录
+     */
+    function displayFeedback(data) {
+        // console.log('接收到的反馈数据:', data); // 调试信息
+
+        document.getElementById('infoId').textContent = data.feedbackId;
+        document.getElementById('infoModelId').textContent = data.modelId;
+        document.getElementById('infoCreatedAt').textContent = data.createAt;
+        const feedbackTypeSpan = document.getElementById('infoFeedbackType');
+        if (data.feedbackType === 'LIKE') {
+            feedbackTypeSpan.textContent = '👍 点赞';
+            feedbackTypeSpan.style.color = '#10b981';
+        } else {
+            feedbackTypeSpan.textContent = '👎 点踩';
+            feedbackTypeSpan.style.color = '#ef4444';
+        }
+        document.getElementById('questionDisplay').value = data.question;
+
+        // 修复模型回答显示
+        const answerContainer = document.getElementById('answerText');
+        let html = '';
+
+        // 检查answer是否存在且不为空
+        if (data.answer) {
+            // console.log('模型回答内容:', data.answer); // 调试信息
+
+            const thinkingRegex = /<think>(.*?)<\/think>/gs;
+            const thinkMatch = thinkingRegex.exec(data.answer);
+            let mainAnswerContent = data.answer;
+
+            if (thinkMatch) {
+                const beforeContent = data.answer.slice(0, thinkMatch.index).trim();
+                const thinkingContent = thinkMatch[1].trim();
+                const afterContent = data.answer.slice(thinkMatch.index + thinkMatch[0].length).trim();
+                mainAnswerContent = (beforeContent + '\n' + afterContent).trim();
+                html += `<div class="thinking-section"><div class="section-header thinking-header"><div class="section-icon">💭</div><h3 class="section-title">思考过程</h3></div><div class="thinking-content">${thinkingContent.replace(/\n/g, "<br>")}</div></div>`;
+            }
+
+            if (mainAnswerContent) {
+                // 检查是否有marked库，如果没有就直接显示文本
+                if (typeof marked !== 'undefined') {
+                    html += `<div class="normal-content">${marked.parse(mainAnswerContent)}</div>`;
+                } else {
+                    // 如果没有marked库，直接显示原始文本
+                    html += `<div class="normal-content">${mainAnswerContent.replace(/\n/g, "<br>")}</div>`;
+                }
+            }
+        } else {
+            html += `<div class="normal-content">无模型回答内容</div>`;
+        }
+
+        // 修复来源显示
+        let sources = [];
+        if (data.source && Array.isArray(data.source)) {
+            sources = data.source;
+            // console.log('来源数据:', sources); // 调试信息
+        }
+
+        if (sources.length > 0) {
+            let sourcesHtml = `<div class="reference-section"><div class="section-header reference-header"><div class="section-icon reference-icon">📚</div><h3 class="section-title reference-title">参考内容</h3></div><div class="reference-content">`;
+            sources.forEach(item => {
+                const selectedClass = item.canAnswer ? 'selected' : '';
+                sourcesHtml += `<div class="reference-item ${selectedClass}">
+                    <div class="reference-filename">[${item.id}] ${item.fileName}</div>
+                    <div class="reference-similarity">
+                        <span>初始检索分: ${item.initialScore || 'N/A'}</span> |
+                        <span>重排序分: ${item.rerankedScore || 'N/A'}</span>
+                        ${item.canAnswer ? ' | <span style="color: #10b981; font-weight: 600;">✓ 可回答</span>' : ' | <span style="color: #6b7280;">○ 不可回答</span>'}
+                    </div>
+                    <div class="reference-text">"${(item.content || '').replace(/\n/g, "<br>")}"</div>`;
+                if (item.keyPassage) {
+                    sourcesHtml += `<div class="key-passage"><div class="key-passage-label">🔍 关键段落：</div>${item.keyPassage.replace(/\n/g, "<br>")}</div>`;
+                }
+                sourcesHtml += `</div>`;
+            });
+            sourcesHtml += `</div></div>`;
+            html += sourcesHtml;
+        }
+
+        answerContainer.innerHTML = html;
+
+        // 修复差评详情显示
+        if (data.feedbackType === 'DISLIKE') {
+            // console.log('显示差评详情'); // 调试信息
+            // console.log('原因:', data.reason);
+            // console.log('报告人:', data.reporterName);
+            // console.log('报告单位:', data.reporterUnit);
+
+            document.getElementById('dislikeReason').textContent = data.reason || '(未填写)';
+            document.getElementById('dislikeReporterName').textContent = data.reporterName || '(未填写)';
+            document.getElementById('dislikeReporterUnit').textContent = data.reporterUnit || '(未填写)';
+            document.getElementById('dislikeDetailsContainer').classList.remove('hidden');
+        } else {
+            // 确保LIKE类型时隐藏差评详情
+            document.getElementById('dislikeDetailsContainer').classList.add('hidden');
+        }
+    }
+
+    /**
+     * 从后端API获取反馈数据并调用渲染函数
+     * @param {string | number} feedbackId - 要获取的反馈记录ID
+     */
+    async function fetchFeedbackData(feedbackId) {
+        const messageContainer = document.getElementById('messageContainer');
+        const appContainer = document.getElementById('appContainer');
+        messageContainer.textContent = '正在加载数据...';
+
+        const API_ENDPOINT = `/api/feedback/show/${feedbackId}`;
+
+        try {
+            const response = await fetch(API_ENDPOINT);
+
+            if (!response.ok) {
+                throw new Error(`网络响应错误: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if(!result.success) {
+                throw new Error(result.message);
+            }
+
+            // 修正：API返回的数据在result.data.feedback中
+            const feedbackData = result.data.feedback;
+
+            messageContainer.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            displayFeedback(feedbackData);
+
+        } catch (error) {
+             console.error("获取反馈数据失败:", error);
+            messageContainer.innerHTML = `<h1>获取数据失败</h1><p>${error.message}</p>`;
+        }
+    }
+
+    // --- 新增的辅助函数 ---
+    function formatSource(sources) {
+        if (!sources || !Array.isArray(sources) || sources.length === 0) {
+            return '<span style="color: #999;">無來源資料</span>';
+        }
+        try {
+            const sourceHtml = sources.map(source => {
+                return `<div style="margin-bottom: 5px; padding: 3px; border-bottom: 1px solid #eee;">
+                            <strong>文件名:</strong> ${source.fileName || 'N/A'} <br>
+                            <small style="color: #666;">ID: ${source.id || 'N/A'}</small>
+                        </div>`;
+            }).join('');
+            return sourceHtml;
+        } catch (e) {
+            console.error("解析Source失败:", e, sources);
+            return '<span style="color: red;">來源資料格式錯誤</span>';
+        }
+    }
+
+    async function fetchAndRenderFeedback() {
+        const tbody = document.getElementById('feedback-tbody');
+        if (!tbody) return; // 如果页面没有表格元素，跳过
+
+        try {
+            const response = await fetch('/api/feedback/show/list');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message);
+            }
+
+            const feedbacks = result.data.feedbacks;
+            tbody.innerHTML = ''; // 清空现有内容
+
+            feedbacks.forEach(item => {
+                const row = `<tr>
+                                <td>${item.feedbackId}</td>
+                                <td>${item.feedbackType}</td>
+                                <td><div class="td-content">${item.question}</div></td>
+                                <td><div class="td-content">${item.answer}</div></td>
+                                <td>${item.modelId || 'N/A'}</td>
+                                <td><div class="td-content">${item.reason || ''}</div></td>
+                                <td>${item.reporterName || ''}</td>
+                                <td>${item.reporterUnit || ''}</td>
+                                <td>${formatSource(item.source)}</td>
+                                <td>${item.createAt}</td>
+                                <td>${item.isProcessed ? '是' : '否'}</td>
+                            </tr>`;
+                tbody.innerHTML += row;
+            });
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="11">加载数据失败: ${error.message}</td></tr>`;
+            console.error('加载反馈数据失败:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchAndRenderFeedback);
+
+    // --- 页面加载时的入口逻辑 ---
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const feedbackId = urlParams.get('id');
+
+        if (feedbackId) {
+            fetchFeedbackData(feedbackId);
+        } else {
+            const messageContainer = document.getElementById('messageContainer');
+            messageContainer.innerHTML = '<h1>请提供一个反馈ID</h1><p>请在URL中通过查询参数指定要查看的反馈ID，例如：<code>feedback_viewer.html?id=101</code></p>';
+        }
+    };
+</script>
+
+</body>
+</html>

@@ -105,6 +105,9 @@ def register_page_routes(app):
     def route_knowledge():
         return render_template('knowledge_answer.html')
 
+    @app.route('/board')
+    def route_board():
+        return render_template('feedback_list.html')
     @app.route('/knowledge/v4')
     def route_knowledge_v4():
         return render_template('knowledge_answer_v4.html')
