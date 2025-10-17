@@ -79,6 +79,14 @@ class Settings:
     TEMPERATURE_REDUCTION = 0.0
     TOP_P = 0.95  # 添加top_p参数，默认值0.95
 
+    # Qdrant 配置
+    QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
+    QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
+    QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "knowledge_base")
+
+    # 可选:内嵌模式路径(不使用 Docker 时启用) 现在用的是docker，用不到hhhhhhhhhhh
+    # QDRANT_PATH = os.getenv("QDRANT_PATH", "./qdrant_data")
+
     # ==================== 服务器配置 ====================
     # SERVER_HOST = "0.0.0.0"
     SERVER_HOST = "127.0.0.1" # 只能监听本机，通过nginx代理访问
