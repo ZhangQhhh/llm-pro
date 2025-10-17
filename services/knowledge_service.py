@@ -38,11 +38,26 @@ class KnowledgeService:
             port=AppSettings.QDRANT_PORT
         )
 
+        # 对话管理器初始化为 None(需要在 embed_model 设置后初始化)
+        self.conversation_manager = None
+
         # 内嵌模式(无需 Docker,取消注释使用)
         # self.qdrant_client = QdrantClient(
         #     path=AppSettings.QDRANT_PATH
         # )
         logger.info("Qdrant 客户端初始化成功")
+
+    def initialize_conversation_manager(self):
+        """初始化对话管理器(需在 embed_model 设置后调用)"""
+        if Settings.embed_model is None:
+            raise ValueError("Embed model 未设置,无法初始化对话管理器")
+
+        from services.conversation_manager import ConversationManager
+        self.conversation_manager = ConversationManager(
+            embed_model=Settings.embed_model,
+            qdrant_client=self.qdrant_client
+        )
+        logger.info("对话管理器初始化成功")
 
     def build_or_load_index(self) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
         """
@@ -296,4 +311,3 @@ class KnowledgeService:
         self.index = index
         self.all_nodes = all_nodes
         return index, all_nodes
-

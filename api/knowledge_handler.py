@@ -390,3 +390,275 @@ class KnowledgeHandler:
                 "insert_block_mode": use_insert_block
             }
         )
+
+    def process_conversation(
+        self,
+        question: str,
+        session_id: str,
+        enable_thinking: bool,
+        rerank_top_n: int,
+        llm,
+        client_ip: str = "unknown",
+        use_insert_block: bool = False,
+        insert_block_llm_id: Optional[str] = None
+    ) -> Generator[str, None, None]:
+        """
+        处理支持多轮对话的知识问答
+
+        Args:
+            question: 问题内容
+            session_id: 会话ID
+            enable_thinking: 是否启用思考模式
+            rerank_top_n: 重排序后返回的文档数量
+            llm: LLM 实例
+            client_ip: 客户端 IP
+            use_insert_block: 是否使用 InsertBlock 过滤模式
+            insert_block_llm_id: InsertBlock 使用的 LLM ID
+
+        Yields:
+            SSE 格式的响应流
+        """
+        full_response = ""
+
+        try:
+            logger.info(
+                f"处理多轮对话: 会话 {session_id[:8]}... | '{question}' | "
+                f"思考模式: {enable_thinking} | InsertBlock: {use_insert_block}"
+            )
+
+            # 获取对话管理器
+            from flask import current_app
+            knowledge_service = current_app.knowledge_service
+            conversation_manager = knowledge_service.conversation_manager
+
+            if not conversation_manager:
+                raise ValueError("对话管理器未初始化")
+
+            # 返回会话ID
+            yield f"SESSION:{session_id}"
+
+            # 1. 检索
+            yield "CONTENT:正在进行混合检索..."
+            full_response += "正在进行混合检索...\n"
+
+            final_nodes = self._retrieve_and_rerank(question, rerank_top_n)
+
+            # 2. 如果启用 InsertBlock 模式，进行智能过滤
+            filtered_results = None
+            nodes_for_prompt = final_nodes
+
+            if use_insert_block and final_nodes and self.insert_block_filter:
+                yield "CONTENT:正在使用 InsertBlock 智能过滤..."
+                full_response += "正在使用 InsertBlock 智能过滤...\n"
+
+                filtered_results = self.insert_block_filter.filter_nodes(
+                    question=question,
+                    nodes=final_nodes,
+                    llm_id=insert_block_llm_id
+                )
+
+                if filtered_results:
+                    yield f"CONTENT:找到 {len(filtered_results)} 个可回答的节点"
+                    full_response += f"找到 {len(filtered_results)} 个可回答的节点\n"
+                    nodes_for_prompt = None
+                else:
+                    yield "CONTENT:未找到可直接回答的节点，将使用原始检索结果"
+                    full_response += "未找到可直接回答的节点，将使用原始检索结果\n"
+                    filtered_results = None
+
+            # 3. 构建知识库上下文
+            knowledge_context = self._build_knowledge_context(
+                nodes_for_prompt,
+                filtered_results
+            )
+
+            # 4. 从 prompts.json 获取对话提示词
+            has_rag = bool(knowledge_context)
+
+            if has_rag:
+                system_prompt_list = get_prompt(
+                    "conversation.system.rag_with_history",
+                    ["你是一名资深边检业务专家。请根据业务规定和对话历史，回答用户的业务咨询。"]
+                )
+            else:
+                system_prompt_list = get_prompt(
+                    "conversation.system.general_with_history",
+                    ["你是一名资深边检业务专家。请结合对话历史，回答用户的业务咨询。"]
+                )
+
+            system_prompt = "\n".join(system_prompt_list) if isinstance(system_prompt_list, list) else system_prompt_list
+
+            # 获取上下文前缀
+            context_prefixes = {
+                "relevant_history": get_prompt(
+                    "conversation.context_prefix.relevant_history",
+                    "以下是相关的历史对话，可作为背景参考：\n"
+                ),
+                "recent_history": get_prompt(
+                    "conversation.context_prefix.recent_history",
+                    "以下是最近的对话历史：\n"
+                ),
+                "regulations": get_prompt(
+                    "conversation.context_prefix.regulations",
+                    "业务规定如下：\n"
+                )
+            }
+
+            # 5. 构建完整的 messages 数组（包含历史对话）
+            messages = conversation_manager.build_context_messages(
+                session_id=session_id,
+                current_query=question,
+                system_prompt=system_prompt,
+                knowledge_context=knowledge_context,
+                context_prefixes=context_prefixes,
+                recent_turns=Settings.MAX_RECENT_TURNS,
+                relevant_turns=Settings.MAX_RELEVANT_TURNS
+            )
+
+            # 6. 输出状态
+            status_msg = (
+                "已找到相关资料，正在生成回答..."
+                if final_nodes
+                else "未找到高相关性资料，基于通用知识和对话历史回答..."
+            )
+            yield f"CONTENT:{status_msg}"
+            full_response += status_msg + "\n"
+
+            # 7. 调用 LLM（使用 messages 数组）
+            assistant_response = ""
+            for chunk in self._call_llm_with_messages(llm, messages):
+                yield f"CONTENT:{chunk}"
+                full_response += chunk
+                assistant_response += chunk
+
+            # 8. 存储本轮对话到向量库
+            context_doc_names = []
+            if final_nodes:
+                context_doc_names = [
+                    node.node.metadata.get('file_name', '未知')
+                    for node in final_nodes
+                ]
+
+            conversation_manager.add_conversation_turn(
+                session_id=session_id,
+                user_query=question,
+                assistant_response=assistant_response,
+                context_docs=context_doc_names
+            )
+
+            # 9. 输出参考来源
+            if use_insert_block and filtered_results:
+                yield "CONTENT:\n\n**参考来源（全部检索结果）:**"
+                full_response += "\n\n参考来源（全部检索结果）:"
+
+                filtered_map = {}
+                for result in filtered_results:
+                    key = f"{result['file_name']}_{result['reranked_score']}"
+                    filtered_map[key] = result
+
+                for i, node in enumerate(final_nodes):
+                    file_name = node.node.metadata.get('file_name', '未知')
+                    initial_score = node.node.metadata.get('initial_score', 0.0)
+                    key = f"{file_name}_{node.score}"
+
+                    filtered_info = filtered_map.get(key)
+
+                    source_data = {
+                        "id": i + 1,
+                        "fileName": file_name,
+                        "initialScore": f"{initial_score:.4f}",
+                        "rerankedScore": f"{node.score:.4f}",
+                        "content": node.node.text.strip(),
+                        "canAnswer": filtered_info is not None,
+                        "reasoning": filtered_info.get('reasoning', '') if filtered_info else '',
+                        "keyPassage": filtered_info.get('key_passage', '') if filtered_info else ''
+                    }
+
+                    yield f"SOURCE:{json.dumps(source_data, ensure_ascii=False)}"
+
+                    full_response += (
+                        f"\n[{source_data['id']}] 文件: {source_data['fileName']}, "
+                        f"重排分: {source_data['rerankedScore']}, "
+                        f"可回答: {source_data['canAnswer']}"
+                    )
+
+            elif final_nodes:
+                yield "CONTENT:\n\n**参考来源:**"
+                full_response += "\n\n参考来源:"
+
+                for source_msg in self._format_sources(final_nodes):
+                    yield source_msg
+                    if source_msg.startswith("SOURCE:"):
+                        data = json.loads(source_msg[7:])
+                        full_response += (
+                            f"\n[{data['id']}] 文件: {data['fileName']}, "
+                            f"重排分: {data['rerankedScore']}"
+                        )
+
+            yield "DONE:"
+
+            # 10. 保存日志
+            self._save_log(
+                question,
+                full_response,
+                client_ip,
+                bool(final_nodes),
+                use_insert_block=use_insert_block
+            )
+
+        except Exception as e:
+            error_msg = f"处理错误: {str(e)}"
+            logger.error(f"多轮对话处理出错: {e}", exc_info=True)
+            yield f"ERROR:{error_msg}"
+
+    def _build_knowledge_context(self, final_nodes, filtered_results=None):
+        """构建知识库上下文字符串"""
+        if filtered_results:
+            # 使用 InsertBlock 过滤结果
+            context_blocks = []
+            for i, result in enumerate(filtered_results):
+                file_name = result['file_name']
+                key_passage = result.get('key_passage', '')
+                full_content = result['node'].node.text.strip()
+
+                if key_passage:
+                    block = (
+                        f"### 来源 {i + 1} - {file_name}:\n"
+                        f"**【关键段落】**\n> {key_passage}\n\n"
+                        f"**【完整内容】**\n> {full_content}"
+                    )
+                else:
+                    block = f"### 来源 {i + 1} - {file_name}:\n> {full_content}"
+
+                context_blocks.append(block)
+
+            return "\n\n".join(context_blocks) if context_blocks else None
+
+        elif final_nodes:
+            # 使用普通检索结果
+            context_blocks = []
+            for i, node in enumerate(final_nodes):
+                file_name = node.node.metadata.get('file_name', '未知文件')
+                content = node.node.get_content().strip()
+                block = f"### 来源 {i + 1} - {file_name}:\n> {content}"
+                context_blocks.append(block)
+
+            return "\n\n".join(context_blocks)
+
+        return None
+
+    def _call_llm_with_messages(self, llm, messages):
+        """使用 messages 数组调用 LLM"""
+        logger.info(f"使用多轮对话模式调用 LLM, 消息数: {len(messages)}")
+
+        # 使用 llm_wrapper 的 chat 方法
+        response_stream = self.llm_wrapper.stream_chat(
+            llm,
+            messages=messages
+        )
+
+        for delta in response_stream:
+            token = getattr(delta, 'delta', None) or getattr(delta, 'text', None) or ''
+            if token:
+                yield clean_for_sse_text(token)
+

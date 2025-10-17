@@ -108,6 +108,10 @@ def register_page_routes(app):
     @app.route('/board')
     def route_board():
         return render_template('feedback_list.html')
+
+    @app.route('/viewer')
+    def route_viewer():
+       return render_template('feedback_viewer.html')
     @app.route('/knowledge/v4')
     def route_knowledge_v4():
         return render_template('knowledge_answer_v4.html')

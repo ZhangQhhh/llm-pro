@@ -84,6 +84,11 @@ class Settings:
     QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
     QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "knowledge_base")
 
+    # 对话管理配置
+    CONVERSATION_COLLECTION = os.getenv("CONVERSATION_COLLECTION", "conversations")
+    MAX_RECENT_TURNS = int(os.getenv("MAX_RECENT_TURNS", 3))  # 最近对话轮数
+    MAX_RELEVANT_TURNS = int(os.getenv("MAX_RELEVANT_TURNS", 2))  # 相关对话轮数
+
     # 可选:内嵌模式路径(不使用 Docker 时启用) 现在用的是docker，用不到hhhhhhhhhhh
     # QDRANT_PATH = os.getenv("QDRANT_PATH", "./qdrant_data")
 
