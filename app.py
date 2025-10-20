@@ -131,7 +131,7 @@ def register_page_routes(app):
 
     @app.route('/knowledge/conversation')
     def route_conversation():
-        return render_template('conversation2.html')
+        return render_template('conversation3.html')
 
     @app.route('/topic/v2')
     def route_topic_test():

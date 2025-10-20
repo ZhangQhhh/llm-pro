@@ -527,9 +527,16 @@ class KnowledgeHandler:
             # 7. 调用 LLM（使用 messages 数组）
             assistant_response = ""
             for chunk in self._call_llm_with_messages(llm, messages):
-                yield f"CONTENT:{chunk}"
-                full_response += chunk
-                assistant_response += chunk
+                # _call_llm_with_messages 返回的chunk可能是:
+                # 1. "THINK:xxx" - 思考内容，直接输出
+                # 2. 普通文本 - 正文内容，需要加CONTENT:前缀
+                if chunk.startswith('THINK:'):
+                    yield chunk  # 直接输出思考内容
+                    # 思考内容不计入assistant_response和full_response
+                else:
+                    yield f"CONTENT:{chunk}"
+                    full_response += chunk
+                    assistant_response += chunk
 
             # 8. 存储本轮对话到向量库
             context_doc_names = []
@@ -539,11 +546,28 @@ class KnowledgeHandler:
                     for node in final_nodes
                 ]
 
+            # 获取上一轮对话的 turn_id 作为 parent_turn_id
+            parent_turn_id = None
+            try:
+                recent_history = conversation_manager.get_recent_history(
+                    session_id=session_id,
+                    limit=1
+                )
+                if recent_history:
+                    parent_turn_id = recent_history[0].get('turn_id')
+            except Exception as e:
+                logger.warning(f"获取父对话ID失败: {e}")
+
+            # 生成当前轮次的 turn_id
+            current_turn_id = str(__import__('uuid').uuid4())
+
             conversation_manager.add_conversation_turn(
                 session_id=session_id,
                 user_query=question,
                 assistant_response=assistant_response,
-                context_docs=context_doc_names
+                context_docs=context_doc_names,
+                turn_id=current_turn_id,
+                parent_turn_id=parent_turn_id
             )
 
             # 9. 输出参考来源
@@ -657,8 +681,72 @@ class KnowledgeHandler:
             messages=messages
         )
 
+        # 用于跟踪当前是否在思考标签内
+        in_think_tag = False
+        buffer = ""
+
         for delta in response_stream:
             token = getattr(delta, 'delta', None) or getattr(delta, 'text', None) or ''
-            if token:
-                yield clean_for_sse_text(token)
+            if not token:
+                continue
 
+            buffer += token
+
+            # 处理思考标签的逻辑
+            while True:
+                if not in_think_tag:
+                    # 查找 <think> 开始标签
+                    think_start = buffer.find('<think>')
+                    if think_start != -1:
+                        # 发送思考标签之前的内容作为正文
+                        if think_start > 0:
+                            content_before = buffer[:think_start]
+                            cleaned = clean_for_sse_text(content_before)
+                            if cleaned:
+                                yield cleaned
+                        # 移除已处理的内容和 <think> 标签
+                        buffer = buffer[think_start + 7:]
+                        in_think_tag = True
+                    else:
+                        # 没有找到开始标签，检查buffer是否可能包含部分标签
+                        # 保留可能的部分标签（最多7个字符 "<think>"）
+                        if len(buffer) > 10:
+                            safe_length = len(buffer) - 7
+                            cleaned = clean_for_sse_text(buffer[:safe_length])
+                            if cleaned:
+                                yield cleaned
+                            buffer = buffer[safe_length:]
+                        break
+                else:
+                    # 在思考标签内，查找 </think> 结束标签
+                    think_end = buffer.find('</think>')
+                    if think_end != -1:
+                        # 发送思考内容（带 THINK: 前缀）
+                        think_content = buffer[:think_end]
+                        if think_content:
+                            cleaned = clean_for_sse_text(think_content)
+                            if cleaned:
+                                yield f'THINK:{cleaned}'
+                        # 移除已处理的内容和 </think> 标签
+                        buffer = buffer[think_end + 8:]
+                        in_think_tag = False
+                    else:
+                        # 没有找到结束标签，保留可能的部分标签
+                        if len(buffer) > 10:
+                            safe_length = len(buffer) - 8
+                            think_content = buffer[:safe_length]
+                            if think_content:
+                                cleaned = clean_for_sse_text(think_content)
+                                if cleaned:
+                                    yield f'THINK:{cleaned}'
+                            buffer = buffer[safe_length:]
+                        break
+
+        # 处理剩余的buffer内容
+        if buffer:
+            cleaned = clean_for_sse_text(buffer)
+            if cleaned:
+                if in_think_tag:
+                    yield f'THINK:{cleaned}'
+                else:
+                    yield cleaned

@@ -33,7 +33,10 @@ class ConversationManager:
         """确保 Qdrant 对话集合存在"""
         try:
             collections = self.qdrant_client.get_collections().collections
-            if not any(c.name == self.collection_name for c in collections):
+            collection_exists = any(c.name == self.collection_name for c in collections)
+
+            if not collection_exists:
+                logger.warning(f"对话集合 {self.collection_name} 不存在，正在创建...")
                 # 获取 embedding 维度
                 test_embedding = self.embed_model.get_text_embedding("test")
                 vector_size = len(test_embedding)
@@ -45,9 +48,23 @@ class ConversationManager:
                         distance=Distance.COSINE
                     )
                 )
-                logger.info(f"创建对话集合 {self.collection_name}")
+                logger.info(f"✅ 成功创建对话集合 {self.collection_name}（维度: {vector_size}）")
+
+            return True
         except Exception as e:
-            logger.error(f"创建对话集合失败: {e}")
+            logger.error(f"❌ 创建对话集合失败: {e}", exc_info=True)
+            raise  # 抛出异常而不是静默失败
+
+    def _check_and_create_collection(self):
+        """检查集合是否存在，不存在则创建（用于运行时检查）"""
+        try:
+            # 尝试获取集合信息
+            self.qdrant_client.get_collection(self.collection_name)
+            return True
+        except Exception:
+            # 集合不存在，尝试创建
+            logger.warning(f"检测到集合 {self.collection_name} 不存在，尝试重新创建...")
+            return self._ensure_collection()
 
     def add_conversation_turn(
         self,
@@ -72,6 +89,9 @@ class ConversationManager:
         start_time = time.time()
 
         try:
+            # 确保集合存在
+            self._check_and_create_collection()
+
             # 构建对话文本(用于向量化)
             conversation_text = f"用户: {user_query}\n助手: {assistant_response}"
 
@@ -212,6 +232,9 @@ class ConversationManager:
                 return cache_entry["conversations"][:limit]
 
         try:
+            # 确保集合存在
+            self._check_and_create_collection()
+
             # 使用 scroll 获取所有对话,然后按时间排序
             scroll_result = self.qdrant_client.scroll(
                 collection_name=self.collection_name,
@@ -231,7 +254,9 @@ class ConversationManager:
                 all_turns.append({
                     "user_query": point.payload["user_query"],
                     "assistant_response": point.payload["assistant_response"],
-                    "timestamp": point.payload["timestamp"]
+                    "timestamp": point.payload["timestamp"],
+                    "turn_id": point.payload.get("turn_id"),  # 添加 turn_id
+                    "parent_turn_id": point.payload.get("parent_turn_id")  # 添加 parent_turn_id
                 })
                 total_tokens += point.payload.get("token_count", 0)
 
