@@ -67,6 +67,14 @@ def create_app():
         logger.error("知识库索引或节点加载失败")
         return None
 
+    # 4.5 初始化对话管理器（用于多轮对话功能）
+    try:
+        knowledge_service.initialize_conversation_manager()
+        logger.info("对话管理器初始化成功 - 多轮对话功能已启用")
+    except Exception as e:
+        logger.warning(f"对话管理器初始化失败（多轮对话功能不可用）: {e}")
+        logger.warning("单轮对话功能不受影响，将继续正常运行")
+
     # 5. 初始化业务处理器
     llm_wrapper = LLMStreamWrapper()
     knowledge_handler = KnowledgeHandler(retriever, reranker, llm_wrapper, llm_service)
@@ -78,11 +86,12 @@ def create_app():
     app.llm_service = llm_service
     app.knowledge_handler = knowledge_handler
     app.judge_handler = judge_handler
+    app.knowledge_service = knowledge_service  # 添加这行，让路由可以访问 conversation_manager
     app.retriever = retriever
     app.reranker = reranker
 
     # 7. 注册路由蓝图
-    app.register_blueprint(knowledge_bp)
+    app.register_blueprint(knowledge_bp,url_prefix='/api')
 
     # 8. 注册页面路由
     register_page_routes(app)
@@ -119,6 +128,10 @@ def register_page_routes(app):
     @app.route('/topic')
     def route_topic():
         return render_template('topic_answer.html')
+
+    @app.route('/knowledge/conversation')
+    def route_conversation():
+        return render_template('conversation2.html')
 
     @app.route('/topic/v2')
     def route_topic_test():

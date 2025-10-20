@@ -59,6 +59,78 @@ class LLMStreamWrapper:
             )
 
     @staticmethod
+    def stream_chat(llm: Any, messages: List[Any]):
+        """
+        多轮对话模式的流式调用接口
+
+        Args:
+            llm: LLM 实例
+            messages: ChatMessage 列表或字典列表
+
+        Returns:
+            流式响应生成器
+        """
+        try:
+            # 如果 LLM 支持 stream_chat，将字典转换为 ChatMessage 对象
+            if hasattr(llm, 'stream_chat'):
+                # 检查 messages 是否需要转换
+                if messages and isinstance(messages[0], dict):
+                    # 字典格式，需要转换为 ChatMessage
+                    if ChatMessage is not None:
+                        chat_messages = []
+                        for msg in messages:
+                            role = msg.get('role', 'user')
+                            content = msg.get('content', '')
+                            chat_messages.append(ChatMessage(role=role, content=content))
+                        return llm.stream_chat(chat_messages)
+                    else:
+                        # ChatMessage 未导入，回退到 stream_complete
+                        logger.warning("ChatMessage 未导入，回退到 stream_complete")
+                        prompt_parts = []
+                        for msg in messages:
+                            role = msg.get('role', 'user')
+                            content = msg.get('content', '')
+                            if role == 'system':
+                                prompt_parts.append(f"系统: {content}")
+                            elif role == 'user':
+                                prompt_parts.append(f"用户: {content}")
+                            elif role == 'assistant':
+                                prompt_parts.append(f"助手: {content}")
+                        combined_prompt = "\n".join(prompt_parts)
+                        return llm.stream_complete(combined_prompt)
+                else:
+                    # 已经是 ChatMessage 对象，直接使用
+                    return llm.stream_chat(messages)
+            else:
+                # 如果不支持 stream_chat，回退到 stream_complete
+                logger.warning(f"LLM 不支持 stream_chat，尝试使用 stream_complete")
+
+                # 将 messages 转换为单个 prompt
+                prompt_parts = []
+                for msg in messages:
+                    # 兼容字典和对象两种格式
+                    if isinstance(msg, dict):
+                        role = msg.get('role', 'user')
+                        content = msg.get('content', '')
+                    else:
+                        role = getattr(msg, 'role', 'user')
+                        content = getattr(msg, 'content', '')
+
+                    if role == 'system':
+                        prompt_parts.append(f"系统: {content}")
+                    elif role == 'user':
+                        prompt_parts.append(f"用户: {content}")
+                    elif role == 'assistant':
+                        prompt_parts.append(f"助手: {content}")
+
+                combined_prompt = "\n".join(prompt_parts)
+                return llm.stream_complete(combined_prompt)
+
+        except Exception as e:
+            logger.error(f"stream_chat 调用失败: {e}", exc_info=True)
+            raise
+
+    @staticmethod
     def _stream_chat(
         llm: Any,
         system_prompt: Optional[str],
@@ -103,4 +175,3 @@ class LLMStreamWrapper:
             combined += assistant_context + "\n"
         combined += (user_prompt or '')
         return llm.stream_complete(prompt or combined)
-

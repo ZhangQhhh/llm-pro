@@ -208,7 +208,8 @@ class KnowledgeService:
                 service_context=service_context
             )
 
-            # 获取所有节点
+            # 获取所有节点 - 修复文本加载问题，使用正确的字段名
+            logger.info("正在从 Qdrant 获取所有文本节点...")
             scroll_result = self.qdrant_client.scroll(
                 collection_name=AppSettings.QDRANT_COLLECTION,
                 limit=10000,
@@ -219,12 +220,37 @@ class KnowledgeService:
             all_nodes = []
             for point in scroll_result[0]:
                 if point.payload:
+                    # LlamaIndex 将文本内容存储在 _node_content 字段中，不是 text 字段
+                    text_content = point.payload.get("_node_content", "")
+
+                    # 如果 _node_content 为空，尝试备用字段
+                    if not text_content:
+                        text_content = point.payload.get("text", "")
+
+                    if not text_content:
+                        logger.warning(f"节点 {point.id} 缺少文本内容 (_node_content 和 text 字段都为空)")
+                        continue
+
+                    # 构造元数据，保留文件信息
+                    metadata = {
+                        "file_name": point.payload.get("file_name", ""),
+                        "file_path": point.payload.get("file_path", ""),
+                        "doc_id": point.payload.get("doc_id"),
+                        "document_id": point.payload.get("document_id"),
+                        "ref_doc_id": point.payload.get("ref_doc_id"),
+                        "_node_type": point.payload.get("_node_type", "Document")
+                    }
+
                     node = TextNode(
-                        text=point.payload.get("text", ""),
+                        text=text_content,
                         id_=str(point.id),
-                        metadata=point.payload.get("metadata", {})
+                        metadata=metadata
                     )
                     all_nodes.append(node)
+
+            if not all_nodes:
+                logger.error("从 Qdrant 未能加载到任何有效文本节点")
+                return None, None
 
             logger.info(f"成功加载索引,共 {len(all_nodes)} 个节点")
             self.index = index
@@ -233,6 +259,7 @@ class KnowledgeService:
 
         except Exception as e:
             logger.error(f"加载索引失败: {e}", exc_info=True)
+            logger.info("将尝试重新构建索引...")
             return None, None
 
     def _build_index(

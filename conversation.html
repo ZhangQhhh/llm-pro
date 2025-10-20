@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>多轮知识对话（需登录）</title>
+    <style>
+        /* === 本地字体（请根据实际路径调整） === */
+        @font-face {
+            font-family: "Noto Sans SC";
+            font-style: normal;
+            font-weight: 400;
+            src: url('/static/fonts/SourceHanSansSC-Regular.otf') format('opentype');
+        }
+        @font-face {
+            font-family: "Noto Sans SC";
+            font-style: normal;
+            font-weight: 600;
+            src: url('/static/fonts/SourceHanSansSC-Medium.otf') format('opentype');
+        }
+        @font-face {
+            font-family: "Noto Serif SC";
+            font-style: normal;
+            font-weight: 700;
+            src: url('/static/fonts/SourceHanSerifCN-Bold.otf') format('opentype');
+        }
+
+        :root{
+            --bg-1: #0f172a;
+            --card: #0b1220;
+            --accentA: #7c3aed;
+            --accentB: #06b6d4;
+            --glass: rgba(255,255,255,0.04);
+            --muted: #94a3b8;
+            --soft: rgba(255,255,255,0.03);
+        }
+
+        html,body {
+            height: 100%;
+            margin: 0;
+            font-family: "Noto Sans SC", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: radial-gradient(800px 400px at 10% 10%, rgba(124,58,237,0.10), transparent 10%),
+                        radial-gradient(700px 350px at 90% 90%, rgba(6,182,212,0.08), transparent 10%),
+                        linear-gradient(180deg, #f7fafc 0%, #eef2ff 100%);
+            color: #e6eef8;
+        }
+
+        .wrap {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 28px;
+            box-sizing: border-box;
+        }
+
+        header {
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:16px;
+            margin-bottom:18px;
+        }
+        .brand {
+            display:flex;
+            gap:14px;
+            align-items:center;
+        }
+        .logo {
+            width:56px;
+            height:56px;
+            border-radius:12px;
+            background: linear-gradient(135deg,var(--accentA),var(--accentB));
+            box-shadow: 0 10px 30px rgba(12,18,30,0.12);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-weight:700;
+            font-family: "Noto Serif SC", serif;
+            font-size:20px;
+            color:white;
+        }
+        h1 {
+            margin:0;
+            font-size:22px;
+            color:#0f172a;
+            font-family:"Noto Serif SC", serif;
+        }
+        .subtitle { color:var(--muted); font-size:13px; margin-top:4px; }
+
+        .user-panel {
+            display:flex;
+            gap:12px;
+            align-items:center;
+        }
+        .btn {
+            border: none;
+            padding:9px 14px;
+            border-radius:10px;
+            cursor:pointer;
+            font-weight:600;
+            font-size:14px;
+            background: linear-gradient(90deg,#111827,#0f172a);
+            color: #e6eef8;
+            box-shadow: 0 6px 20px rgba(2,6,23,0.2);
+        }
+        .btn.ghost {
+            background: transparent;
+            border: 1px solid rgba(15,23,42,0.08);
+            color: #0f172a;
+        }
+        .token-indicator {
+            font-size:13px;
+            color:var(--muted);
+        }
+
+        /* 主卡片 */
+        .card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.85));
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(2,6,23,0.08);
+            color: #0f172a;
+        }
+
+        .controls {
+            display:flex;
+            gap:12px;
+            align-items:center;
+            margin-bottom:16px;
+            flex-wrap:wrap;
+        }
+        textarea#questionInput {
+            width:100%;
+            min-height:110px;
+            border-radius:12px;
+            padding:16px;
+            border:1px solid #e6eef8;
+            box-sizing:border-box;
+            resize:vertical;
+            font-size:15px;
+            line-height:1.6;
+            font-family: "Noto Sans SC", sans-serif;
+        }
+        .control-row {
+            display:flex;
+            gap:12px;
+            align-items:center;
+            margin-top:10px;
+            flex-wrap:wrap;
+        }
+        select, input[type=number] {
+            padding:8px 10px;
+            border-radius:8px;
+            border:1px solid #dbeafe;
+            background:transparent;
+            font-size:14px;
+        }
+
+        .right-actions {
+            margin-left:auto;
+            display:flex;
+            gap:8px;
+            align-items:center;
+        }
+
+        .submit-primary {
+            background: linear-gradient(90deg,var(--accentA),var(--accentB));
+            color:white;
+            border-radius:10px;
+            padding:10px 18px;
+            border:none;
+            font-weight:700;
+            cursor:pointer;
+            box-shadow: 0 8px 30px rgba(124,58,237,0.18);
+        }
+        .submit-primary:disabled { opacity:0.6; cursor:not-allowed; box-shadow:none; }
+
+        .answer-area {
+            margin-top:22px;
+            display:grid;
+            grid-template-columns: 1fr 340px;
+            gap:18px;
+        }
+        .conversation {
+            background: #fff;
+            padding:18px;
+            border-radius:12px;
+            min-height:300px;
+            box-sizing:border-box;
+            border:1px solid #eef2ff;
+            overflow:auto;
+        }
+        .sidebar {
+            background: linear-gradient(180deg,#f8fafc,#f1f5f9);
+            border-radius:12px;
+            padding:14px;
+            box-sizing:border-box;
+            border:1px solid #eef2ff;
+            min-height:300px;
+        }
+
+        /* 对话气泡 */
+        .msg { margin-bottom:14px; display:flex; gap:10px; align-items:flex-start; }
+        .msg.user { justify-content:flex-end; }
+        .msg .bubble {
+            max-width:78%;
+            padding:12px 14px;
+            border-radius:12px;
+            line-height:1.6;
+            font-size:14px;
+            box-shadow: 0 6px 20px rgba(2,6,23,0.04);
+        }
+        .msg.user .bubble {
+            background: linear-gradient(90deg,var(--accentA),var(--accentB));
+            color:white;
+            border-bottom-right-radius:4px;
+        }
+        .msg.assistant .bubble {
+            background: #ffffff;
+            color:#0f172a;
+            border:1px solid #eef2ff;
+            border-bottom-left-radius:4px;
+        }
+
+        .small-muted { font-size:12px; color:var(--muted); }
+
+        /* loader */
+        .loader {
+            width:36px;height:36px;border-radius:50%;
+            border:4px solid #eef2ff;border-top-color: #7c3aed; animation:spin 1s linear infinite;
+            margin-left:8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .reference-item {
+            background: white;
+            padding:8px;
+            border-radius:8px;
+            margin-bottom:8px;
+            border:1px solid #eef2ff;
+            color:#0f172a;
+            font-size:13px;
+        }
+
+        .footer {
+            margin-top:18px;
+            color:var(--muted);
+            font-size:13px;
+            display:flex;
+            justify-content:space-between;
+            gap:8px;
+        }
+
+        /* 登录模态（弹窗） */
+        .modal-overlay { position: fixed; inset:0; display:flex; align-items:center; justify-content:center; background: rgba(2,6,23,0.45); z-index:2000; }
+        .login-modal {
+            width:480px;
+            max-width:92%;
+            background: linear-gradient(180deg,#ffffff,#f8fbff);
+            border-radius:12px;
+            padding:20px;
+            box-shadow: 0 24px 60px rgba(2,6,23,0.45);
+            box-sizing:border-box;
+        }
+        .login-modal h3 { margin:0 0 8px 0; color:#0f172a; font-size:20px; font-family:"Noto Serif SC", serif; }
+        .login-row { display:flex; gap:8px; align-items:center; margin-top:10px; }
+        .login-row input { flex:1; padding:10px; border-radius:8px; border:1px solid #e6eef8; }
+        .login-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+
+        .hint { font-size:13px; color:var(--muted); margin-top:8px; }
+
+        /* 禁用覆盖（未登录时使界面模糊并阻止操作） */
+        .locked-overlay {
+            position:absolute; inset:0; background:rgba(255,255,255,0.6); backdrop-filter: blur(3px); border-radius:12px; display:flex; align-items:center; justify-content:center; z-index:50;
+        }
+
+        /* 响应式 */
+        @media (max-width:980px) {
+            .answer-area { grid-template-columns: 1fr; }
+            .right-actions { margin-left:0; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <div class="brand">
+            <div class="logo">问</div>
+            <div>
+                <h1>多轮知识对话</h1>
+                <div class="subtitle">基于多轮会话与知识检索的问答 — 登录后可使用（内网无 CDN）</div>
+            </div>
+        </div>
+        <div class="user-panel">
+            <div class="token-indicator" id="statusText">未登录</div>
+            <button class="btn" id="btnLogout" style="display:none">登出</button>
+            <button class="btn" id="btnOpenLogin">登录</button>
+        </div>
+    </header>
+
+    <div class="card" id="mainCard" style="position:relative;">
+        <!-- 如果未登录，显示锁定覆盖 -->
+        <div id="lockedOverlay" class="locked-overlay" style="display:none">
+            <div style="text-align:center;">
+                <div style="font-size:18px;font-weight:700;color:#0f172a;">需要登录才能使用</div>
+                <div class="hint" style="color:#0f172a;margin-top:6px;">请点击右上角“登录”按钮或使用弹窗登录。</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <textarea id="questionInput" placeholder="请输入您的问题（支持多轮对话）。首次提问会返回 session_id，后续请求将复用以保持上下文。"></textarea>
+        </div>
+
+        <div class="control-row">
+            <div style="display:flex;gap:8px;align-items:center;">
+                <label for="modelSelector">模型</label>
+                <select id="modelSelector">
+                    <option value="qwen3-32b">qwen3-32b</option>
+                    <option value="qwen2025">qwen2025</option>
+                    <option value="gpt-like">gpt-like</option>
+                </select>
+                <label for="rerankTopNInput">参考数</label>
+                <input type="number" id="rerankTopNInput" value="10" min="1" max="15" style="width:72px">
+                <label style="display:flex;gap:6px;align-items:center;">
+                    <input type="checkbox" id="thinkingModeToggle" checked> 思考模式
+                </label>
+                <label style="display:flex;gap:6px;align-items:center;">
+                    <input type="checkbox" id="insertBlockToggle"> 精准检索
+                </label>
+            </div>
+
+            <div class="right-actions">
+                <div id="currentSession" class="small-muted" style="margin-right:12px">会话：无</div>
+                <div id="liveLoader" style="display:none" title="模型生成中"><div class="loader"></div></div>
+                <button id="submitBtn" class="submit-primary" disabled>发送</button>
+            </div>
+        </div>
+
+        <div class="answer-area">
+            <div class="conversation" id="conversation">
+                <!-- 对话信息将追加在这里 -->
+                <div class="small-muted" id="welcomeNote">
+                    欢迎 — 请先登录并发送第一条问题以开始多轮对话。服务器端多轮接口：<code>/api/knowledge_chat_conversation</code>（SSE）。
+                </div>
+            </div>
+
+            <aside class="sidebar">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <div style="font-weight:700;color:#0f172a">参考来源</div>
+                    <div class="small-muted">（流式更新）</div>
+                </div>
+                <div id="references" style="max-height:380px;overflow:auto;">
+                    <!-- SOURCE 项会添加到这里 -->
+                </div>
+
+                <div style="margin-top:12px;">
+                    <button id="clearSessionBtn" class="btn" style="width:100%;">清空会话</button>
+                </div>
+            </aside>
+        </div>
+
+        <div class="footer">
+            <div>内部静态资源优先（无 CDN）</div>
+            <div>© 多轮对话系统</div>
+        </div>
+    </div>
+</div>
+
+<!-- 登录模态 -->
+<div id="loginModal" class="modal-overlay" style="display:none">
+    <div class="login-modal">
+        <h3>系统登录</h3>
+        <div class="hint">登录后将获得 JWT（token）并用于后续多轮对话请求头 Authorization: Bearer &lt;token&gt;</div>
+
+        <div style="margin-top:14px;">
+            <label>用户名</label>
+            <div class="login-row"><input id="loginUsername" placeholder="请输入用户名 / 工号"></div>
+            <label style="margin-top:8px">密码</label>
+            <div class="login-row"><input id="loginPassword" type="password" placeholder="请输入密码"></div>
+
+            <div class="hint">注意：当前示例中 <strong>登录 API 地址默认为空</strong>（内部环境常见）。若未配置，页面会自动使用本地模拟登录以便调试。</div>
+
+            <div class="login-actions">
+                <button class="btn" id="loginCancel">取消</button>
+                <button class="btn" id="loginSubmit">登录</button>
+            </div>
+            <div class="hint" id="loginMsg" style="margin-top:10px;color:#ef4444;display:none"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+/*
+  说明：
+  - LOGIN_API 变量留空表示“API 未配置”，页面会进行本地模拟登录（仅用于开发/内网）
+  - 如果你已部署登录接口，请把 LOGIN_API 设为完整路径，例如 "/api/login"
+  - 登录接口期望返回 JSON map，包含 token 与 error_msg，例如:
+      { "token": "jwt...", "error_msg": "success" }
+*/
+
+const LOGIN_API = ""; // <--- 这里留空以符合“登录api先空着”的要求。如需真实登录，把地址填到这里。
+const CHAT_API = "/api/knowledge_chat_conversation"; // 多轮对话 SSE 接口（后端已实现）
+const STORAGE_TOKEN_KEY = "multi_turn_chat_jwt";
+const STORAGE_SESSION_KEY = "multi_turn_chat_session_id";
+const STORAGE_USER_KEY = "multi_turn_chat_user";
+
+const loginModal = document.getElementById("loginModal");
+const btnOpenLogin = document.getElementById("btnOpenLogin");
+const btnLogout = document.getElementById("btnLogout");
+const loginSubmit = document.getElementById("loginSubmit");
+const loginCancel = document.getElementById("loginCancel");
+const loginUsername = document.getElementById("loginUsername");
+const loginPassword = document.getElementById("loginPassword");
+const loginMsg = document.getElementById("loginMsg");
+const statusText = document.getElementById("statusText");
+
+const submitBtn = document.getElementById("submitBtn");
+const questionInput = document.getElementById("questionInput");
+const modelSelector = document.getElementById("modelSelector");
+const rerankTopNInput = document.getElementById("rerankTopNInput");
+const thinkingModeToggle = document.getElementById("thinkingModeToggle");
+const insertBlockToggle = document.getElementById("insertBlockToggle");
+const conversation = document.getElementById("conversation");
+const references = document.getElementById("references");
+const currentSessionEl = document.getElementById("currentSession");
+const clearSessionBtn = document.getElementById("clearSessionBtn");
+const liveLoader = document.getElementById("liveLoader");
+const lockedOverlay = document.getElementById("lockedOverlay");
+const btnOpenLoginTop = document.getElementById("btnOpenLogin");
+const btnLogoutTop = document.getElementById("btnLogout");
+const welcomeNote = document.getElementById("welcomeNote");
+
+let jwtToken = localStorage.getItem(STORAGE_TOKEN_KEY) || null;
+let sessionId = localStorage.getItem(STORAGE_SESSION_KEY) || null;
+let username = localStorage.getItem(STORAGE_USER_KEY) || null;
+
+// 初始状态
+updateLoginUI();
+
+// 事件：打开登录弹窗
+btnOpenLoginTop.addEventListener("click", () => {
+    loginMsg.style.display = "none";
+    loginModal.style.display = "flex";
+    loginUsername.value = username || "";
+    loginPassword.value = "";
+});
+
+// 取消登录（隐藏）
+loginCancel.addEventListener("click", () => {
+    loginModal.style.display = "none";
+});
+
+// 登出
+btnLogoutTop.addEventListener("click", () => {
+    logout();
+});
+
+// 登录提交
+loginSubmit.addEventListener("click", async () => {
+    loginMsg.style.display = "none";
+    const user = loginUsername.value.trim();
+    const pass = loginPassword.value.trim();
+    if (!user || !pass) {
+        loginMsg.style.display = "block";
+        loginMsg.textContent = "用户名和密码不能为空。";
+        return;
+    }
+
+    loginSubmit.disabled = true;
+    loginSubmit.textContent = "登录中...";
+    try {
+        let tokenResp;
+        if (!LOGIN_API) {
+            // 模拟登录（便于内网/开发调试）
+            // 模拟返回 map.put("token", jwt); map.put("error_msg", "success");
+            tokenResp = { token: "SIMULATED_JWT_TOKEN_" + btoa(user).slice(0,24), error_msg: "success" };
+            // 模拟短延时
+            await new Promise(r => setTimeout(r, 400));
+        } else {
+            // 真实登录请求
+            const resp = await fetch(LOGIN_API, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+            if (!resp.ok) {
+                throw new Error("登录请求失败: " + resp.status);
+            }
+            tokenResp = await resp.json();
+        }
+
+        if (!tokenResp || !tokenResp.token || tokenResp.error_msg !== "success") {
+            throw new Error(tokenResp && tokenResp.error_msg ? tokenResp.error_msg : "登录失败，返回格式异常");
+        }
+
+        jwtToken = tokenResp.token;
+        username = user;
+        // persist
+        localStorage.setItem(STORAGE_TOKEN_KEY, jwtToken);
+        localStorage.setItem(STORAGE_USER_KEY, username);
+
+        loginModal.style.display = "none";
+        updateLoginUI();
+        appendSystemMessage(`登录成功，用户：${username}`);
+    } catch (err) {
+        console.error("login error", err);
+        loginMsg.style.display = "block";
+        loginMsg.textContent = "登录失败：" + (err.message || err);
+    } finally {
+        loginSubmit.disabled = false;
+        loginSubmit.textContent = "登录";
+    }
+});
+
+// 更新登录相关 UI 状态
+function updateLoginUI() {
+    jwtToken = localStorage.getItem(STORAGE_TOKEN_KEY);
+    sessionId = localStorage.getItem(STORAGE_SESSION_KEY);
+    username = localStorage.getItem(STORAGE_USER_KEY);
+
+    const loggedIn = !!jwtToken;
+    statusText.textContent = loggedIn ? `已登录：${username || '用户'}` : "未登录";
+    btnLogoutTop.style.display = loggedIn ? "inline-block" : "none";
+    btnOpenLoginTop.style.display = loggedIn ? "none" : "inline-block";
+
+    // 是否允许发送
+    submitBtn.disabled = !loggedIn;
+    // 锁定覆盖
+    lockedOverlay.style.display = loggedIn ? "none" : "flex";
+    currentSessionEl.textContent = "会话：" + (sessionId ? sessionId : "无");
+}
+
+// 登出逻辑
+function logout() {
+    localStorage.removeItem(STORAGE_TOKEN_KEY);
+    localStorage.removeItem(STORAGE_SESSION_KEY);
+    localStorage.removeItem(STORAGE_USER_KEY);
+    jwtToken = null; sessionId = null; username = null;
+    // 清 UI
+    appendSystemMessage("已登出，当前会话已失效。");
+    updateLoginUI();
+}
+
+// 清空会话（前端同时请求后端清空接口 if available）
+clearSessionBtn.addEventListener("click", async () => {
+    if (!sessionId) {
+        appendSystemMessage("当前没有可清空的会话。");
+        return;
+    }
+    // 尝试调用后端清空接口（如果存在）
+    try {
+        const resp = await fetch("/llm/api/conversation/clear", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(jwtToken ? { "Authorization": "Bearer " + jwtToken } : {})
+            },
+            body: JSON.stringify({ session_id: sessionId })
+        });
+        // 忽略结果是否存在，仍然清本地
+        if (resp.ok) {
+            appendSystemMessage("已请求后端清空会话（如后端实现），本地会话也已清除。");
+        } else {
+            appendSystemMessage("本地会话已清除（后端清空接口返回非 200）。");
+        }
+    } catch (e) {
+        appendSystemMessage("无法调用后端清空接口，已本地清除会话。");
+    } finally {
+        localStorage.removeItem(STORAGE_SESSION_KEY);
+        sessionId = null;
+        currentSessionEl.textContent = "会话：无";
+
+        // 清空对话显示区域和参考来源
+        conversation.innerHTML = '<div class="small-muted" id="welcomeNote">会话已清空，请发送新问题开始新的多轮对话。</div>';
+        references.innerHTML = '';
+    }
+});
+
+// 发送请求（SSE 流）
+submitBtn.addEventListener("click", handleSubmit);
+questionInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSubmit();
+    }
+});
+
+let abortController = null;
+
+async function handleSubmit() {
+    const question = questionInput.value.trim();
+    if (!question) {
+        alert("问题不能为空");
+        return;
+    }
+    if (!jwtToken) {
+        alert("请先登录");
+        return;
+    }
+
+    // UI 准备
+    submitBtn.disabled = true;
+    liveLoader.style.display = "block";
+    welcomeNote && (welcomeNote.style.display = "none");
+
+    // 在对话区追加用户消息
+    appendUserMessage(question);
+    questionInput.value = "";
+
+    // prepare payload
+    const payload = {
+        question: question,
+        session_id: sessionId || null,
+        thinking: !!thinkingModeToggle.checked,
+        model_id: modelSelector.value,
+        rerank_top_n: Number(rerankTopNInput.value || 10),
+        use_insert_block: !!insertBlockToggle.checked,
+        insert_block_llm_id: modelSelector.value
+    };
+
+    // SSE via fetch streaming
+    try {
+        abortController && abortController.abort();
+        abortController = new AbortController();
+
+        const resp = await fetch(CHAT_API, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + jwtToken
+            },
+            body: JSON.stringify(payload),
+            signal: abortController.signal
+        });
+
+        if (!resp.ok) {
+            throw new Error("服务器返回错误: " + resp.status);
+        }
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+
+        let buffer = "";
+        let assistantTextSoFar = "";
+        let isFirstChunk = true;
+
+        // 在消息流开始时添加助手占位
+        const assistantBubbleEl = appendAssistantPlaceholder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            // SSE messages are separated by \n\n blocks
+            let parts = buffer.split("\n\n");
+            buffer = parts.pop();
+
+            for (const part of parts) {
+                const trimmed = part.trim();
+                if (!trimmed.startsWith("data:")) continue;
+                const raw = trimmed.substring(5).trim(); // remove leading "data:"
+                // handle different message types
+                if (raw.startsWith("SESSION:")) {
+                    const sid = raw.substring("SESSION:".length).trim();
+                    if (sid) {
+                        sessionId = sid;
+                        localStorage.setItem(STORAGE_SESSION_KEY, sessionId);
+                        currentSessionEl.textContent = "会话：" + sessionId;
+                    }
+                } else if (raw.startsWith("CONTENT:")) {
+                    const content = raw.substring("CONTENT:".length);
+                    assistantTextSoFar += content;
+                    updateAssistantBubble(assistantBubbleEl, assistantTextSoFar);
+                } else if (raw.startsWith("SOURCE:")) {
+                    const jsonStr = raw.substring("SOURCE:".length);
+                    try {
+                        const src = JSON.parse(jsonStr);
+                        appendReference(src);
+                    } catch (e) {
+                        console.warn("无法解析 SOURCE JSON:", jsonStr);
+                    }
+                } else if (raw.startsWith("ERROR:")) {
+                    const errMsg = raw.substring("ERROR:".length).trim();
+                    updateAssistantBubble(assistantBubbleEl, "发生错误：" + errMsg);
+                } else if (raw.startsWith("DONE:")) {
+                    // 流结束标记
+                    // nothing special
+                } else {
+                    // 非标准前缀，尝试当作内容追加
+                    assistantTextSoFar += raw;
+                    updateAssistantBubble(assistantBubbleEl, assistantTextSoFar);
+                }
+            }
+        }
+
+        // 流结束后 - 显示反馈按钮（若需要可扩展）
+        liveLoader.style.display = "none";
+        submitBtn.disabled = false;
+    } catch (err) {
+        console.error("请求异常：", err);
+        appendSystemMessage("请求失败：" + (err.message || err));
+        liveLoader.style.display = "none";
+        submitBtn.disabled = false;
+    } finally {
+        updateLoginUI();
+    }
+}
+
+/* ---------- UI helper: append messages ---------- */
+
+function appendUserMessage(text) {
+    const div = document.createElement("div");
+    div.className = "msg user";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerText = text;
+    div.appendChild(bubble);
+    conversation.appendChild(div);
+    conversation.scrollTop = conversation.scrollHeight;
+}
+
+function appendAssistantPlaceholder() {
+    // create assistant message placeholder and return the bubble element to update
+    const div = document.createElement("div");
+    div.className = "msg assistant";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.innerHTML = '<div style="opacity:0.6" class="small-muted">正在生成回复…</div>';
+    div.appendChild(bubble);
+    conversation.appendChild(div);
+    conversation.scrollTop = conversation.scrollHeight;
+    return bubble;
+}
+
+function updateAssistantBubble(bubbleEl, text) {
+    // text may contain markdown; if marked.js available at /static/marked.min.js, use it, otherwise plain text
+    if (window.marked) {
+        try {
+            bubbleEl.innerHTML = window.marked.parse(text);
+        } catch (e) {
+            bubbleEl.textContent = text;
+        }
+    } else {
+        // basic newline to <br>
+        bubbleEl.innerHTML = text.replace(/\n/g, "<br>");
+    }
+    conversation.scrollTop = conversation.scrollHeight;
+}
+
+function appendReference(src) {
+    // src expected e.g. { id, fileName, initialScore, rerankedScore, content, keyPassage, canAnswer }
+    const el = document.createElement("div");
+    el.className = "reference-item";
+    let title = src.fileName || ("来源 " + (src.id || ""));
+    let html = `<div style="font-weight:700;margin-bottom:6px;">${escapeHtml(title)} ${src.canAnswer ? '<span style="color:#059669;font-weight:700">✓</span>' : ''}</div>`;
+    html += `<div class="small-muted">初始分: ${src.initialScore ?? '-'} | 重排分: ${src.rerankedScore ?? '-'} </div>`;
+    if (src.content) {
+        html += `<div style="margin-top:8px;">${escapeHtml(src.content).replace(/\n/g, '<br>')}</div>`;
+    }
+    if (src.keyPassage) {
+        html += `<div style="margin-top:8px;padding:8px;border-left:3px solid #f59e0b;background:#fff8e6;border-radius:6px;color:#92400e">${escapeHtml(src.keyPassage)}</div>`;
+    }
+    el.innerHTML = html;
+    references.prepend(el);
+}
+
+function appendSystemMessage(text) {
+    const div = document.createElement("div");
+    div.className = "msg assistant";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.style.background = "linear-gradient(90deg,#eef2ff,#ffffff)";
+    bubble.style.color = "#0f172a";
+    bubble.innerText = text;
+    div.appendChild(bubble);
+    conversation.appendChild(div);
+    conversation.scrollTop = conversation.scrollHeight;
+}
+
+/* ---------- util ---------- */
+function escapeHtml(str) {
+    if (!str && str !== 0) return "";
+    return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#39;');
+}
+
+// on load, if no token, show modal
+window.addEventListener("load", () => {
+    updateLoginUI();
+    if (!jwtToken) {
+        // 自动弹出登录框以便用户登录（可被用户取消）
+        setTimeout(() => loginModal.style.display = "flex", 200);
+    } else {
+        appendSystemMessage("检测到已登录，您可以继续进行多轮对话。");
+    }
+});
+
+/* ---------- 说明性注释 ----------
+ - 后端登录接口：期望返回 JSON 对象 { token: "...", error_msg: "success" }
+ - 多轮对话接口：POST /api/knowledge_chat_conversation （SSE 流）
+    - SSE 中 data 行支持多种前缀：SESSION:, CONTENT:, SOURCE:, ERROR:, DONE:
+    - 本前端会处理这些前缀：SESSION 会保存并展示 session_id；CONTENT 会实时追加到助手回复；SOURCE 会展示到侧栏
+ - 本页面为内网环境设计，不使用任何外部 CDN。如需渲染 Markdown，请确保 /static/marked.min.js 在你的静态目录中。
+ - 若想禁用模拟登录，设置顶部常量 LOGIN_API 为真实 API 地址。
+--------------------------------- */
+
+</script>
+
+<!-- 本地依赖（如果你有 marked.min.js 放在 /static/ 下，可启用 Markdown 渲染） -->
+<script src="/static/marked.min.js"></script>
+
+</body>
+</html>

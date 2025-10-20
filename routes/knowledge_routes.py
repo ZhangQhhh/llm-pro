@@ -2,7 +2,7 @@
 """
 知识问答路由
 """
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, request, jsonify, Response, stream_with_context
 from config import Settings
 from utils import format_sse_text, logger
 
@@ -10,7 +10,7 @@ from utils import format_sse_text, logger
 knowledge_bp = Blueprint('knowledge', __name__)
 
 
-@knowledge_bp.route('/api/knowledge_chat_conversation', methods=['POST'])
+@knowledge_bp.route('/knowledge_chat_conversation', methods=['POST'])
 def knowledge_chat_conversation():
     """
     支持多轮对话的知识问答接口
@@ -112,10 +112,11 @@ def knowledge_chat_conversation():
         ):
             yield format_sse_text(item)
 
-    return Response(generate(), mimetype='text/event-stream')
+    # 使用 stream_with_context 确保在流式响应期间保留应用/请求上下文
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 
-@knowledge_bp.route('/api/conversation/clear', methods=['POST'])
+@knowledge_bp.route('/conversation/clear', methods=['POST'])
 def clear_conversation():
     """
     清空指定会话的对话历史
@@ -138,10 +139,90 @@ def clear_conversation():
         knowledge_service = current_app.knowledge_service
 
         if knowledge_service.conversation_manager:
-            knowledge_service.conversation_manager.clear_session(session_id)
+            success = knowledge_service.conversation_manager.clear_session(session_id)
+            if success:
+                return jsonify({
+                    "type": "success",
+                    "message": f"会话 {session_id} 已清空"
+                })
+            else:
+                return jsonify({
+                    "type": "error",
+                    "content": "清空会话失败"
+                }), 500
+        else:
+            return jsonify({
+                "type": "error",
+                "content": "对话管理器未初始化"
+            }), 500
+    except Exception as e:
+        logger.error(f"清空会话失败: {e}", exc_info=True)
+        return jsonify({"type": "error", "content": str(e)}), 500
+
+
+@knowledge_bp.route('/conversation/statistics', methods=['POST'])
+def get_conversation_statistics():
+    """
+    获取会话统计信息
+
+    Request JSON:
+    {
+        "session_id": "会话ID"
+    }
+    """
+    data = request.get_json()
+    if not data:
+        return jsonify({"type": "error", "content": "请求体必须是JSON格式"}), 400
+
+    session_id = data.get('session_id')
+    if not session_id:
+        return jsonify({"type": "error", "content": "缺少 session_id 参数"}), 400
+
+    try:
+        from flask import current_app
+        knowledge_service = current_app.knowledge_service
+
+        if knowledge_service.conversation_manager:
+            stats = knowledge_service.conversation_manager.get_session_statistics(session_id)
+            if "error" in stats:
+                return jsonify({
+                    "type": "error",
+                    "content": stats["error"]
+                }), 500
+            else:
+                return jsonify({
+                    "type": "success",
+                    "data": stats
+                })
+        else:
+            return jsonify({
+                "type": "error",
+                "content": "对话管理器未初始化"
+            }), 500
+    except Exception as e:
+        logger.error(f"获取会话统计失败: {e}", exc_info=True)
+        return jsonify({"type": "error", "content": str(e)}), 500
+
+
+@knowledge_bp.route('/conversation/cache/clear', methods=['POST'])
+def clear_conversation_cache():
+    """
+    清空对话缓存（管理员功能）
+
+    Request JSON:
+    {
+        "admin_token": "管理员令牌(可选)"
+    }
+    """
+    try:
+        from flask import current_app
+        knowledge_service = current_app.knowledge_service
+
+        if knowledge_service.conversation_manager:
+            knowledge_service.conversation_manager.clear_cache()
             return jsonify({
                 "type": "success",
-                "message": f"会话 {session_id} 已清空"
+                "message": "对话缓存已清空"
             })
         else:
             return jsonify({
@@ -149,11 +230,11 @@ def clear_conversation():
                 "content": "对话管理器未初始化"
             }), 500
     except Exception as e:
-        logger.error(f"清空会话失败: {e}")
+        logger.error(f"清空缓存失败: {e}", exc_info=True)
         return jsonify({"type": "error", "content": str(e)}), 500
 
 
-@knowledge_bp.route('/api/knowledge_chat', methods=['POST'])
+@knowledge_bp.route('/knowledge_chat', methods=['POST'])
 def knowledge_chat():
     """知识问答接口"""
     data = request.get_json()
@@ -197,7 +278,7 @@ def knowledge_chat():
         def empty_stream():
             yield "ERROR:问题内容不能为空！"
         return Response(
-            (format_sse_text(item) for item in empty_stream()),
+            stream_with_context((format_sse_text(item) for item in empty_stream())),
             mimetype='text/event-stream'
         )
 
@@ -218,7 +299,7 @@ def knowledge_chat():
         def error_stream():
             yield "ERROR:模型服务异常"
         return Response(
-            (format_sse_text(item) for item in error_stream()),
+            stream_with_context((format_sse_text(item) for item in error_stream())),
             mimetype='text/event-stream'
         )
 
@@ -245,6 +326,6 @@ def knowledge_chat():
             yield item
 
     return Response(
-        (format_sse_text(item) for item in generate()),
+        stream_with_context((format_sse_text(item) for item in generate())),
         mimetype='text/event-stream'
     )

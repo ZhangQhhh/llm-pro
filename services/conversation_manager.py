@@ -4,13 +4,14 @@
 负责多轮对话的存储、检索和上下文构建
 """
 from typing import List, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue, FilterSelector, Range
 from llama_index.core.embeddings import BaseEmbedding
 from config import Settings as AppSettings
 from utils.logger import logger
 import uuid
+import time
 
 
 class ConversationManager:
@@ -20,6 +21,10 @@ class ConversationManager:
         self.embed_model = embed_model
         self.qdrant_client = qdrant_client
         self.collection_name = AppSettings.CONVERSATION_COLLECTION
+
+        # 缓存最近对话（减少 Qdrant 查询）
+        self._recent_cache = {}  # {session_id: {"conversations": [...], "timestamp": float}}
+        self._cache_ttl = 300  # 缓存有效期 5 分钟
 
         # 确保对话集合存在
         self._ensure_collection()
@@ -49,7 +54,9 @@ class ConversationManager:
         session_id: str,
         user_query: str,
         assistant_response: str,
-        context_docs: Optional[List[str]] = None
+        context_docs: Optional[List[str]] = None,
+        turn_id: Optional[str] = None,
+        parent_turn_id: Optional[str] = None
     ):
         """
         存储一轮对话到向量库
@@ -59,21 +66,33 @@ class ConversationManager:
             user_query: 用户问题
             assistant_response: 助手回答
             context_docs: 使用的上下文文档(可选)
+            turn_id: 对话轮次ID(可选，用于对话分支)
+            parent_turn_id: 父对话轮次ID(可选，用于对话分支)
         """
+        start_time = time.time()
+
         try:
             # 构建对话文本(用于向量化)
             conversation_text = f"用户: {user_query}\n助手: {assistant_response}"
 
-            # 生成 embedding
-            embedding = self.embed_model.get_text_embedding(conversation_text)
+            # 统计 token 数量（粗略估算：中文按字符数，英文按空格分词）
+            token_count = len(user_query) + len(assistant_response)
 
-            # 构建 payload
+            # 生成 embedding
+            embedding_start = time.time()
+            embedding = self.embed_model.get_text_embedding(conversation_text)
+            embedding_time = time.time() - embedding_start
+
+            # 构建 payload（包含监控字段和分支字段）
             payload = {
                 "session_id": session_id,
                 "user_query": user_query,
                 "assistant_response": assistant_response,
                 "timestamp": datetime.now().isoformat(),
-                "context_docs": context_docs or []
+                "context_docs": context_docs or [],
+                "token_count": token_count,
+                "turn_id": turn_id or str(uuid.uuid4()),  # 自动生成或使用提供的
+                "parent_turn_id": parent_turn_id or None  # 用于对话分支
             }
 
             # 存储到 Qdrant
@@ -89,7 +108,25 @@ class ConversationManager:
                 ]
             )
 
-            logger.info(f"会话 {session_id} 对话已存储")
+            # 清除该会话的缓存
+            if session_id in self._recent_cache:
+                del self._recent_cache[session_id]
+
+            total_time = time.time() - start_time
+
+            logger.info(
+                f"会话 {session_id} 对话已存储 | "
+                f"Token数: {token_count} | "
+                f"Embedding耗时: {embedding_time:.2f}s | "
+                f"总耗时: {total_time:.2f}s"
+            )
+
+            # 异常检测：如果 token 数过多，发出警告
+            if token_count > 4000:
+                logger.warning(
+                    f"⚠️ 会话 {session_id} 单轮对话 token 数过多: {token_count}，"
+                    f"可能导致上下文超限"
+                )
 
         except Exception as e:
             logger.error(f"存储对话失败: {e}", exc_info=True)
@@ -111,6 +148,8 @@ class ConversationManager:
         Returns:
             相关对话列表
         """
+        start_time = time.time()
+
         try:
             # 生成查询 embedding
             query_embedding = self.embed_model.get_text_embedding(current_query)
@@ -138,7 +177,11 @@ class ConversationManager:
                     "score": hit.score
                 })
 
-            logger.info(f"检索到 {len(relevant_history)} 条相关历史")
+            elapsed_time = time.time() - start_time
+            logger.info(
+                f"检索到 {len(relevant_history)} 条相关历史 | "
+                f"耗时: {elapsed_time:.2f}s"
+            )
             return relevant_history
 
         except Exception as e:
@@ -151,7 +194,7 @@ class ConversationManager:
         limit: int = 5
     ) -> List[Dict]:
         """
-        获取最近 N 轮对话
+        获取最近 N 轮对话（带缓存优化）
 
         Args:
             session_id: 会话ID
@@ -160,6 +203,14 @@ class ConversationManager:
         Returns:
             最近对话列表(按时间升序)
         """
+        # 检查缓存
+        current_time = time.time()
+        if session_id in self._recent_cache:
+            cache_entry = self._recent_cache[session_id]
+            if current_time - cache_entry["timestamp"] < self._cache_ttl:
+                logger.debug(f"使用缓存的最近对话 (session: {session_id})")
+                return cache_entry["conversations"][:limit]
+
         try:
             # 使用 scroll 获取所有对话,然后按时间排序
             scroll_result = self.qdrant_client.scroll(
@@ -175,12 +226,14 @@ class ConversationManager:
 
             # 提取并排序
             all_turns = []
+            total_tokens = 0
             for point in scroll_result[0]:
                 all_turns.append({
                     "user_query": point.payload["user_query"],
                     "assistant_response": point.payload["assistant_response"],
                     "timestamp": point.payload["timestamp"]
                 })
+                total_tokens += point.payload.get("token_count", 0)
 
             # 按时间降序排序,取最近的 limit 条
             recent_turns = sorted(
@@ -192,7 +245,25 @@ class ConversationManager:
             # 反转为时间升序(旧→新)
             recent_turns.reverse()
 
-            logger.info(f"获取到 {len(recent_turns)} 条最近对话")
+            # 更新缓存
+            self._recent_cache[session_id] = {
+                "conversations": recent_turns,
+                "timestamp": current_time
+            }
+
+            logger.info(
+                f"获取到 {len(recent_turns)} 条最近对话 | "
+                f"会话总轮次: {len(all_turns)} | "
+                f"累计Token数: {total_tokens}"
+            )
+
+            # 如果累计 token 数过多，发出警告
+            if total_tokens > 10000:
+                logger.warning(
+                    f"⚠️ 会话 {session_id} 累计 token 数过多: {total_tokens}，"
+                    f"建议考虑清理历史或增加摘要机制"
+                )
+
             return recent_turns
 
         except Exception as e:
@@ -302,20 +373,209 @@ class ConversationManager:
 
         return messages
 
-    def clear_session(self, session_id: str):
-        """清空指定会话的对话历史"""
+    def clear_session(self, session_id: str) -> bool:
+        """
+        清空指定会话的所有历史对话
+
+        Args:
+            session_id: 会话ID
+
+        Returns:
+            是否成功清空
+        """
         try:
+            logger.info(f"开始清空会话 {session_id} 的历史对话...")
+
+            # 删除 Qdrant 中该会话的所有点
             self.qdrant_client.delete(
                 collection_name=self.collection_name,
-                points_selector={
-                    "filter": {
-                        "must": [
-                            {"key": "session_id", "match": {"value": session_id}}
+                points_selector=FilterSelector(
+                    filter=Filter(
+                        must=[
+                            FieldCondition(
+                                key="session_id",
+                                match=MatchValue(value=session_id)
+                            )
                         ]
-                    }
-                }
+                    )
+                )
             )
-            logger.info(f"已清空会话 {session_id}")
-        except Exception as e:
-            logger.error(f"清空会话失败: {e}")
 
+            # 清除缓存
+            if session_id in self._recent_cache:
+                del self._recent_cache[session_id]
+
+            logger.info(f"✅ 会话 {session_id} 历史对话已清空")
+            return True
+
+        except Exception as e:
+            logger.error(f"清空会话失败: {e}", exc_info=True)
+            return False
+
+    def get_session_statistics(self, session_id: str) -> Dict:
+        """
+        获取会话统计信息
+
+        Args:
+            session_id: 会话ID
+
+        Returns:
+            统计信息字典
+        """
+        try:
+            scroll_result = self.qdrant_client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter={
+                    "must": [
+                        {"key": "session_id", "match": {"value": session_id}}
+                    ]
+                },
+                limit=1000,
+                with_payload=True
+            )
+
+            total_turns = len(scroll_result[0])
+            total_tokens = sum(
+                point.payload.get("token_count", 0)
+                for point in scroll_result[0]
+            )
+
+            if total_turns > 0:
+                first_turn = min(
+                    scroll_result[0],
+                    key=lambda p: p.payload["timestamp"]
+                )
+                last_turn = max(
+                    scroll_result[0],
+                    key=lambda p: p.payload["timestamp"]
+                )
+
+                return {
+                    "session_id": session_id,
+                    "total_turns": total_turns,
+                    "total_tokens": total_tokens,
+                    "avg_tokens_per_turn": total_tokens / total_turns,
+                    "first_conversation": first_turn.payload["timestamp"],
+                    "last_conversation": last_turn.payload["timestamp"]
+                }
+            else:
+                return {
+                    "session_id": session_id,
+                    "total_turns": 0,
+                    "total_tokens": 0,
+                    "avg_tokens_per_turn": 0
+                }
+
+        except Exception as e:
+            logger.error(f"获取会话统计失败: {e}", exc_info=True)
+            return {"error": str(e)}
+
+    def clear_cache(self):
+        """清空所有缓存"""
+        self._recent_cache.clear()
+        logger.info("对话缓存已清空")
+
+    def delete_old_conversations(self, days: int) -> Dict[str, any]:
+        """
+        删除指定天数之前的过期对话
+
+        Args:
+            days: 指定天数，删除该天数之前的对话
+
+        Returns:
+            删除结果字典，包含删除的会话数量和详细信息
+        """
+        try:
+            # 计算阈值日期
+            threshold_date = datetime.now() - timedelta(days=days)
+            threshold_iso = threshold_date.isoformat()
+
+            logger.info(f"开始删除 {days} 天前（{threshold_iso}）的过期对话...")
+
+            # 先统计有多少条过期对话
+            scroll_result = self.qdrant_client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="timestamp",
+                            range=Range(lt=threshold_iso)  # 小于阈值日期的对话
+                        )
+                    ]
+                ),
+                limit=10000,  # 假设不会超过1万条过期对话
+                with_payload=True
+            )
+
+            expired_points = scroll_result[0]
+            expired_count = len(expired_points)
+
+            if expired_count == 0:
+                logger.info("没有找到需要删除的过期对话")
+                return {
+                    "success": True,
+                    "deleted_count": 0,
+                    "message": "没有过期对话需要删除"
+                }
+
+            # 统计受影响的会话
+            affected_sessions = set()
+            total_tokens = 0
+            for point in expired_points:
+                affected_sessions.add(point.payload.get("session_id"))
+                total_tokens += point.payload.get("token_count", 0)
+
+            # 删除过期对话
+            self.qdrant_client.delete(
+                collection_name=self.collection_name,
+                points_selector=FilterSelector(
+                    filter=Filter(
+                        must=[
+                            FieldCondition(
+                                key="timestamp",
+                                range=Range(lt=threshold_iso)
+                            )
+                        ]
+                    )
+                )
+            )
+
+            # 清空所有缓存（因为可能涉及多个会话）
+            self.clear_cache()
+
+            result = {
+                "success": True,
+                "deleted_count": expired_count,
+                "affected_sessions": len(affected_sessions),
+                "total_tokens_removed": total_tokens,
+                "threshold_date": threshold_iso
+            }
+
+            logger.info(
+                f"✅ 成功删除 {expired_count} 条过期对话 | "
+                f"涉及 {len(affected_sessions)} 个会话 | "
+                f"释放 {total_tokens} tokens"
+            )
+
+            return result
+
+        except Exception as e:
+            logger.error(f"删除过期对话失败: {e}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e),
+                "deleted_count": 0
+            }
+
+    def cleanup_expired_conversations(self) -> Dict[str, any]:
+        """
+        自动清理过期对话（使用配置的过期天数）
+
+        Returns:
+            清理结果字典
+        """
+        expire_days = AppSettings.CONVERSATION_EXPIRE_DAYS
+        logger.info(f"开始自动清理过期对话（过期天数: {expire_days}）...")
+        result = self.delete_old_conversations(expire_days)
+        logger.info(f"自动清理完成: {result}")
+        return result
