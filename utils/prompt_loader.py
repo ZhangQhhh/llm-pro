@@ -4,6 +4,7 @@ Prompt 配置加载器
 """
 import json
 import logging
+import os
 from typing import Dict, Any, Optional
 
 
@@ -16,11 +17,28 @@ class PromptLoader:
         self.load()
 
     def load(self) -> None:
-        """加载 Prompt 配置文件"""
+        """加载 Prompt 配置文件（支持 .json 和 .py 格式）"""
         try:
-            with open(self.config_path, "r", encoding="utf-8") as f:
-                self.prompts = json.load(f)
-            logging.info(f"Prompts 配置文件已加载: {self.config_path}")
+            # 检查文件扩展名
+            _, ext = os.path.splitext(self.config_path)
+
+            if ext == '.py':
+                # 加载 Python 配置文件
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("prompts_config", self.config_path)
+                if spec and spec.loader:
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    self.prompts = getattr(module, 'PROMPTS', {})
+                    logging.info(f"Prompts 配置文件已加载 (Python): {self.config_path}")
+                else:
+                    raise ValueError(f"无法加载 Python 配置文件: {self.config_path}")
+            else:
+                # 默认按 JSON 格式加载
+                with open(self.config_path, "r", encoding="utf-8") as f:
+                    self.prompts = json.load(f)
+                logging.info(f"Prompts 配置文件已加载 (JSON): {self.config_path}")
+
         except FileNotFoundError:
             logging.warning(f"Prompts 配置文件不存在: {self.config_path}")
             self.prompts = {}

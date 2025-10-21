@@ -17,7 +17,7 @@ def test_prompt_loader():
     print("=" * 60)
 
     # 初始化加载器
-    loader = PromptLoader("prompts.json")
+    loader = PromptLoader("prompts.py")
 
     # 测试场景1: 加载字符串格式的提示词
     print("\n【测试1】加载字符串格式提示词:")
@@ -94,4 +94,3 @@ def test_prompt_loader():
 
 if __name__ == "__main__":
     test_prompt_loader()
-

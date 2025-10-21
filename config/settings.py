@@ -29,9 +29,12 @@ class Settings:
 
     # Prompt 配置文件候选路径 (修复: 去掉 cls 未定义的引用)
     PROMPT_CONFIG_CANDIDATES = [
-        os.path.join(BASE_DIR, 'prompts.json'),          # 当前项目目录
-        os.path.join(BASE_DIR, '..', 'prompts.json'),    # 上一级（兼容旧结构）
-        "/opt/rag_final_project/prompts.json"           # 部署环境固定路径
+        os.path.join(BASE_DIR, 'prompts.py'),            # Python 配置（优先）
+        os.path.join(BASE_DIR, 'prompts.json'),          # JSON 配置（兼容旧版）
+        os.path.join(BASE_DIR, '..', 'prompts.py'),      # 上一级 Python
+        os.path.join(BASE_DIR, '..', 'prompts.json'),    # 上一级 JSON（兼容旧结构）
+        "/opt/rag_final_project/prompts.py",             # 部署环境 Python
+        "/opt/rag_final_project/prompts.json"            # 部署环境 JSON
     ]
     PROMPT_CONFIG_PATH = None
 
@@ -116,7 +119,7 @@ class Settings:
                 return abs_path
         # 若都不存在，使用第一个作为期望路径
         cls.PROMPT_CONFIG_PATH = os.path.abspath(cls.PROMPT_CONFIG_CANDIDATES[0])
-        logging.warning(f"未找到 prompts.json，期望路径: {cls.PROMPT_CONFIG_PATH}")
+        logging.warning(f"未找到 prompts 配置文件，期望路径: {cls.PROMPT_CONFIG_PATH}")
         return cls.PROMPT_CONFIG_PATH
 
     @classmethod

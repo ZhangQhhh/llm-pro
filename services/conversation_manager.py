@@ -48,11 +48,11 @@ class ConversationManager:
                         distance=Distance.COSINE
                     )
                 )
-                logger.info(f"✅ 成功创建对话集合 {self.collection_name}（维度: {vector_size}）")
+                logger.info(f" 成功创建对话集合 {self.collection_name}（维度: {vector_size}）")
 
             return True
         except Exception as e:
-            logger.error(f"❌ 创建对话集合失败: {e}", exc_info=True)
+            logger.error(f" 创建对话集合失败: {e}", exc_info=True)
             raise  # 抛出异常而不是静默失败
 
     def _check_and_create_collection(self):
@@ -499,6 +499,320 @@ class ConversationManager:
         """清空所有缓存"""
         self._recent_cache.clear()
         logger.info("对话缓存已清空")
+
+    def get_user_sessions(
+        self,
+        user_id: int,
+        limit: int = 20,
+        offset: int = 0,
+        sort_by: str = "last_update"
+    ) -> Dict:
+        """
+        获取用户的所有会话列表
+
+        Args:
+            user_id: 用户ID
+            limit: 每页返回的会话数量
+            offset: 分页偏移量
+            sort_by: 排序方式 ("last_update" 或 "create_time")
+
+        Returns:
+            包含会话列表和总数的字典
+        """
+        try:
+            logger.info(f"获取用户 {user_id} 的会话列表 (limit={limit}, offset={offset})")
+
+            # 确保集合存在
+            self._check_and_create_collection()
+
+            # 获取所有该用户的对话点（通过 session_id 前缀匹配）
+            # 注意：Qdrant 不支持前缀匹配，我们需要获取所有点然后在内存中过滤
+            scroll_result = self.qdrant_client.scroll(
+                collection_name=self.collection_name,
+                limit=10000,  # 假设不会超过这个数量
+                with_payload=True
+            )
+
+            # 按 session_id 分组
+            sessions_data = {}
+            for point in scroll_result[0]:
+                session_id = point.payload.get("session_id")
+
+                # 验证 session_id 是否属于该用户
+                if session_id and session_id.startswith(f"{user_id}_"):
+                    if session_id not in sessions_data:
+                        sessions_data[session_id] = {
+                            "turns": [],
+                            "total_tokens": 0
+                        }
+
+                    sessions_data[session_id]["turns"].append({
+                        "user_query": point.payload.get("user_query"),
+                        "assistant_response": point.payload.get("assistant_response"),
+                        "timestamp": point.payload.get("timestamp"),
+                        "token_count": point.payload.get("token_count", 0)
+                    })
+                    sessions_data[session_id]["total_tokens"] += point.payload.get("token_count", 0)
+
+            # 构建会话列表
+            sessions = []
+            for session_id, data in sessions_data.items():
+                turns = data["turns"]
+                if not turns:
+                    continue
+
+                # 按时间排序
+                turns_sorted = sorted(turns, key=lambda x: x["timestamp"])
+                first_turn = turns_sorted[0]
+                last_turn = turns_sorted[-1]
+
+                # 生成会话标题（从第一条用户消息提取）
+                title = self._generate_session_title(first_turn["user_query"])
+
+                sessions.append({
+                    "session_id": session_id,
+                    "user_id": user_id,
+                    "title": title,
+                    "first_message": first_turn["user_query"][:50] + "..." if len(first_turn["user_query"]) > 50 else first_turn["user_query"],
+                    "last_message": last_turn["user_query"][:50] + "..." if len(last_turn["user_query"]) > 50 else last_turn["user_query"],
+                    "message_count": len(turns),
+                    "total_tokens": data["total_tokens"],
+                    "create_time": first_turn["timestamp"],
+                    "last_update_time": last_turn["timestamp"]
+                })
+
+            # 排序
+            if sort_by == "last_update":
+                sessions.sort(key=lambda x: x["last_update_time"], reverse=True)
+            else:  # create_time
+                sessions.sort(key=lambda x: x["create_time"], reverse=True)
+
+            # 分页
+            total = len(sessions)
+            sessions_page = sessions[offset:offset + limit]
+
+            logger.info(f"找到用户 {user_id} 的 {total} 个会话，返回第 {offset}-{offset+len(sessions_page)} 个")
+
+            return {
+                "total": total,
+                "sessions": sessions_page,
+                "limit": limit,
+                "offset": offset
+            }
+
+        except Exception as e:
+            logger.error(f"获取用户会话列表失败: {e}", exc_info=True)
+            return {
+                "total": 0,
+                "sessions": [],
+                "error": str(e)
+            }
+
+    def _generate_session_title(self, first_message: str, max_length: int = 30) -> str:
+        """
+        从第一条消息生成会话标题
+
+        Args:
+            first_message: 第一条用户消息
+            max_length: 标题最大长度
+
+        Returns:
+            会话标题
+        """
+        # 清理消息
+        title = first_message.strip()
+
+        # 移除多余的空白字符
+        title = " ".join(title.split())
+
+        # 截断到合适长度
+        if len(title) > max_length:
+            title = title[:max_length] + "..."
+
+        return title if title else "新对话"
+
+    def get_session_full_history(
+        self,
+        session_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        order: str = "asc"
+    ) -> Dict:
+        """
+        获取会话的完整历史记录（支持分页）
+
+        Args:
+            session_id: 会话ID
+            limit: 每页返回的消息数量
+            offset: 分页偏移量
+            order: 排序顺序 ("asc"=从旧到新, "desc"=从新到旧)
+
+        Returns:
+            包含消息列表和总数的字典
+        """
+        try:
+            logger.info(f"获取会话 {session_id} 的完整历史 (limit={limit}, offset={offset}, order={order})")
+
+            # 确保集合存在
+            self._check_and_create_collection()
+
+            # 获取该会话的所有对话
+            scroll_result = self.qdrant_client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter={
+                    "must": [
+                        {"key": "session_id", "match": {"value": session_id}}
+                    ]
+                },
+                limit=1000,  # 假设单会话不超过1000轮
+                with_payload=True
+            )
+
+            # 提取所有消息
+            messages = []
+            for point in scroll_result[0]:
+                messages.append({
+                    "turn_id": point.payload.get("turn_id"),
+                    "parent_turn_id": point.payload.get("parent_turn_id"),
+                    "user_query": point.payload.get("user_query"),
+                    "assistant_response": point.payload.get("assistant_response"),
+                    "timestamp": point.payload.get("timestamp"),
+                    "context_docs": point.payload.get("context_docs", []),
+                    "token_count": point.payload.get("token_count", 0)
+                })
+
+            # 按时间排序
+            messages.sort(
+                key=lambda x: x["timestamp"],
+                reverse=(order == "desc")
+            )
+
+            # 分页
+            total = len(messages)
+            messages_page = messages[offset:offset + limit]
+
+            logger.info(f"会话 {session_id} 共有 {total} 条消息，返回第 {offset}-{offset+len(messages_page)} 条")
+
+            return {
+                "session_id": session_id,
+                "total_messages": total,
+                "messages": messages_page,
+                "limit": limit,
+                "offset": offset,
+                "order": order
+            }
+
+        except Exception as e:
+            logger.error(f"获取会话历史失败: {e}", exc_info=True)
+            return {
+                "session_id": session_id,
+                "total_messages": 0,
+                "messages": [],
+                "error": str(e)
+            }
+
+    def delete_session(self, session_id: str) -> bool:
+        """
+        删除指定会话（物理删除）
+
+        Args:
+            session_id: 会话ID
+
+        Returns:
+            是否成功删除
+        """
+        try:
+            logger.info(f"开始删除会话 {session_id}...")
+
+            # 删除 Qdrant 中该会话的所有点
+            self.qdrant_client.delete(
+                collection_name=self.collection_name,
+                points_selector=FilterSelector(
+                    filter=Filter(
+                        must=[
+                            FieldCondition(
+                                key="session_id",
+                                match=MatchValue(value=session_id)
+                            )
+                        ]
+                    )
+                )
+            )
+
+            # 清除缓存
+            if session_id in self._recent_cache:
+                del self._recent_cache[session_id]
+
+            logger.info(f"✅ 会话 {session_id} 已删除")
+            return True
+
+        except Exception as e:
+            logger.error(f"删除会话失败: {e}", exc_info=True)
+            return False
+
+    def get_session_info(self, session_id: str) -> Optional[Dict]:
+        """
+        获取单个会话的详细信息
+
+        Args:
+            session_id: 会话ID
+
+        Returns:
+            会话信息字典，如果不存在返回 None
+        """
+        try:
+            scroll_result = self.qdrant_client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter={
+                    "must": [
+                        {"key": "session_id", "match": {"value": session_id}}
+                    ]
+                },
+                limit=1000,
+                with_payload=True
+            )
+
+            if not scroll_result[0]:
+                return None
+
+            # 提取所有对话轮次
+            turns = []
+            total_tokens = 0
+            for point in scroll_result[0]:
+                turns.append({
+                    "timestamp": point.payload.get("timestamp"),
+                    "user_query": point.payload.get("user_query"),
+                    "token_count": point.payload.get("token_count", 0)
+                })
+                total_tokens += point.payload.get("token_count", 0)
+
+            # 排序
+            turns.sort(key=lambda x: x["timestamp"])
+            first_turn = turns[0]
+            last_turn = turns[-1]
+
+            # 提取 user_id
+            user_id = None
+            if "_" in session_id:
+                try:
+                    user_id = int(session_id.split("_", 1)[0])
+                except ValueError:
+                    pass
+
+            return {
+                "session_id": session_id,
+                "user_id": user_id,
+                "title": self._generate_session_title(first_turn["user_query"]),
+                "message_count": len(turns),
+                "total_tokens": total_tokens,
+                "create_time": first_turn["timestamp"],
+                "last_update_time": last_turn["timestamp"],
+                "first_message": first_turn["user_query"]
+            }
+
+        except Exception as e:
+            logger.error(f"获取会话信息失败: {e}", exc_info=True)
+            return None
 
     def delete_old_conversations(self, days: int) -> Dict[str, any]:
         """

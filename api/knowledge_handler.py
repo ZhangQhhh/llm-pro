@@ -247,7 +247,7 @@ class KnowledgeHandler:
                     # 如果有关键段落，先展示关键段落，再展示完整内容
                     block = (
                         f"### 来源 {i + 1} - {file_name}:\n"
-                        f"**【关键段落】**\n> {key_passage}\n\n"
+                        # f"**【关键段落】**\n> {key_passage}\n\n"
                         f"**【完整内容】**\n> {full_content}"
                     )
                 else:
@@ -472,7 +472,7 @@ class KnowledgeHandler:
                 filtered_results
             )
 
-            # 4. 从 prompts.json 获取对话提示词
+            # 4. 从 prompts.py 获取对话提示词
             has_rag = bool(knowledge_context)
 
             if has_rag:
@@ -511,8 +511,8 @@ class KnowledgeHandler:
                 system_prompt=system_prompt,
                 knowledge_context=knowledge_context,
                 context_prefixes=context_prefixes,
-                recent_turns=Settings.MAX_RECENT_TURNS,
-                relevant_turns=Settings.MAX_RELEVANT_TURNS
+                recent_turns=Settings.MAX_RECENT_TURNS,  # 最近对话轮数
+                relevant_turns=Settings.MAX_RELEVANT_TURNS  # 相关对话轮数
             )
 
             # 6. 输出状态
@@ -648,7 +648,7 @@ class KnowledgeHandler:
                 if key_passage:
                     block = (
                         f"### 来源 {i + 1} - {file_name}:\n"
-                        f"**【关键段落】**\n> {key_passage}\n\n"
+                        # f"**【关键段落】**\n> {key_passage}\n\n"      
                         f"**【完整内容】**\n> {full_content}"
                     )
                 else:

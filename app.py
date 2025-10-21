@@ -6,6 +6,10 @@ RAG 系统主应用入口
 import os
 from flask import Flask, render_template
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
 
 from config import Settings
 from utils import logger
@@ -13,6 +17,7 @@ from services import LLMService, EmbeddingService, KnowledgeService
 from core import LLMStreamWrapper
 from api import JudgeHandler, KnowledgeHandler
 from routes import knowledge_bp
+from middleware.auth_decorator import create_auth_manager
 
 
 def create_app():
@@ -89,6 +94,11 @@ def create_app():
     app.knowledge_service = knowledge_service  # 添加这行，让路由可以访问 conversation_manager
     app.retriever = retriever
     app.reranker = reranker
+
+    # 🔥 6.5 初始化并注册认证管理器
+    auth_manager = create_auth_manager()
+    app.extensions['auth_manager'] = auth_manager
+    logger.info(f"认证管理器已注册，Spring Boot URL: {os.getenv('SPRING_BOOT_URL', 'http://localhost:8080')}")
 
     # 7. 注册路由蓝图
     app.register_blueprint(knowledge_bp,url_prefix='/api')

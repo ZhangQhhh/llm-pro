@@ -4,6 +4,7 @@ flask-cors
 
 # HTTP & streaming
 httpx
+requests
 
 # Chinese tokenization
 jieba
@@ -26,4 +27,3 @@ tqdm
 # pandas
 # faiss-cpu    # 如果后续接入向量库
 # elasticsearch # 如果接入外部检索
-
