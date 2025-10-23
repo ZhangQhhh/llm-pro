@@ -6,7 +6,8 @@
 import json
 from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from utils import get_prompt, logger
+from utils import logger
+from prompts import get_insertblock_system_all, get_insertblock_user_all
 
 
 class InsertBlockFilter:
@@ -160,14 +161,8 @@ class InsertBlockFilter:
             reranked_score = node.score
 
             # 构造提示词
-            system_template = get_prompt(
-                "insertBlock.system.all",
-                ["# 角色\n你是一位精通中国出入境边防检查各项业务的专家。"]
-            )
-            user_template = get_prompt(
-                "insertBlock.user.all",
-                ["# 任务\n请分析法规是否能回答问题。"]
-            )
+            system_template = get_insertblock_system_all()
+            user_template = get_insertblock_user_all()
 
             # 拼接提示词（system 和 user 都是列表）
             # 先对模板进行 format，再 join

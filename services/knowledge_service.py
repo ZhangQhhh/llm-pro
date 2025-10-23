@@ -81,7 +81,8 @@ class KnowledgeService:
         if self._should_rebuild_index(storage_path, hashes_file, kb_dir):
             return self._build_index(storage_path, kb_dir, hashes_file)
         else:
-            return self._load_index(storage_path)
+            # return self._load_index(storage_path)  先暂时一直重建
+            return self._build_index(storage_path, kb_dir, hashes_file)
 
     def create_retriever(self):
         """创建混合检索器"""

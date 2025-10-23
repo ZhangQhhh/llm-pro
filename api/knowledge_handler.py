@@ -7,7 +7,28 @@ import json
 from typing import Generator, Dict, Any, Optional
 from llama_index.core import QueryBundle
 from config import Settings
-from utils import get_prompt, logger, clean_for_sse_text
+from utils import logger, clean_for_sse_text
+from prompts import (
+    get_knowledge_assistant_context_prefix,
+    get_knowledge_system_rag_simple,
+    get_knowledge_system_rag_advanced,
+    get_knowledge_system_no_rag_think,
+    get_knowledge_system_no_rag_simple,
+    get_knowledge_user_rag_simple,
+    get_knowledge_user_rag_advanced,
+    get_knowledge_user_no_rag_think,
+    get_knowledge_user_no_rag_simple,
+    get_conversation_system_rag_with_history,
+    get_conversation_system_general_with_history,
+    get_conversation_context_prefix_relevant_history,
+    get_conversation_context_prefix_recent_history,
+    get_conversation_context_prefix_regulations,
+    get_conversation_user_rag_query,
+    get_conversation_user_general_query,
+    get_conversation_summary_system,
+    get_conversation_summary_user,
+    get_conversation_summary_context_prefix
+)
 
 
 class KnowledgeHandler:
@@ -281,40 +302,41 @@ class KnowledgeHandler:
 
         if has_rag:
             # 获取前缀
-            assistant_prefix = get_prompt(
-                "knowledge.assistant_context_prefix",
-                "业务规定如下：\n"
-            )
+            assistant_prefix = get_knowledge_assistant_context_prefix()
 
             # 组合 assistant_context
             assistant_context = assistant_prefix + formatted_context
 
             # 根据思考模式选择不同的 system 和 user prompt
             if enable_thinking:
-                system_key = "knowledge.system.rag_advanced"
-                user_key = "knowledge.user.rag_advanced"
+                system_prompt = get_knowledge_system_rag_advanced()
+                user_template = get_knowledge_user_rag_advanced()
             else:
-                system_key = "knowledge.system.rag_simple"
-                user_key = "knowledge.user.rag_simple"
+                system_prompt = get_knowledge_system_rag_simple()
+                user_template = get_knowledge_user_rag_simple()
 
-            system_prompt = get_prompt(system_key, "你是一名资深边检业务专家。")
-            user_template = get_prompt(user_key, "业务咨询\n{question}\n\n请给出你的回答。")
-            user_prompt = user_template.format(question=question)
+            # user_template 是列表，需要 join 后再 format
+            user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
+            user_prompt = user_prompt_str.format(question=question)
 
         else:
             # 没有检索到相关内容
             assistant_context = None
 
             if enable_thinking:
-                system_key = "knowledge.system.no_rag_think"
-                user_key = "knowledge.user.no_rag_think"
+                system_prompt = get_knowledge_system_no_rag_think()
+                user_template = get_knowledge_user_no_rag_think()
             else:
-                system_key = "knowledge.system.no_rag_simple"
-                user_key = "knowledge.user.no_rag_simple"
+                system_prompt = get_knowledge_system_no_rag_simple()
+                user_template = get_knowledge_user_no_rag_simple()
 
-            system_prompt = get_prompt(system_key, "你是一名资深边检业务专家。")
-            user_template = get_prompt(user_key, "请回答以下问题。\n\n问题: {question}")
-            user_prompt = user_template.format(question=question)
+            # user_template 可能是列表或字符串
+            user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
+            user_prompt = user_prompt_str.format(question=question)
+
+        # system_prompt 可能是列表，需要转换为字符串
+        if isinstance(system_prompt, list):
+            system_prompt = "\n".join(system_prompt)
 
         # 构建 fallback_prompt（用于不支持 chat 模式的情况）
         fallback_parts = [system_prompt]
@@ -329,8 +351,15 @@ class KnowledgeHandler:
             "fallback_prompt": "\n\n".join(fallback_parts)
         }
 
-    def _call_llm(self, llm, prompt_parts):
-        """调用 LLM"""
+    def _call_llm(self, llm, prompt_parts, enable_thinking=False):
+        """
+        调用 LLM，支持思考内容和正文内容的分离
+
+        Args:
+            llm: LLM 实例
+            prompt_parts: 提示词字典
+            enable_thinking: 是否启用思考模式（用于解析输出）
+        """
         logger.info(f"使用外部 Prompt:\n{prompt_parts['fallback_prompt'][:200]}...")
 
         response_stream = self.llm_wrapper.stream(
@@ -342,10 +371,94 @@ class KnowledgeHandler:
             use_chat_mode=Settings.USE_CHAT_MODE
         )
 
-        for delta in response_stream:
-            token = getattr(delta, 'delta', None) or getattr(delta, 'text', None) or ''
-            if token:
-                yield clean_for_sse_text(token)
+        # 如果启用思考模式，需要解析并分离思考内容和正文内容
+        if enable_thinking:
+            buffer = ""
+            in_thinking_section = False
+            thinking_complete = False
+
+            for delta in response_stream:
+                token = getattr(delta, 'delta', None) or getattr(delta, 'text', None) or ''
+                if not token:
+                    continue
+
+                buffer += token
+
+                # 检测思考部分的开始和结束标记
+                if not thinking_complete:
+                    # 检查是否进入思考区域
+                    if not in_thinking_section:
+                        # 检测思考开始的多种标记
+                        thinking_markers = [
+                            '【咨询解析】', '第一部分：咨询解析', '第一部分:咨询解析',
+                            '<think>', '## 思考过程', '## 分析过程',
+                            '关键实体', 'Key Entities', '1. 关键实体'
+                        ]
+
+                        for marker in thinking_markers:
+                            if marker in buffer:
+                                in_thinking_section = True
+                                logger.info(f"检测到思考开始标记: {marker}")
+                                break
+
+                    # 检测思考结束的标记
+                    if in_thinking_section:
+                        end_markers = [
+                            '【综合解答】', '第二部分：综合解答', '第二部分:综合解答',
+                            '</think>', '## 最终答案', '## 回答'
+                        ]
+
+                        for marker in end_markers:
+                            if marker in buffer:
+                                thinking_complete = True
+                                logger.info(f"检测到思考结束标记: {marker}")
+                                # 🔥 修复点：输出思考内容（不包含结束标记）
+                                idx = buffer.index(marker)
+                                if idx > 0:
+                                    yield ('THINK', clean_for_sse_text(buffer[:idx]))
+
+                                # 🔥 关键修复：跳过标记本身，只保留标记之后的内容
+                                # 而不是保留"标记+之后的内容"
+                                buffer = buffer[idx + len(marker):]
+                                logger.info(f"跳过结束标记 '{marker}'，剩余buffer长度: {len(buffer)}")
+                                break
+
+                    # 在思考区域且buffer足够长时，流式输出
+                    if in_thinking_section and not thinking_complete and len(buffer) > 20:
+                        yield ('THINK', clean_for_sse_text(buffer))
+                        buffer = ""
+                else:
+                    # 思考完成后，所有内容都是正文
+                    # 🔥 修复点：立即检查buffer中是否还有需要过滤的内容
+                    # 移除可能残留的标题标记（如"第二部分"后面的冒号、换行等）
+                    if buffer and len(buffer) > 20:
+                        # 清理开头可能的空白字符和格式标记
+                        cleaned_buffer = buffer.lstrip('\n\r :：')
+                        if cleaned_buffer:
+                            yield ('CONTENT', clean_for_sse_text(cleaned_buffer))
+                        buffer = ""
+                    elif buffer:
+                        # buffer较短，继续累积
+                        pass
+
+            # 输出剩余的buffer
+            if buffer:
+                if in_thinking_section and not thinking_complete:
+                    # 如果思考区域未完成，剩余内容作为思考输出
+                    yield ('THINK', clean_for_sse_text(buffer))
+                    logger.info(f"输出剩余思考内容: {len(buffer)} 字符")
+                else:
+                    # 否则作为正文输出，但要清理开头的空白和标记
+                    cleaned_buffer = buffer.lstrip('\n\r :：')
+                    if cleaned_buffer:
+                        yield ('CONTENT', clean_for_sse_text(cleaned_buffer))
+                        logger.info(f"输出剩余正文内容: {len(cleaned_buffer)} 字符")
+        else:
+            # 不启用思考模式，所有内容都是正文
+            for delta in response_stream:
+                token = getattr(delta, 'delta', None) or getattr(delta, 'text', None) or ''
+                if token:
+                    yield ('CONTENT', clean_for_sse_text(token))
 
     def _format_sources(self, final_nodes):
         """格式化参考来源"""
@@ -404,6 +517,15 @@ class KnowledgeHandler:
     ) -> Generator[str, None, None]:
         """
         处理支持多轮对话的知识问答
+
+        流程：
+        1. 检索相关文档
+        2. InsertBlock 过滤（可选）
+        3. 获取历史对话
+        4. 使用知识问答的提示词构建 prompt（将历史对话注入到上下文中）
+        5. 调用 LLM
+        6. 存储本轮对话
+        7. 返回参考来源
 
         Args:
             question: 问题内容
@@ -466,53 +588,108 @@ class KnowledgeHandler:
                     full_response += "未找到可直接回答的节点，将使用原始检索结果\n"
                     filtered_results = None
 
-            # 3. 构建知识库上下文
-            knowledge_context = self._build_knowledge_context(
-                nodes_for_prompt,
-                filtered_results
+            # 3. 获取历史对话
+            from config import Settings as AppSettings
+            recent_turns = getattr(AppSettings, 'MAX_RECENT_TURNS', 6)
+            relevant_turns = getattr(AppSettings, 'MAX_RELEVANT_TURNS', 3)
+            max_summary_turns = getattr(AppSettings, 'MAX_SUMMARY_TURNS', 12)
+
+            # 3.1 获取最近的对话历史
+            recent_history = conversation_manager.get_recent_history(
+                session_id=session_id,
+                limit=recent_turns
             )
 
-            # 4. 从 prompts.py 获取对话提示词
-            has_rag = bool(knowledge_context)
+            # 3.2 检索与当前问题相关的历史对话
+            relevant_history = []
+            if relevant_turns > 0:
+                try:
+                    relevant_history = conversation_manager.retrieve_relevant_history(
+                        session_id=session_id,
+                        current_query=question,
+                        top_k=relevant_turns
+                    )
+                    # 过滤掉已经在最近对话中的轮次（避免重复）
+                    recent_turn_ids = {turn.get('turn_id') for turn in recent_history if turn.get('turn_id')}
+                    relevant_history = [
+                        turn for turn in relevant_history
+                        if turn.get('turn_id') not in recent_turn_ids
+                    ]
+                    logger.info(f"检索到 {len(relevant_history)} 条相关历史对话（排除最近对话后）")
+                except Exception as e:
+                    logger.warning(f"检索相关历史对话失败: {e}")
+                    relevant_history = []
 
-            if has_rag:
-                system_prompt_list = get_prompt(
-                    "conversation.system.rag_with_history",
-                    ["你是一名资深边检业务专家。请根据业务规定和对话历史，回答用户的业务咨询。"]
+            # 4. 构建历史对话摘要（优化版）
+            # 获取会话总轮数
+            try:
+                all_history = conversation_manager.get_recent_history(
+                    session_id=session_id,
+                    limit=100  # 假设最多100轮
                 )
+                total_turns = len(all_history)
+            except Exception as e:
+                logger.warning(f"获取总对话轮数失败: {e}")
+                total_turns = len(recent_history)
+                all_history = recent_history
+
+            history_summary = None
+
+            # 只有当总轮数超过 MAX_SUMMARY_TURNS 时才生成摘要（避免频繁摘要）
+            if total_turns > max_summary_turns:
+                # 排除最近N轮，剩余的用于生成摘要
+                old_history = all_history[:-recent_turns] if len(all_history) > recent_turns else []
+
+                if old_history and len(old_history) >= 3:  # 至少3轮才值得摘要
+                    # 检查摘要缓存
+                    cache_key = f"{session_id}_summary"
+                    current_time = time.time()
+
+                    if hasattr(conversation_manager, '_summary_cache'):
+                        cache_entry = conversation_manager._summary_cache.get(cache_key)
+                        if cache_entry:
+                            cache_age = current_time - cache_entry.get('timestamp', 0)
+                            summarized_count = cache_entry.get('summarized_until', 0)
+
+                            # 如果缓存有效且对话数量没变化太多（允许±2轮差异），使用缓存
+                            if (cache_age < AppSettings.SUMMARY_CACHE_TTL and
+                                abs(len(old_history) - summarized_count) <= 2):
+                                history_summary = cache_entry.get('summary')
+                                logger.info(f"使用缓存的历史摘要 (缓存时长: {cache_age:.0f}s)")
+
+                    # 如果没有缓存或缓存失效，生成新摘要
+                    if not history_summary:
+                        try:
+                            history_summary = conversation_manager.summarize_old_conversations(
+                                session_id=session_id,
+                                conversations=old_history
+                            )
+
+                            # 更新缓存
+                            if history_summary and hasattr(conversation_manager, '_summary_cache'):
+                                conversation_manager._summary_cache[cache_key] = {
+                                    'summary': history_summary,
+                                    'summarized_until': len(old_history),
+                                    'timestamp': current_time
+                                }
+                                logger.info(f"已生成并缓存历史摘要 (覆盖 {len(old_history)} 轮)")
+                        except Exception as e:
+                            logger.warning(f"生成历史摘要失败: {e}")
+                            history_summary = None
+                else:
+                    logger.debug(f"旧对话轮数({len(old_history)})不足，跳过摘要生成")
             else:
-                system_prompt_list = get_prompt(
-                    "conversation.system.general_with_history",
-                    ["你是一名资深边检业务专家。请结合对话历史，回答用户的业务咨询。"]
-                )
+                logger.debug(f"总轮数({total_turns})未达摘要阈值({max_summary_turns})，跳过摘要")
 
-            system_prompt = "\n".join(system_prompt_list) if isinstance(system_prompt_list, list) else system_prompt_list
-
-            # 获取上下文前缀
-            context_prefixes = {
-                "relevant_history": get_prompt(
-                    "conversation.context_prefix.relevant_history",
-                    "以下是相关的历史对话，可作为背景参考：\n"
-                ),
-                "recent_history": get_prompt(
-                    "conversation.context_prefix.recent_history",
-                    "以下是最近的对话历史：\n"
-                ),
-                "regulations": get_prompt(
-                    "conversation.context_prefix.regulations",
-                    "业务规定如下：\n"
-                )
-            }
-
-            # 5. 构建完整的 messages 数组（包含历史对话）
-            messages = conversation_manager.build_context_messages(
-                session_id=session_id,
-                current_query=question,
-                system_prompt=system_prompt,
-                knowledge_context=knowledge_context,
-                context_prefixes=context_prefixes,
-                recent_turns=Settings.MAX_RECENT_TURNS,  # 最近对话轮数
-                relevant_turns=Settings.MAX_RELEVANT_TURNS  # 相关对话轮数
+            # 5. 使用优化的提示词构建方式（注入历史对话）
+            prompt_parts = self._build_prompt_with_history(
+                question,
+                enable_thinking,
+                nodes_for_prompt,
+                filtered_results=filtered_results,
+                recent_history=recent_history,
+                relevant_history=relevant_history,
+                history_summary=history_summary
             )
 
             # 6. 输出状态
@@ -524,16 +701,15 @@ class KnowledgeHandler:
             yield f"CONTENT:{status_msg}"
             full_response += status_msg + "\n"
 
-            # 7. 调用 LLM（使用 messages 数组）
+            # 7. 调用 LLM
             assistant_response = ""
-            for chunk in self._call_llm_with_messages(llm, messages):
-                # _call_llm_with_messages 返回的chunk可能是:
-                # 1. "THINK:xxx" - 思考内容，直接输出
-                # 2. 普通文本 - 正文内容，需要加CONTENT:前缀
-                if chunk.startswith('THINK:'):
-                    yield chunk  # 直接输出思考内容
-                    # 思考内容不计入assistant_response和full_response
-                else:
+            for result in self._call_llm(llm, prompt_parts, enable_thinking=enable_thinking):
+                # result 是元组 (prefix_type, content)
+                prefix_type, chunk = result
+                if prefix_type == 'THINK':
+                    yield f"THINK:{chunk}"
+                    # 思考内容不计入 assistant_response
+                elif prefix_type == 'CONTENT':
                     yield f"CONTENT:{chunk}"
                     full_response += chunk
                     assistant_response += chunk
@@ -549,18 +725,16 @@ class KnowledgeHandler:
             # 获取上一轮对话的 turn_id 作为 parent_turn_id
             parent_turn_id = None
             try:
-                recent_history = conversation_manager.get_recent_history(
-                    session_id=session_id,
-                    limit=1
-                )
                 if recent_history:
-                    parent_turn_id = recent_history[0].get('turn_id')
+                    parent_turn_id = recent_history[-1].get('turn_id')
             except Exception as e:
                 logger.warning(f"获取父对话ID失败: {e}")
 
             # 生成当前轮次的 turn_id
-            current_turn_id = str(__import__('uuid').uuid4())
+            import uuid
+            current_turn_id = str(uuid.uuid4())
 
+            # 存储对话（包含完整的助手回答，其中已经包含了实体和动作分析）
             conversation_manager.add_conversation_turn(
                 session_id=session_id,
                 user_query=question,
@@ -635,28 +809,39 @@ class KnowledgeHandler:
             logger.error(f"多轮对话处理出错: {e}", exc_info=True)
             yield f"ERROR:{error_msg}"
 
-    def _build_knowledge_context(self, final_nodes, filtered_results=None):
-        """构建知识库上下文字符串"""
+    def _build_prompt_with_history(
+        self,
+        question: str,
+        enable_thinking: bool,
+        final_nodes,
+        filtered_results=None,
+        recent_history=None,
+        relevant_history=None,
+        history_summary=None
+    ):
+        """
+        构造带历史对话的提示词（使用知识问答的提示词格式）
+
+        Args:
+            question: 当前问题
+            enable_thinking: 是否启用思考模式
+            final_nodes: 检索到的节点
+            filtered_results: InsertBlock 过滤结果
+            recent_history: 最近的对话历史
+            relevant_history: 相关的历史对话
+            history_summary: 历史对话摘要
+        """
+        # 构建知识库上下文（与知识问答相同的逻辑）
+        knowledge_context = None
         if filtered_results:
             # 使用 InsertBlock 过滤结果
             context_blocks = []
             for i, result in enumerate(filtered_results):
                 file_name = result['file_name']
-                key_passage = result.get('key_passage', '')
                 full_content = result['node'].node.text.strip()
-
-                if key_passage:
-                    block = (
-                        f"### 来源 {i + 1} - {file_name}:\n"
-                        # f"**【关键段落】**\n> {key_passage}\n\n"      
-                        f"**【完整内容】**\n> {full_content}"
-                    )
-                else:
-                    block = f"### 来源 {i + 1} - {file_name}:\n> {full_content}"
-
+                block = f"### 来源 {i + 1} - {file_name}:\n> {full_content}"
                 context_blocks.append(block)
-
-            return "\n\n".join(context_blocks) if context_blocks else None
+            knowledge_context = "\n\n".join(context_blocks) if context_blocks else None
 
         elif final_nodes:
             # 使用普通检索结果
@@ -666,87 +851,93 @@ class KnowledgeHandler:
                 content = node.node.get_content().strip()
                 block = f"### 来源 {i + 1} - {file_name}:\n> {content}"
                 context_blocks.append(block)
+            knowledge_context = "\n\n".join(context_blocks)
 
-            return "\n\n".join(context_blocks)
+        has_rag = bool(knowledge_context)
 
-        return None
+        # 构建历史对话上下文
+        history_context = None
+        if history_summary or recent_history or relevant_history:
+            history_parts = []
 
-    def _call_llm_with_messages(self, llm, messages):
-        """使用 messages 数组调用 LLM"""
-        logger.info(f"使用多轮对话模式调用 LLM, 消息数: {len(messages)}")
+            # 添加摘要
+            if history_summary:
+                summary_prefix = get_conversation_summary_context_prefix()
+                history_parts.append(f"{summary_prefix}{history_summary}")
 
-        # 使用 llm_wrapper 的 chat 方法
-        response_stream = self.llm_wrapper.stream_chat(
-            llm,
-            messages=messages
-        )
+            # 添加最近的对话
+            if recent_history:
+                recent_prefix = get_conversation_context_prefix_recent_history()
+                recent_turns_text = "\n\n".join([
+                    f"用户: {turn['user_query']}\n助手: {turn['assistant_response']}"
+                    for turn in recent_history
+                ])
+                history_parts.append(f"{recent_prefix}{recent_turns_text}")
 
-        # 用于跟踪当前是否在思考标签内
-        in_think_tag = False
-        buffer = ""
+            # 添加相关历史对话
+            if relevant_history:
+                relevant_prefix = get_conversation_context_prefix_relevant_history()
+                relevant_turns_text = "\n\n".join([
+                    f"用户: {turn['user_query']}\n助手: {turn['assistant_response']}"
+                    for turn in relevant_history
+                ])
+                history_parts.append(f"{relevant_prefix}{relevant_turns_text}")
 
-        for delta in response_stream:
-            token = getattr(delta, 'delta', None) or getattr(delta, 'text', None) or ''
-            if not token:
-                continue
+            history_context = "\n\n".join(history_parts)
 
-            buffer += token
+        # 使用知识问答的提示词逻辑
+        if has_rag:
+            # 获取前缀
+            assistant_prefix = get_knowledge_assistant_context_prefix()
 
-            # 处理思考标签的逻辑
-            while True:
-                if not in_think_tag:
-                    # 查找 <think> 开始标签
-                    think_start = buffer.find('<think>')
-                    if think_start != -1:
-                        # 发送思考标签之前的内容作为正文
-                        if think_start > 0:
-                            content_before = buffer[:think_start]
-                            cleaned = clean_for_sse_text(content_before)
-                            if cleaned:
-                                yield cleaned
-                        # 移除已处理的内容和 <think> 标签
-                        buffer = buffer[think_start + 7:]
-                        in_think_tag = True
-                    else:
-                        # 没有找到开始标签，检查buffer是否可能包含部分标签
-                        # 保留可能的部分标签（最多7个字符 "<think>"）
-                        if len(buffer) > 10:
-                            safe_length = len(buffer) - 7
-                            cleaned = clean_for_sse_text(buffer[:safe_length])
-                            if cleaned:
-                                yield cleaned
-                            buffer = buffer[safe_length:]
-                        break
-                else:
-                    # 在思考标签内，查找 </think> 结束标签
-                    think_end = buffer.find('</think>')
-                    if think_end != -1:
-                        # 发送思考内容（带 THINK: 前缀）
-                        think_content = buffer[:think_end]
-                        if think_content:
-                            cleaned = clean_for_sse_text(think_content)
-                            if cleaned:
-                                yield f'THINK:{cleaned}'
-                        # 移除已处理的内容和 </think> 标签
-                        buffer = buffer[think_end + 8:]
-                        in_think_tag = False
-                    else:
-                        # 没有找到结束标签，保留可能的部分标签
-                        if len(buffer) > 10:
-                            safe_length = len(buffer) - 8
-                            think_content = buffer[:safe_length]
-                            if think_content:
-                                cleaned = clean_for_sse_text(think_content)
-                                if cleaned:
-                                    yield f'THINK:{cleaned}'
-                            buffer = buffer[safe_length:]
-                        break
+            # 组合上下文：历史对话 + 业务规定
+            context_parts = []
+            if history_context:
+                context_parts.append(history_context)
+            context_parts.append(assistant_prefix + knowledge_context)
 
-        # 处理剩余的buffer内容
-        if buffer:
-            cleaned = clean_for_sse_text(buffer)
-            if cleaned:
-                if in_think_tag:
-                    yield f'THINK:{cleaned}'
-                else:
-                    yield cleaned
+            assistant_context = "\n\n---\n\n".join(context_parts)
+
+            # 根据思考模式选择不同的 system 和 user prompt
+            if enable_thinking:
+                system_prompt = get_knowledge_system_rag_advanced()
+                user_template = get_knowledge_user_rag_advanced()
+            else:
+                system_prompt = get_knowledge_system_rag_simple()
+                user_template = get_knowledge_user_rag_simple()
+
+            # user_template 是列表，需要 join 后再 format
+            user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
+            user_prompt = user_prompt_str.format(question=question)
+
+        else:
+            # 没有检索到相关内容，只有历史对话
+            assistant_context = history_context
+
+            if enable_thinking:
+                system_prompt = get_knowledge_system_no_rag_think()
+                user_template = get_knowledge_user_no_rag_think()
+            else:
+                system_prompt = get_knowledge_system_no_rag_simple()
+                user_template = get_knowledge_user_no_rag_simple()
+
+            # user_template 可能是列表或字符串
+            user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
+            user_prompt = user_prompt_str.format(question=question)
+
+        # system_prompt 可能是列表，需要转换为字符串
+        if isinstance(system_prompt, list):
+            system_prompt = "\n".join(system_prompt)
+
+        # 构建 fallback_prompt（用于不支持 chat 模式的情况）
+        fallback_parts = [system_prompt]
+        if assistant_context:
+            fallback_parts.append(assistant_context)
+        fallback_parts.append(user_prompt)
+
+        return {
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt,
+            "assistant_context": assistant_context,
+            "fallback_prompt": "\n\n".join(fallback_parts)
+        }

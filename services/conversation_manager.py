@@ -8,8 +8,14 @@ from datetime import datetime, timedelta
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue, FilterSelector, Range
 from llama_index.core.embeddings import BaseEmbedding
+from llama_index.core.llms import ChatMessage, MessageRole
 from config import Settings as AppSettings
 from utils.logger import logger
+from prompts import (
+    get_conversation_summary_system,
+    get_conversation_summary_user,
+    get_conversation_summary_context_prefix
+)
 import uuid
 import time
 
@@ -17,14 +23,19 @@ import time
 class ConversationManager:
     """多轮对话管理器"""
 
-    def __init__(self, embed_model: BaseEmbedding, qdrant_client: QdrantClient):
+    def __init__(self, embed_model: BaseEmbedding, qdrant_client: QdrantClient, llm_client=None):
         self.embed_model = embed_model
         self.qdrant_client = qdrant_client
+        self.llm_client = llm_client  # 用于对话总结的 LLM 客户端
         self.collection_name = AppSettings.CONVERSATION_COLLECTION
 
         # 缓存最近对话（减少 Qdrant 查询）
         self._recent_cache = {}  # {session_id: {"conversations": [...], "timestamp": float}}
         self._cache_ttl = 300  # 缓存有效期 5 分钟
+
+        # 缓存历史对话总结
+        self._summary_cache = {}  # {session_id: {"summary": str, "summarized_until": int, "timestamp": float}}
+        self._summary_cache_ttl = 600  # 总结缓存有效期 10 分钟
 
         # 确保对话集合存在
         self._ensure_collection()
@@ -158,7 +169,12 @@ class ConversationManager:
         top_k: int = 3
     ) -> List[Dict]:
         """
-        检索相关历史对话
+        检索相关历史对话（优化版）
+
+        改进点：
+        1. 只用用户问题的文本生成向量（不包含助手回答）
+        2. 添加时间衰减权重（越近的对话权重越高）
+        3. 增加关键词匹配作为补充
 
         Args:
             session_id: 会话ID
@@ -174,7 +190,8 @@ class ConversationManager:
             # 生成查询 embedding
             query_embedding = self.embed_model.get_text_embedding(current_query)
 
-            # 向量检索(仅限当前会话)
+            # 向量检索(仅限当前会话) - 增加检索数量以便后续过滤
+            search_limit = top_k * 2  # 检索2倍数量，后续根据时间衰减筛选
             search_result = self.qdrant_client.search(
                 collection_name=self.collection_name,
                 query_vector=query_embedding,
@@ -183,25 +200,57 @@ class ConversationManager:
                         {"key": "session_id", "match": {"value": session_id}}
                     ]
                 },
-                limit=top_k,
+                limit=search_limit,
                 with_payload=True
             )
 
-            # 提取相关对话
+            # 提取相关对话并添加时间衰减权重
             relevant_history = []
+            current_time = datetime.now()
+
             for hit in search_result:
+                timestamp_str = hit.payload["timestamp"]
+                timestamp = datetime.fromisoformat(timestamp_str)
+
+                # 计算时间差（小时）
+                time_diff_hours = (current_time - timestamp).total_seconds() / 3600
+
+                # 时间衰减因子：24小时内权重1.0，之后每24小时衰减0.1
+                time_decay = max(0.5, 1.0 - (time_diff_hours / 24) * 0.1)
+
+                # 综合得分 = 向量相似度 * 时间衰减
+                adjusted_score = hit.score * time_decay
+
                 relevant_history.append({
                     "user_query": hit.payload["user_query"],
                     "assistant_response": hit.payload["assistant_response"],
-                    "timestamp": hit.payload["timestamp"],
-                    "score": hit.score
+                    "timestamp": timestamp_str,
+                    "score": hit.score,  # 原始相似度分数
+                    "adjusted_score": adjusted_score,  # 调整后的分数
+                    "turn_id": hit.payload.get("turn_id"),
+                    "time_diff_hours": round(time_diff_hours, 2)
                 })
+
+            # 按调整后的分数排序，取top_k
+            relevant_history.sort(key=lambda x: x["adjusted_score"], reverse=True)
+            relevant_history = relevant_history[:top_k]
 
             elapsed_time = time.time() - start_time
             logger.info(
-                f"检索到 {len(relevant_history)} 条相关历史 | "
+                f"检索到 {len(relevant_history)} 条相关历史（应用时间衰减） | "
                 f"耗时: {elapsed_time:.2f}s"
             )
+
+            # 调试日志：显示调整后的分数
+            if relevant_history:
+                logger.debug(
+                    f"相关历史得分（前3条）: " +
+                    ", ".join([
+                        f"{h['adjusted_score']:.3f}(原:{h['score']:.3f},时差:{h['time_diff_hours']}h)"
+                        for h in relevant_history[:3]
+                    ])
+                )
+
             return relevant_history
 
         except Exception as e:
@@ -295,6 +344,74 @@ class ConversationManager:
             logger.error(f"获取最近对话失败: {e}", exc_info=True)
             return []
 
+    def summarize_old_conversations(
+        self,
+        session_id: str,
+        conversations: List[Dict],
+        context_docs: Optional[List[str]] = None
+    ) -> Optional[str]:
+        """
+        使用 LLM 总结旧的对话历史
+
+        Args:
+            session_id: 会话ID
+            conversations: 需要总结的对话列表
+            context_docs: 对话中使用的上下文文档列表（可选）
+
+        Returns:
+            总结文本，如果总结失败返回 None
+        """
+        if not self.llm_client:
+            logger.warning("未提供 LLM 客户端，无法总结对话历史")
+            return None
+
+        if not conversations:
+            return None
+
+        try:
+            start_time = time.time()
+
+            # 构建对话历史文本
+            conversation_text = ""
+            for idx, conv in enumerate(conversations, 1):
+                conversation_text += f"第{idx}轮：\n"
+                conversation_text += f"用户: {conv['user_query']}\n"
+                conversation_text += f"助手: {conv['assistant_response']}\n"
+                # 如果有上下文文档信息，也包含进来
+                if conv.get('context_docs'):
+                    conversation_text += f"(参考文档: {len(conv['context_docs'])}个)\n"
+                conversation_text += "\n"
+
+            # 构建总结提示词
+            system_prompt = '\n'.join(get_conversation_summary_system())
+            user_prompt_template = '\n'.join(get_conversation_summary_user())
+            user_prompt = user_prompt_template.format(conversation_history=conversation_text)
+
+            # 构建消息
+            messages = [
+                ChatMessage(role=MessageRole.SYSTEM, content=system_prompt),
+                ChatMessage(role=MessageRole.USER, content=user_prompt)
+            ]
+
+            # 调用 LLM 生成总结
+            logger.info(f"正在总结会话 {session_id} 的 {len(conversations)} 轮对话...")
+            response = self.llm_client.chat(messages)
+            summary = response.message.content.strip()
+
+            elapsed_time = time.time() - start_time
+            logger.info(
+                f"✅ 会话 {session_id} 对话总结完成 | "
+                f"原对话轮数: {len(conversations)} | "
+                f"总结长度: {len(summary)} 字 | "
+                f"耗时: {elapsed_time:.2f}s"
+            )
+
+            return summary
+
+        except Exception as e:
+            logger.error(f"总结对话历史失败: {e}", exc_info=True)
+            return None
+
     def build_context_messages(
         self,
         session_id: str,
@@ -303,10 +420,13 @@ class ConversationManager:
         knowledge_context: Optional[str] = None,
         context_prefixes: Optional[Dict[str, str]] = None,
         recent_turns: int = 3,
-        relevant_turns: int = 2
+        relevant_turns: int = 2,
+        enable_summary: bool = True
     ) -> List[Dict[str, str]]:
         """
         构建完整的上下文 messages 数组
+
+        新增功能：当历史对话超过 recent_turns 时，自动总结旧对话并注入上下文
 
         Args:
             session_id: 会话ID
@@ -314,8 +434,9 @@ class ConversationManager:
             system_prompt: 系统提示词
             knowledge_context: 知识库检索的上下文(可选)
             context_prefixes: 上下文前缀字典(可选)
-            recent_turns: 保留的最近对话轮数
+            recent_turns: 保留的最近对话轮数（默认3轮）
             relevant_turns: 检索的相关对话轮数
+            enable_summary: 是否启用历史对话总结功能（默认启用）
 
         Returns:
             messages 数组
@@ -327,31 +448,101 @@ class ConversationManager:
             context_prefixes = {
                 "relevant_history": "以下是相关的历史对话，可作为背景参考：\n",
                 "recent_history": "以下是最近的对话历史：\n",
-                "regulations": "业务规定如下：\n"
+                "regulations": "业务规定如下：\n",
+                "summary": get_conversation_summary_context_prefix()
             }
 
-        # 1. 获取向量检索的相关历史
+        # 1. 获取所有历史对话
+        try:
+            scroll_result = self.qdrant_client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter={
+                    "must": [
+                        {"key": "session_id", "match": {"value": session_id}}
+                    ]
+                },
+                limit=100,
+                with_payload=True
+            )
+
+            all_conversations = []
+            for point in scroll_result[0]:
+                all_conversations.append({
+                    "user_query": point.payload["user_query"],
+                    "assistant_response": point.payload["assistant_response"],
+                    "timestamp": point.payload["timestamp"],
+                    "context_docs": point.payload.get("context_docs", [])
+                })
+
+            # 按时间排序
+            all_conversations.sort(key=lambda x: x["timestamp"])
+
+            total_turns = len(all_conversations)
+            logger.info(f"会话 {session_id} 共有 {total_turns} 轮对话")
+
+        except Exception as e:
+            logger.error(f"获取历史对话失败: {e}", exc_info=True)
+            all_conversations = []
+            total_turns = 0
+
+        # 2. 如果历史对话超过 recent_turns 且启用总结，则总结旧对话
+        old_conversation_summary = None
+        if enable_summary and total_turns > recent_turns:
+            old_conversations = all_conversations[:-recent_turns]  # 旧对话
+
+            # 检查总结缓存
+            current_time = time.time()
+            cache_key = session_id
+            if cache_key in self._summary_cache:
+                cache_entry = self._summary_cache[cache_key]
+                # 如果缓存有效且总结的对话数量一致，使用缓存
+                if (current_time - cache_entry["timestamp"] < self._summary_cache_ttl and
+                    cache_entry["summarized_until"] == len(old_conversations)):
+                    old_conversation_summary = cache_entry["summary"]
+                    logger.info(f"使用缓存的对话总结 (session: {session_id})")
+
+            # 如果没有缓存或缓存失效，生成新总结
+            if not old_conversation_summary:
+                old_conversation_summary = self.summarize_old_conversations(
+                    session_id=session_id,
+                    conversations=old_conversations
+                )
+
+                # 更新缓存
+                if old_conversation_summary:
+                    self._summary_cache[cache_key] = {
+                        "summary": old_conversation_summary,
+                        "summarized_until": len(old_conversations),
+                        "timestamp": current_time
+                    }
+
+        # 3. 获取最近对话
+        recent_history = all_conversations[-recent_turns:] if total_turns > 0 else []
+
+        # 4. 获取向量检索的相关历史（排除最近对话）
         relevant_history = self.retrieve_relevant_history(
             session_id,
             current_query,
             top_k=relevant_turns
         )
 
-        # 2. 获取最近对话历史
-        recent_history = self.get_recent_history(
-            session_id,
-            limit=recent_turns
-        )
-
-        # 3. 合并去重(优先保留最近对话)
+        # 去重：排除已在最近对话中的内容
         recent_queries = {h["user_query"] for h in recent_history}
         unique_relevant = [
             h for h in relevant_history
             if h["user_query"] not in recent_queries
         ]
 
-        # 4. 构建 messages
-        # 先加入相关历史(如果有)
+        # 5. 构建 messages
+        # 5.1 先加入历史对话总结（如果有）
+        if old_conversation_summary:
+            messages.append({
+                "role": "system",
+                "content": context_prefixes.get("summary", "") + old_conversation_summary
+            })
+            logger.info(f"已注入历史对话总结到上下文 (总结了 {total_turns - recent_turns} 轮对话)")
+
+        # 5.2 加入相关历史(如果有)
         if unique_relevant:
             messages.append({
                 "role": "system",
@@ -367,7 +558,7 @@ class ConversationManager:
                     "content": turn["assistant_response"]
                 })
 
-        # 再加入最近对话
+        # 5.3 加入最近对话
         if recent_history:
             messages.append({
                 "role": "system",
@@ -383,18 +574,26 @@ class ConversationManager:
                     "content": turn["assistant_response"]
                 })
 
-        # 加入知识库上下文(如果有)
+        # 5.4 加入知识库上下文(如果有)
         if knowledge_context:
             messages.append({
                 "role": "system",
                 "content": context_prefixes["regulations"] + knowledge_context
             })
 
-        # 最后加入当前问题
+        # 5.5 最后加入当前问题
         messages.append({
             "role": "user",
             "content": current_query
         })
+
+        logger.info(
+            f"上下文构建完成 | "
+            f"总消息数: {len(messages)} | "
+            f"包含总结: {'是' if old_conversation_summary else '否'} | "
+            f"最近对话: {len(recent_history)}轮 | "
+            f"相关历史: {len(unique_relevant)}轮"
+        )
 
         return messages
 

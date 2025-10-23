@@ -8,7 +8,16 @@ import time
 from typing import Generator, Dict, Any
 from llama_index.core import QueryBundle
 from config import Settings
-from utils import get_prompt, logger
+from utils import logger
+from prompts import (
+    get_judge_option_system_general,
+    get_judge_option_system_rag,
+    get_judge_option_general_think_on,
+    get_judge_option_general_think_off,
+    get_judge_option_user_think_on,
+    get_judge_option_user_think_off,
+    get_judge_option_assistant_context_prefix
+)
 
 
 class JudgeHandler:
@@ -85,14 +94,8 @@ class JudgeHandler:
             # 无 RAG 命中
             return {
                 "answer_type": "general",
-                "system_prompt": get_prompt(
-                    "judge_option.system.general",
-                    "你是一个严谨的分析师"
-                ),
-                "user_prompt": get_prompt(
-                    f"judge_option.general.think_{'on' if enable_thinking else 'off'}",
-                    "请分析陈述: {query}"
-                ).format(query=question),
+                "system_prompt": get_judge_option_system_general(),
+                "user_prompt": get_judge_option_general_think_off().format(query=question),
                 "assistant_context": None,
                 "sources": "(来源: 通用知识)"
             }
@@ -110,18 +113,9 @@ class JudgeHandler:
 
             return {
                 "answer_type": "rag",
-                "system_prompt": get_prompt(
-                    "judge_option.system.rag",
-                    "你是严谨的分析师"
-                ),
-                "user_prompt": get_prompt(
-                    f"judge_option.user.think_{'on' if enable_thinking else 'off'}",
-                    "请判断: {query}"
-                ).format(query=question),
-                "assistant_context": get_prompt(
-                    "judge_option.assistant_context_prefix",
-                    "参考资料如下：\n"
-                ) + context_str,
+                "system_prompt": get_judge_option_system_rag(),
+                "user_prompt": get_judge_option_user_think_off().format(query=question),
+                "assistant_context": get_judge_option_assistant_context_prefix() + context_str,
                 "sources": "\n".join(sources_list)
             }
 
@@ -230,4 +224,3 @@ class JudgeHandler:
             "answer": judgment,
             "full_analysis": analysis
         }
-

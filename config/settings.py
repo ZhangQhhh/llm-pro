@@ -59,6 +59,11 @@ class Settings:
             "api_base_url": "http://127.0.0.1:1035/v1",
             "access_token": "",
             "llm_model_name": "qwen3-14b-lora"
+        },
+        "deepseek-32b": {
+            "api_base_url": "https://53.3.1.3:5001/openapi/v1",
+            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwMjc1MjZjYjQxYzRmN2Q4NDE4MzM2ZjczODQ4NTJiIiwib3JnSWQiOiIiLCJ1c2VybmFtZSI6IiIsIm5pY2tuYW1lIjoiIiwiYnVmZmVyVGltZSI6MTc1NDUzNTAyNiwiYXVkIjoiMjMyIiwiZXhwIjoxNzU3MTE5ODI2LCJpc3MiOiJkMWNmNTYwMTRlOTg0ZDdiYjMyN2MyMDA5YjZlMDNmMyIsIm5iZiI6MTc1NDUyNzgyNiwic3ViIjoiYXBwIn0.aIEkeovA61aCMaxh5wGDUBmLtltKtfHlPCHcBff-tYo",
+            "llm_model_name": "deepseek-r1-distill-qwen-32b"
         }
     }
     DEFAULT_LLM_ID = "qwen3-32b"
@@ -89,9 +94,15 @@ class Settings:
 
     # 对话管理配置
     CONVERSATION_COLLECTION = os.getenv("CONVERSATION_COLLECTION", "conversations")
-    MAX_RECENT_TURNS = int(os.getenv("MAX_RECENT_TURNS", 3))  # 最近对话轮数
-    MAX_RELEVANT_TURNS = int(os.getenv("MAX_RELEVANT_TURNS", 2))  # 相关对话轮数
+    MAX_RECENT_TURNS = int(os.getenv("MAX_RECENT_TURNS", 6))  # 从3提升到6 - 保留最近6轮完整对话
+    MAX_RELEVANT_TURNS = int(os.getenv("MAX_RELEVANT_TURNS", 3))  # 从2提升到3 - 检索3轮相关历史
     CONVERSATION_EXPIRE_DAYS = int(os.getenv("CONVERSATION_EXPIRE_DAYS", 7))  # 对话过期天数，默认7天
+
+    # 新增：对话记忆优化配置
+    MAX_HISTORY_TOKEN_BUDGET = int(os.getenv("MAX_HISTORY_TOKEN_BUDGET", 4000))  # 历史对话Token预算上限
+    MAX_SUMMARY_TURNS = int(os.getenv("MAX_SUMMARY_TURNS", 12))  # 超过12轮才生成摘要
+    SUMMARY_CACHE_TTL = int(os.getenv("SUMMARY_CACHE_TTL", 1800))  # 摘要缓存30分钟(秒)
+    ENABLE_SMART_HISTORY_FILTER = os.getenv("ENABLE_SMART_HISTORY_FILTER", "true").lower() == "true"  # 启用智能历史筛选
 
     # 可选:内嵌模式路径(不使用 Docker 时启用) 现在用的是docker，用不到hhhhhhhhhhh
     # QDRANT_PATH = os.getenv("QDRANT_PATH", "./qdrant_data")

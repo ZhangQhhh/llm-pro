@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>知识问答 V4 - 精准检索模式</title>
     <style>
         /* --- 1. 定义新的本地字体 --- */
@@ -260,6 +261,7 @@
                         <option value="qwen3-32b">qwen-32</option>
                         <option value="qwen2025">qwen满血版</option>
                         <option value="deepseek">deepseek-r1</option>
+                        <option value="deepseek-32b">deepseek-32b</option>
                     </select>
                 </div>
 
@@ -365,6 +367,19 @@
     let lastAnswer = "";
     let selectedNodeIds = new Set();
     let lastSources = []; // <-- 修改点 1: 新增全局变量来存储参考来源
+    let isHandling503 = false; // 标志位，防止重复触发
+
+
+    function handle503Error() {
+        // 如果已经在处理503，就不要重复执行
+        if (isHandling503) return;
+        isHandling503 = true;
+
+        console.error("检测到 503 错误（服务器不可用）。立即跳转到维护页面...");
+
+        // 立即跳转到 /maintenance.html
+        window.location.href = '/maintenance.html';
+    }
 
     function renderApp(currentAnswer, sources) {
         let html = '';
@@ -432,6 +447,13 @@
                     source: JSON.stringify(lastSources) // 将source数组转为JSON字符串
                 }),
             });
+
+            if (response.status === 503) {
+                console.warn("检测到服务器正在维护...");
+                handle503Error(); // 调用新函数
+                throw new Error("服务器 503"); // 停止后续执行
+            }
+
             const result = await response.json();
             if (!response.ok || !result.success) {
                 throw new Error(result.message || `服务器响应错误: ${response.status}`);
@@ -470,6 +492,11 @@
                     source: JSON.stringify(lastSources) // 将source数组转为JSON字符串
                 }),
             });
+            // <-- 【修改点 2】: 添加 503 维护检查
+            if (response.status === 503) {
+                handle503Error(); // 调用新函数
+                throw new Error("服务器 503"); // 停止后续执行
+            }
             const result = await response.json();
             if (!response.ok || !result.success) {
                 throw new Error(result.message || `服务器响应错误: ${response.status}`);
@@ -528,6 +555,13 @@
                     insert_block_llm_id: selectedModelId
                 }),
             });
+
+            // <-- 【修改点 3】: 添加 503 维护检查
+            if (response.status === 503) {
+                console.warn("检测到服务器正在维护(主提交)...");
+                handle503Error(); // 调用新函数
+                throw new Error("服务器 503"); // 停止后续执行
+            }
 
             if (!response.ok) throw new Error(`服务器错误: ${response.status}`);
             const reader = response.body.getReader();
