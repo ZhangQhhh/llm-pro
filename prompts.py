@@ -107,7 +107,7 @@ def get_knowledge_system_rag_simple():
     return [
         "你是一名资深边检业务专家。请根据下方提供的业务规定，直接、清晰地回答用户的业务咨询。",
         "",
-        "# 规则",
+        "# 回答规则",
         "1. 你的回答必须严格依据业务规定。",
         "2. 在回答中引用规定要点时，请在句末用 [来源 N] 标注出处。",
         "3. 如果规定未能覆盖问题，请明确指出\"根据现有规定无法回答此问题\"。"
@@ -183,9 +183,7 @@ def get_knowledge_user_rag_simple():
     """知识问答RAG简单模式用户提示词"""
     return [
         "业务咨询：",
-        "{question}",
-        "",
-        "请给出你的回答。不要输出 <think> 或任何推理过程，直接回答即可。"
+        "{question}"
     ]
 
 
@@ -507,4 +505,3 @@ def get_prompt(path: str, default: str = ""):
         return '\n'.join(node)
     else:
         return default
-

@@ -131,9 +131,15 @@ class KnowledgeHandler:
             full_response += status_msg + "\n"
 
             # 5. 调用 LLM
-            for chunk in self._call_llm(llm, prompt_parts):
-                yield f"CONTENT:{chunk}"
-                full_response += chunk
+            for result in self._call_llm(llm, prompt_parts, enable_thinking=enable_thinking):
+                # result 是元组 (prefix_type, content)
+                prefix_type, chunk = result
+                if prefix_type == 'THINK':
+                    yield f"THINK:{chunk}"
+                    # 思考内容不计入 full_response
+                elif prefix_type == 'CONTENT':
+                    yield f"CONTENT:{chunk}"
+                    full_response += chunk
 
             # 6. 输出参考来源
             if use_insert_block and filtered_results:
@@ -359,6 +365,10 @@ class KnowledgeHandler:
             llm: LLM 实例
             prompt_parts: 提示词字典
             enable_thinking: 是否启用思考模式（用于解析输出）
+
+        Note:
+            enable_thinking 参数用于选择不同的提示词模板，实际的思考模式通过提示词内容来控制。
+            LLM 会根据提示词在回答中自然地包含或省略思考过程。
         """
         logger.info(f"使用外部 Prompt:\n{prompt_parts['fallback_prompt'][:200]}...")
 
@@ -368,7 +378,8 @@ class KnowledgeHandler:
             system_prompt=prompt_parts['system_prompt'],
             user_prompt=prompt_parts['user_prompt'],
             assistant_context=prompt_parts['assistant_context'],
-            use_chat_mode=Settings.USE_CHAT_MODE
+            use_chat_mode=Settings.USE_CHAT_MODE,
+            enable_thinking=enable_thinking  # 参数会在底层被过滤
         )
 
         # 如果启用思考模式，需要解析并分离思考内容和正文内容
@@ -378,7 +389,16 @@ class KnowledgeHandler:
             thinking_complete = False
 
             for delta in response_stream:
-                token = getattr(delta, 'delta', None) or getattr(delta, 'text', None) or ''
+                # 获取文本内容
+                if hasattr(delta, 'delta'):
+                    token = delta.delta
+                elif hasattr(delta, 'text'):
+                    token = delta.text
+                elif hasattr(delta, 'content'):
+                    token = delta.content
+                else:
+                    token = str(delta) if delta else ''
+
                 if not token:
                     continue
 
@@ -412,13 +432,12 @@ class KnowledgeHandler:
                             if marker in buffer:
                                 thinking_complete = True
                                 logger.info(f"检测到思考结束标记: {marker}")
-                                # 🔥 修复点：输出思考内容（不包含结束标记）
+                                # 输出思考内容（不包含结束标记）
                                 idx = buffer.index(marker)
                                 if idx > 0:
                                     yield ('THINK', clean_for_sse_text(buffer[:idx]))
 
-                                # 🔥 关键修复：跳过标记本身，只保留标记之后的内容
-                                # 而不是保留"标记+之后的内容"
+                                # 跳过标记本身，只保留标记之后的内容
                                 buffer = buffer[idx + len(marker):]
                                 logger.info(f"跳过结束标记 '{marker}'，剩余buffer长度: {len(buffer)}")
                                 break
@@ -429,8 +448,7 @@ class KnowledgeHandler:
                         buffer = ""
                 else:
                     # 思考完成后，所有内容都是正文
-                    # 🔥 修复点：立即检查buffer中是否还有需要过滤的内容
-                    # 移除可能残留的标题标记（如"第二部分"后面的冒号、换行等）
+                    # 立即检查buffer中是否还有需要过滤的内容
                     if buffer and len(buffer) > 20:
                         # 清理开头可能的空白字符和格式标记
                         cleaned_buffer = buffer.lstrip('\n\r :：')
@@ -456,9 +474,18 @@ class KnowledgeHandler:
         else:
             # 不启用思考模式，所有内容都是正文
             for delta in response_stream:
-                token = getattr(delta, 'delta', None) or getattr(delta, 'text', None) or ''
-                if token:
-                    yield ('CONTENT', clean_for_sse_text(token))
+                # 获取文本内容
+                if hasattr(delta, 'delta'):
+                    text = delta.delta
+                elif hasattr(delta, 'text'):
+                    text = delta.text
+                elif hasattr(delta, 'content'):
+                    text = delta.content
+                else:
+                    text = str(delta) if delta else ''
+
+                if text:
+                    yield ('CONTENT', clean_for_sse_text(text))
 
     def _format_sources(self, final_nodes):
         """格式化参考来源"""

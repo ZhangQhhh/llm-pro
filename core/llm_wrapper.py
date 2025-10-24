@@ -27,7 +27,8 @@ class LLMStreamWrapper:
         system_prompt: Optional[str] = None,
         user_prompt: Optional[str] = None,
         assistant_context: Optional[str] = None,
-        use_chat_mode: bool = True
+        use_chat_mode: bool = True,
+        enable_thinking: bool = False
     ):
         """
         统一的流式调用接口
@@ -39,9 +40,14 @@ class LLMStreamWrapper:
             user_prompt: 用户提示词
             assistant_context: 助手上下文（RAG 内容）
             use_chat_mode: 是否使用 chat 模式
+            enable_thinking: 是否启用思考模式（通过提示词控制，而非 API 原生参数）
 
         Returns:
             流式响应生成器
+
+        Note:
+            enable_thinking 参数会传递到底层但会在 llm_service.py 中被过滤掉，
+            实际的思考模式通过提示词内容来控制。
         """
         use_chat = (
             use_chat_mode
@@ -51,11 +57,11 @@ class LLMStreamWrapper:
 
         if use_chat:
             return LLMStreamWrapper._stream_chat(
-                llm, system_prompt, user_prompt, assistant_context, prompt
+                llm, system_prompt, user_prompt, assistant_context, prompt, enable_thinking
             )
         else:
             return LLMStreamWrapper._stream_complete(
-                llm, system_prompt, user_prompt, assistant_context, prompt
+                llm, system_prompt, user_prompt, assistant_context, prompt, enable_thinking
             )
 
     @staticmethod
@@ -136,7 +142,8 @@ class LLMStreamWrapper:
         system_prompt: Optional[str],
         user_prompt: Optional[str],
         assistant_context: Optional[str],
-        fallback_prompt: Optional[str]
+        fallback_prompt: Optional[str],
+        enable_thinking: bool = False
     ):
         """Chat 模式流式调用"""
         if not user_prompt:
@@ -152,6 +159,7 @@ class LLMStreamWrapper:
         messages.append(ChatMessage(role="user", content=user_prompt))
 
         try:
+            # 不传递 enable_thinking 参数，该参数仅用于上层逻辑控制
             return llm.stream_chat(messages)
         except Exception as e:
             logger.warning(f"stream_chat 失败，回退到 stream_complete: {e}")
@@ -167,7 +175,8 @@ class LLMStreamWrapper:
         system_prompt: Optional[str],
         user_prompt: Optional[str],
         assistant_context: Optional[str],
-        prompt: Optional[str]
+        prompt: Optional[str],
+        enable_thinking: bool = False
     ):
         """Complete 模式流式调用"""
         combined = (system_prompt or '') + "\n"

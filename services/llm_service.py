@@ -29,6 +29,8 @@ class CustomOpenAILike(OpenAI):
         completion_kwargs["max_tokens"] = Settings.LLM_MAX_TOKENS
         completion_kwargs["top_p"] = Settings.TOP_P
         completion_kwargs.pop("stop", None)
+        # 移除 enable_thinking 参数，改用提示词控制思考模式
+        completion_kwargs.pop("enable_thinking", None)
         return completion_kwargs
 
     def _get_chat_kwargs(self, **kwargs: Any) -> Dict[str, Any]:
@@ -37,6 +39,8 @@ class CustomOpenAILike(OpenAI):
         chat_kwargs["max_tokens"] = Settings.LLM_MAX_TOKENS
         chat_kwargs["top_p"] = Settings.TOP_P
         chat_kwargs.pop("stop", None)
+        # 移除 enable_thinking 参数，改用提示词控制思考模式
+        chat_kwargs.pop("enable_thinking", None)
         return chat_kwargs
 
 

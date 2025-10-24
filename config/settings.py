@@ -62,7 +62,7 @@ class Settings:
         },
         "deepseek-32b": {
             "api_base_url": "https://53.3.1.3:5001/openapi/v1",
-            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYwMjc1MjZjYjQxYzRmN2Q4NDE4MzM2ZjczODQ4NTJiIiwib3JnSWQiOiIiLCJ1c2VybmFtZSI6IiIsIm5pY2tuYW1lIjoiIiwiYnVmZmVyVGltZSI6MTc1NDUzNTAyNiwiYXVkIjoiMjMyIiwiZXhwIjoxNzU3MTE5ODI2LCJpc3MiOiJkMWNmNTYwMTRlOTg0ZDdiYjMyN2MyMDA5YjZlMDNmMyIsIm5iZiI6MTc1NDUyNzgyNiwic3ViIjoiYXBwIn0.aIEkeovA61aCMaxh5wGDUBmLtltKtfHlPCHcBff-tYo",
+            "access_token": "sk-dd997ba3a3804d468e4e7e493184c9af",
             "llm_model_name": "deepseek-r1-distill-qwen-32b"
         }
     }
