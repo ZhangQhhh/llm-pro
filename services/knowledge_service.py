@@ -93,7 +93,8 @@ class KnowledgeService:
         self.retriever = RetrieverFactory.create_hybrid_retriever(
             self.index,
             self.all_nodes,
-            AppSettings.RETRIEVAL_TOP_K
+            AppSettings.RETRIEVAL_TOP_K,
+            AppSettings.RETRIEVAL_TOP_K_BM25
         )
         return self.retriever
 

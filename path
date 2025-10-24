@@ -1,0 +1,19 @@
+knowledge_handler.py (enable_thinking=True)
+  ↓
+llm_wrapper.py (enable_thinking=True)
+  ↓
+llm.stream_chat(messages, enable_thinking=True)  ← 这里传入
+  ↓
+OpenAI 基类的 stream_chat() 方法
+  ↓
+调用 _get_chat_kwargs(**kwargs)  ← kwargs 包含 enable_thinking
+  ↓
+super()._get_chat_kwargs(**kwargs)  ← OpenAI 基类处理
+  ↓
+chat_kwargs 中包含 enable_thinking
+  ↓
+completion_kwargs.pop("enable_thinking", None)  ← 你删除了它
+  ↓
+返回 chat_kwargs
+  ↓
+调用 client.chat.completions.create(**chat_kwargs)  ← 但 enable_thinking 可能已经在这之前被添加到请求参数中了

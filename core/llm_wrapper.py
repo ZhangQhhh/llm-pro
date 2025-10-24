@@ -159,15 +159,15 @@ class LLMStreamWrapper:
         messages.append(ChatMessage(role="user", content=user_prompt))
 
         try:
-            # 不传递 enable_thinking 参数，该参数仅用于上层逻辑控制
-            return llm.stream_chat(messages)
+            # 传递 enable_thinking 参数到底层 LLM
+            return llm.stream_chat(messages, enable_thinking=enable_thinking)
         except Exception as e:
             logger.warning(f"stream_chat 失败，回退到 stream_complete: {e}")
             combined = system_prompt + "\n"
             if assistant_context:
                 combined += assistant_context + "\n"
             combined += user_prompt
-            return llm.stream_complete(fallback_prompt or combined)
+            return llm.stream_complete(fallback_prompt or combined, enable_thinking=enable_thinking)
 
     @staticmethod
     def _stream_complete(
@@ -183,4 +183,4 @@ class LLMStreamWrapper:
         if assistant_context:
             combined += assistant_context + "\n"
         combined += (user_prompt or '')
-        return llm.stream_complete(prompt or combined)
+        return llm.stream_complete(prompt or combined, enable_thinking=enable_thinking)

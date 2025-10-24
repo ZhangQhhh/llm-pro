@@ -14,6 +14,9 @@ from utils.logger import logger
 class CustomOpenAILike(OpenAI):
     """自定义 OpenAI 兼容 LLM 客户端"""
 
+    # 使用类变量存储所有实例的思考模式设置（避免 Pydantic 验证错误）
+    _thinking_modes: Dict[int, bool] = {}
+
     @property
     def metadata(self) -> LLMMetadata:
         return LLMMetadata(
@@ -23,24 +26,90 @@ class CustomOpenAILike(OpenAI):
             model_name=self.model,
         )
 
+    def _get_enable_thinking(self) -> bool:
+        """获取当前实例的思考模式设置"""
+        return self._thinking_modes.get(id(self), False)
+
+    def _set_enable_thinking(self, value: bool):
+        """设置当前实例的思考模式"""
+        self._thinking_modes[id(self)] = value
+
+    def _get_model_kwargs(self, **kwargs: Any) -> Dict[str, Any]:
+        """
+        拦截并处理 enable_thinking 参数
+        这个方法在 OpenAI 基类中被调用，用于准备模型参数
+        """
+        # 提取 enable_thinking 参数
+        enable_thinking = kwargs.pop("enable_thinking", None)
+        if enable_thinking is not None:
+            self._set_enable_thinking(enable_thinking)
+            logger.info(f"✓ 思考模式已设置: enable_thinking={enable_thinking}")
+
+        # 调用父类方法
+        if hasattr(super(), '_get_model_kwargs'):
+            return super()._get_model_kwargs(**kwargs)
+        return {}
+
     def _get_completion_kwargs(self, **kwargs: Any) -> Dict[str, Any]:
-        """重写以强制设置 max_tokens、top_p 并移除 stop 参数"""
+        """重写以强制设置 max_tokens、top_p 并移除 stop 参数，支持 enable_thinking"""
+        # 先提取 enable_thinking，避免传递给父类
+        enable_thinking = kwargs.pop("enable_thinking", None)
+        if enable_thinking is not None:
+            self._set_enable_thinking(enable_thinking)
+
         completion_kwargs = super()._get_completion_kwargs(**kwargs)
         completion_kwargs["max_tokens"] = Settings.LLM_MAX_TOKENS
         completion_kwargs["top_p"] = Settings.TOP_P
         completion_kwargs.pop("stop", None)
-        # 移除 enable_thinking 参数，改用提示词控制思考模式
-        completion_kwargs.pop("enable_thinking", None)
+
+        # 获取当前实例的思考模式设置
+        current_enable_thinking = self._get_enable_thinking()
+
+        # 通过 additional_kwargs 或 extra_body 传递 enable_thinking
+        if current_enable_thinking:
+            # 尝试使用 additional_kwargs（llama-index 的方式）
+            if "additional_kwargs" not in completion_kwargs:
+                completion_kwargs["additional_kwargs"] = {}
+            completion_kwargs["additional_kwargs"]["enable_thinking"] = current_enable_thinking
+
+            # 同时尝试 extra_body（OpenAI SDK 1.0+ 的方式）
+            if "extra_body" not in completion_kwargs:
+                completion_kwargs["extra_body"] = {}
+            completion_kwargs["extra_body"]["enable_thinking"] = current_enable_thinking
+
+            logger.info(f"✓ 已将 enable_thinking={current_enable_thinking} 添加到请求参数")
+
         return completion_kwargs
 
     def _get_chat_kwargs(self, **kwargs: Any) -> Dict[str, Any]:
-        """重写以强制设置 max_tokens、top_p 并移除 stop 参数"""
+        """重写以强制设置 max_tokens、top_p 并移除 stop 参数，支持 enable_thinking"""
+        # 先提取 enable_thinking，避免传递给父类
+        enable_thinking = kwargs.pop("enable_thinking", None)
+        if enable_thinking is not None:
+            self._set_enable_thinking(enable_thinking)
+
         chat_kwargs = super()._get_chat_kwargs(**kwargs)
         chat_kwargs["max_tokens"] = Settings.LLM_MAX_TOKENS
         chat_kwargs["top_p"] = Settings.TOP_P
         chat_kwargs.pop("stop", None)
-        # 移除 enable_thinking 参数，改用提示词控制思考模式
-        chat_kwargs.pop("enable_thinking", None)
+
+        # 获取当前实例的思考模式设置
+        current_enable_thinking = self._get_enable_thinking()
+
+        # 通过 additional_kwargs 或 extra_body 传递 enable_thinking
+        if current_enable_thinking:
+            # 尝试使用 additional_kwargs（llama-index 的方式）
+            if "additional_kwargs" not in chat_kwargs:
+                chat_kwargs["additional_kwargs"] = {}
+            chat_kwargs["additional_kwargs"]["enable_thinking"] = current_enable_thinking
+
+            # 同时尝试 extra_body（OpenAI SDK 1.0+ 的方式）
+            if "extra_body" not in chat_kwargs:
+                chat_kwargs["extra_body"] = {}
+            chat_kwargs["extra_body"]["enable_thinking"] = current_enable_thinking
+
+            logger.info(f"✓ 已将 enable_thinking={current_enable_thinking} 添加到请求参数")
+
         return chat_kwargs
 
 

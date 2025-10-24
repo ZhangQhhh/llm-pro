@@ -71,6 +71,7 @@ class Settings:
     # ==================== RAG 核心参数 ====================
     RETRIEVAL_TOP_K = 30
     RERANK_TOP_N = 10
+    RETRIEVAL_TOP_K_BM25 = 10  # BM25 检索时的 Top K
     RERANKER_INPUT_TOP_N = 20
     RETRIEVAL_SCORE_THRESHOLD = 0.2
     RERANK_SCORE_THRESHOLD = 0.2

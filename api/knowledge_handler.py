@@ -357,7 +357,7 @@ class KnowledgeHandler:
             "fallback_prompt": "\n\n".join(fallback_parts)
         }
 
-    def _call_llm(self, llm, prompt_parts, enable_thinking=False):
+    def _call_llm(self, llm, prompt_parts, enable_thinking: bool = False):
         """
         调用 LLM，支持思考内容和正文内容的分离
 
@@ -367,8 +367,9 @@ class KnowledgeHandler:
             enable_thinking: 是否启用思考模式（用于解析输出）
 
         Note:
-            enable_thinking 参数用于选择不同的提示词模板，实际的思考模式通过提示词内容来控制。
-            LLM 会根据提示词在回答中自然地包含或省略思考过程。
+            支持两种思考模式：
+            1. 阿里云原生 reasoning_content 字段（推荐）
+            2. 文本标记方式（兼容其他模型）
         """
         logger.info(f"使用外部 Prompt:\n{prompt_parts['fallback_prompt'][:200]}...")
 
@@ -379,7 +380,7 @@ class KnowledgeHandler:
             user_prompt=prompt_parts['user_prompt'],
             assistant_context=prompt_parts['assistant_context'],
             use_chat_mode=Settings.USE_CHAT_MODE,
-            enable_thinking=enable_thinking  # 参数会在底层被过滤
+            enable_thinking=enable_thinking
         )
 
         # 如果启用思考模式，需要解析并分离思考内容和正文内容
@@ -387,60 +388,81 @@ class KnowledgeHandler:
             buffer = ""
             in_thinking_section = False
             thinking_complete = False
+            has_reasoning_content = False  # 标记是否检测到原生 reasoning_content
 
             for delta in response_stream:
-                # 获取文本内容
-                if hasattr(delta, 'delta'):
-                    token = delta.delta
-                elif hasattr(delta, 'text'):
-                    token = delta.text
-                elif hasattr(delta, 'content'):
-                    token = delta.content
-                else:
-                    token = str(delta) if delta else ''
+                # 优先检查阿里云原生的 reasoning_content 字段
+                if hasattr(delta, 'reasoning_content') and delta.reasoning_content is not None:
+                    has_reasoning_content = True
+                    reasoning_text = delta.reasoning_content
+                    if reasoning_text:
+                        yield ('THINK', clean_for_sse_text(reasoning_text))
+                        logger.debug(f"输出思考内容: {len(reasoning_text)} 字符")
 
-                if not token:
-                    continue
+                # 检查正常回答内容
+                if hasattr(delta, 'content') and delta.content is not None:
+                    content_text = delta.content
+                    if content_text:
+                        yield ('CONTENT', clean_for_sse_text(content_text))
+                        logger.debug(f"输出回答内容: {len(content_text)} 字符")
+                    # 如果有 reasoning_content，直接跳过后续的文本标记解析
+                    if has_reasoning_content:
+                        continue
 
-                buffer += token
+                # 如果没有 reasoning_content 字段，使用文本标记方式（兼容模式）
+                if not has_reasoning_content:
+                    # 获取文本内容
+                    if hasattr(delta, 'delta'):
+                        token = delta.delta
+                    elif hasattr(delta, 'text'):
+                        token = delta.text
+                    elif hasattr(delta, 'content'):
+                        token = delta.content
+                    else:
+                        token = str(delta) if delta else ''
 
-                # 检测思考部分的开始和结束标记
-                if not thinking_complete:
-                    # 检查是否进入思考区域
-                    if not in_thinking_section:
-                        # 检测思考开始的多种标记
-                        thinking_markers = [
-                            '【咨询解析】', '第一部分：咨询解析', '第一部分:咨询解析',
-                            '<think>', '## 思考过程', '## 分析过程',
-                            '关键实体', 'Key Entities', '1. 关键实体'
-                        ]
+                    if not token:
+                        continue
 
-                        for marker in thinking_markers:
-                            if marker in buffer:
-                                in_thinking_section = True
-                                logger.info(f"检测到思考开始标记: {marker}")
-                                break
+                    buffer += token
 
-                    # 检测思考结束的标记
-                    if in_thinking_section:
-                        end_markers = [
-                            '【综合解答】', '第二部分：综合解答', '第二部分:综合解答',
-                            '</think>', '## 最终答案', '## 回答'
-                        ]
+                    # 检测思考部分的开始和结束标记
+                    if not thinking_complete:
+                        # 检查是否进入思考区域
+                        if not in_thinking_section:
+                            # 检测思考开始的多种标记
+                            thinking_markers = [
+                                '【咨询解析】', '第一部分：咨询解析', '第一部分:咨询解析',
+                                '<think>', '## 思考过程', '## 分析过程',
+                                '关键实体', 'Key Entities', '1. 关键实体'
+                            ]
 
-                        for marker in end_markers:
-                            if marker in buffer:
-                                thinking_complete = True
-                                logger.info(f"检测到思考结束标记: {marker}")
-                                # 输出思考内容（不包含结束标记）
-                                idx = buffer.index(marker)
-                                if idx > 0:
-                                    yield ('THINK', clean_for_sse_text(buffer[:idx]))
+                            for marker in thinking_markers:
+                                if marker in buffer:
+                                    in_thinking_section = True
+                                    logger.info(f"检测到思考开始标记: {marker}")
+                                    break
 
-                                # 跳过标记本身，只保留标记之后的内容
-                                buffer = buffer[idx + len(marker):]
-                                logger.info(f"跳过结束标记 '{marker}'，剩余buffer长度: {len(buffer)}")
-                                break
+                        # 检测思考结束的标记
+                        if in_thinking_section:
+                            end_markers = [
+                                '【综合解答】', '第二部分：综合解答', '第二部分:综合解答',
+                                '</think>', '## 最终答案', '## 回答'
+                            ]
+
+                            for marker in end_markers:
+                                if marker in buffer:
+                                    thinking_complete = True
+                                    logger.info(f"检测到思考结束标记: {marker}")
+                                    # 输出思考内容（不包含结束标记）
+                                    idx = buffer.index(marker)
+                                    if idx > 0:
+                                        yield ('THINK', clean_for_sse_text(buffer[:idx]))
+
+                                    # 跳过标记本身，只保留标记之后的内容
+                                    buffer = buffer[idx + len(marker):]
+                                    logger.info(f"跳过结束标记 '{marker}'，剩余buffer长度: {len(buffer)}")
+                                    break
 
                     # 在思考区域且buffer足够长时，流式输出
                     if in_thinking_section and not thinking_complete and len(buffer) > 20:
@@ -459,8 +481,8 @@ class KnowledgeHandler:
                         # buffer较短，继续累积
                         pass
 
-            # 输出剩余的buffer
-            if buffer:
+            # 输出剩余的buffer（仅在文本标记模式下）
+            if not has_reasoning_content and buffer:
                 if in_thinking_section and not thinking_complete:
                     # 如果思考区域未完成，剩余内容作为思考输出
                     yield ('THINK', clean_for_sse_text(buffer))

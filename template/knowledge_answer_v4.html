@@ -366,9 +366,31 @@
     let lastQuestion = "";
     let lastAnswer = "";
     let selectedNodeIds = new Set();
-    let lastSources = []; // <-- 修改点 1: 新增全局变量来存储参考来源
-    let isHandling503 = false; // 标志位，防止重复触发
+    let lastSources = [];
+    let isHandling503 = false;
 
+    // 🔥 新增：定义状态消息关键词列表
+    const STATUS_KEYWORDS = [
+        "正在进行混合检索",
+        "正在使用 InsertBlock",
+        "找到",
+        "个可回答的节点",
+        "未找到可直接回答的节点",
+        "已找到相关资料，正在生成回答",
+        "未找到高相关性资料，基于通用知识回答",
+        "参考来源"
+    ];
+
+    // 🔥 新增：判断是否为状态消息的函数
+    function isStatusMessage(text) {
+        if (!text || text.trim() === '') return true;
+        for (const keyword of STATUS_KEYWORDS) {
+            if (text.includes(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     function handle503Error() {
         // 如果已经在处理503，就不要重复执行
@@ -531,10 +553,13 @@
         answerBox.classList.add("hidden");
 
         let currentAnswer = "";
-        lastSources = []; // <-- 在提交时清空上次的参考来源
+        lastSources = [];
         selectedNodeIds.clear();
         lastQuestion = question;
         lastAnswer = "";
+
+        // 🔥 新增：用于累积思考内容
+        let thinkingContent = "";
 
         renderApp(currentAnswer, lastSources);
 
@@ -556,11 +581,10 @@
                 }),
             });
 
-            // <-- 【修改点 3】: 添加 503 维护检查
             if (response.status === 503) {
                 console.warn("检测到服务器正在维护(主提交)...");
-                handle503Error(); // 调用新函数
-                throw new Error("服务器 503"); // 停止后续执行
+                handle503Error();
+                throw new Error("服务器 503");
             }
 
             if (!response.ok) throw new Error(`服务器错误: ${response.status}`);
@@ -577,35 +601,72 @@
                 for (const part of parts) {
                     if (part.startsWith("data: ")) {
                         const rawData = part.substring(6);
-                        if (rawData.startsWith("CONTENT:")) {
+
+                        // 🔥 新增：处理 THINK: 前缀的思考内容
+                        if (rawData.startsWith("THINK:")) {
+                            const thinkChunk = rawData.substring(6);
+                            thinkingContent += thinkChunk;
+
+                            // 将思考内容包装到 <think> 标签中
+                            const fullAnswer = thinkingContent ?
+                                `<think>${thinkingContent}</think>\n${currentAnswer}` :
+                                currentAnswer;
+
                             if (isFirstChunk) {
                                 answerBox.classList.remove("hidden");
                                 isFirstChunk = false;
                             }
+
+                            renderApp(fullAnswer, lastSources);
+                            console.log("接收到思考内容:", thinkChunk.substring(0, 50) + "...");
+                        }
+                        else if (rawData.startsWith("CONTENT:")) {
                             const content = rawData.substring(8).replace(/\u2029/g, "\n");
-                            currentAnswer += content;
-                            lastAnswer = currentAnswer;
+
+                            // 🔥 修复：过滤掉状态消息，只保留真正的回答内容
+                            if (!isStatusMessage(content)) {
+                                if (isFirstChunk) {
+                                    answerBox.classList.remove("hidden");
+                                    isFirstChunk = false;
+                                }
+                                currentAnswer += content;
+
+                                // 组合思考内容和正文内容
+                                const fullAnswer = thinkingContent ?
+                                    `<think>${thinkingContent}</think>\n${currentAnswer}` :
+                                    currentAnswer;
+
+                                lastAnswer = fullAnswer;
+                                renderApp(fullAnswer, lastSources);
+                            } else {
+                                console.log("检索状态:", content.trim());
+                            }
                         } else if (rawData.startsWith("SOURCE:")) {
                             const jsonString = rawData.substring(7);
                             try {
                                 const sourceData = JSON.parse(jsonString);
-                                lastSources.push(sourceData); // <-- 填充全局变量
-                                if (sourceData.canAnswer === true) {
+                                lastSources.push(sourceData);
+                                if sourceData.canAnswer === true) {
                                     selectedNodeIds.add(sourceData.id);
                                 }
+
+                                // 使用完整答案进行渲染
+                                const fullAnswer = thinkingContent ?
+                                    `<think>${thinkingContent}</think>\n${currentAnswer}` :
+                                    currentAnswer;
+                                renderApp(fullAnswer, lastSources);
                             } catch (e) {
                                 console.error("解析SOURCE JSON失败:", e, jsonString);
                             }
                         } else if (rawData.startsWith("DONE:")) {
                             console.log("Stream finished.");
-                            if (lastAnswer) {
+                            if (lastAnswer || currentAnswer) {
                                 feedbackActions.classList.remove("hidden");
                                 scrollToFeedbackBtn.classList.remove("hidden");
                             }
                         } else if (rawData.startsWith("ERROR:")) {
                             throw new Error(rawData.substring(6));
                         }
-                        renderApp(currentAnswer, lastSources);
                     }
                 }
             }

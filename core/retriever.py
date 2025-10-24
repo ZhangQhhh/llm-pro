@@ -139,7 +139,8 @@ class RetrieverFactory:
     def create_hybrid_retriever(
         index: VectorStoreIndex,
         all_nodes: List[TextNode],
-        similarity_top_k: int
+        similarity_top_k: int,
+        similarity_top_k_bm25: int
     ) -> HybridRetriever:
         """
         创建混合检索器
@@ -167,7 +168,7 @@ class RetrieverFactory:
         # BM25 检索器
         bm25_retriever = CleanBM25Retriever(
             all_nodes,
-            similarity_top_k=similarity_top_k
+            similarity_top_k=similarity_top_k_bm25
         )
 
         # 混合检索器
