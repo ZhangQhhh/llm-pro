@@ -124,6 +124,8 @@ def register_page_routes(app):
     def route_knowledge():
         return render_template('knowledge_answer.html')
 
+
+
     @app.route('/board')
     def route_board():
         return render_template('feedback_list.html')
