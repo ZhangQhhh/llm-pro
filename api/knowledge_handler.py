@@ -471,6 +471,8 @@ class KnowledgeHandler:
             in_thinking_section = False
             thinking_complete = False
             has_reasoning_content = False  # 标记是否检测到原生 reasoning_content
+            think_output_count = 0
+            content_output_count = 0
 
             for delta in response_stream:
                 # 优先检查阿里云原生的 reasoning_content 字段
@@ -478,16 +480,18 @@ class KnowledgeHandler:
                     has_reasoning_content = True
                     reasoning_text = delta.reasoning_content
                     if reasoning_text:
-                        yield ('THINK', clean_for_sse_text(reasoning_text))
-                        logger.debug(f"输出思考内容: {len(reasoning_text)} 字符")
+                        think_output_count += 1
+                        output = ('THINK', clean_for_sse_text(reasoning_text))
+                        yield output
 
-                # 检查正常回答内容
+                # 检查正常回答内容（无论是否有 reasoning_content，都要处理）
                 if hasattr(delta, 'content') and delta.content is not None:
                     content_text = delta.content
                     if content_text:
-                        yield ('CONTENT', clean_for_sse_text(content_text))
-                        logger.debug(f"输出回答内容: {len(content_text)} 字符")
-                    # 如果有 reasoning_content，直接跳过后续的文本标记解析
+                        content_output_count += 1
+                        output = ('CONTENT', clean_for_sse_text(content_text))
+                        yield output
+                    # 如果有 reasoning_content 且已处理了 content，则跳过后续的文本标记解析
                     if has_reasoning_content:
                         continue
 
@@ -535,46 +539,48 @@ class KnowledgeHandler:
                             for marker in end_markers:
                                 if marker in buffer:
                                     thinking_complete = True
-                                    logger.info(f"检测到思考结束标记: {marker}")
                                     # 输出思考内容（不包含结束标记）
                                     idx = buffer.index(marker)
                                     if idx > 0:
-                                        yield ('THINK', clean_for_sse_text(buffer[:idx]))
+                                        think_content = buffer[:idx]
+                                        think_output_count += 1
+                                        output = ('THINK', clean_for_sse_text(think_content))
+                                        yield output
 
                                     # 跳过标记本身，只保留标记之后的内容
                                     buffer = buffer[idx + len(marker):]
-                                    logger.info(f"跳过结束标记 '{marker}'，剩余buffer长度: {len(buffer)}")
                                     break
 
-                    # 在思考区域且buffer足够长时，流式输出
+                    # 在思考区域且buffer足够长时，流式输出思考内容
                     if in_thinking_section and not thinking_complete and len(buffer) > 20:
-                        yield ('THINK', clean_for_sse_text(buffer))
+                        think_output_count += 1
+                        output = ('THINK', clean_for_sse_text(buffer))
+                        yield output
                         buffer = ""
-                else:
-                    # 思考完成后，所有内容都是正文
-                    # 立即检查buffer中是否还有需要过滤的内容
-                    if buffer and len(buffer) > 20:
-                        # 清理开头可能的空白字符和格式标记
-                        cleaned_buffer = buffer.lstrip('\n\r :：')
+                    # 思考完成后，流式输出正文内容
+                    elif thinking_complete and len(buffer) > 0:
+                        # 只清理开头的标记符号（冒号等），保留换行符
+                        cleaned_buffer = buffer.lstrip(':：')
                         if cleaned_buffer:
-                            yield ('CONTENT', clean_for_sse_text(cleaned_buffer))
+                            content_output_count += 1
+                            output = ('CONTENT', clean_for_sse_text(cleaned_buffer))
+                            yield output
                         buffer = ""
-                    elif buffer:
-                        # buffer较短，继续累积
-                        pass
 
             # 输出剩余的buffer（仅在文本标记模式下）
             if not has_reasoning_content and buffer:
                 if in_thinking_section and not thinking_complete:
                     # 如果思考区域未完成，剩余内容作为思考输出
-                    yield ('THINK', clean_for_sse_text(buffer))
-                    logger.info(f"输出剩余思考内容: {len(buffer)} 字符")
+                    think_output_count += 1
+                    output = ('THINK', clean_for_sse_text(buffer))
+                    yield output
                 else:
-                    # 否则作为正文输出，但要清理开头的空白和标记
-                    cleaned_buffer = buffer.lstrip('\n\r :：')
+                    # 否则作为正文输出，只清理开头的标记符号，保留换行符
+                    cleaned_buffer = buffer.lstrip(':：')
                     if cleaned_buffer:
-                        yield ('CONTENT', clean_for_sse_text(cleaned_buffer))
-                        logger.info(f"输出剩余正文内容: {len(cleaned_buffer)} 字符")
+                        content_output_count += 1
+                        output = ('CONTENT', clean_for_sse_text(cleaned_buffer))
+                        yield output
         else:
             # 不启用思考模式，所有内容都是正文
             for delta in response_stream:
