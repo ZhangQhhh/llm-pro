@@ -55,6 +55,31 @@ def require_auth_for_knowledge():
     logger.debug(f"用户 {g.username} (ID: {g.userid}) 已通过认证，访问 {request.path}")
 
 
+@knowledge_bp.route('/conversation/new', methods=['POST'])
+def create_new_session():
+    """
+    创建新会话接口
+
+    用户主动创建新会话，不再自动生成
+
+    Returns:
+        JSON: {"session_id": "新会话ID", "message": "成功消息"}
+    """
+    # 获取当前用户信息
+    username = g.get('username', 'unknown')
+    userid = g.get('userid', 0)
+
+    # 生成新会话ID
+    new_session_id = generate_session_id(userid)
+
+    logger.info(f"用户 {username} (ID: {userid}) 主动创建新会话: {new_session_id}")
+
+    return jsonify({
+        "session_id": new_session_id,
+        "message": "新会话创建成功"
+    }), 200
+
+
 @knowledge_bp.route('/knowledge_chat_conversation', methods=['POST'])
 def knowledge_chat_conversation():
     """
@@ -63,7 +88,7 @@ def knowledge_chat_conversation():
     Request JSON:
     {
         "question": "用户问题",
-        "session_id": "会话ID(可选,不提供则创建新会话)",
+        "session_id": "会话ID(必须提供，使用/conversation/new创建)",
         "thinking": true/false,
         "model_id": "模型ID",
         "rerank_top_n": 10,
@@ -80,7 +105,7 @@ def knowledge_chat_conversation():
 
     # 参数解析
     user_question = data.get('question', '').strip()
-    session_id = data.get('session_id')  # 可选
+    session_id = data.get('session_id')  # 现在变为必须提供
     enable_thinking_str = data.get('thinking', 'true')
     enable_thinking = str(enable_thinking_str).lower() == 'true'
     requested_model_id = data.get('model_id', Settings.DEFAULT_LLM_ID)
@@ -115,24 +140,26 @@ def knowledge_chat_conversation():
     if not user_question:
         return jsonify({"type": "error", "content": "问题内容不能为空"}), 400
 
+    # 🔥 验证会话ID必须提供
+    if not session_id:
+        return jsonify({
+            "type": "error",
+            "content": "缺少会话ID，请先创建会话或使用现有会话"
+        }), 400
+
     # 获取依赖
     llm_service = current_app.llm_service
     knowledge_handler = current_app.knowledge_handler
 
-    # 处理会话ID（格式：{userid}_{uuid}）
-    if not session_id:
-        session_id = generate_session_id(userid)
-        logger.info(f"用户 {username} (ID: {userid}) 创建新会话: {session_id}")
-    else:
-        # 验证会话ID是否属于当前用户
-        if not validate_session_ownership(session_id, userid):
-            logger.warning(
-                f"用户 {username} (ID: {userid}) 尝试访问其他用户的会话: {session_id}"
-            )
-            return jsonify({
-                "type": "error",
-                "content": "无权访问该会话"
-            }), 403
+    # 验证会话ID是否属于当前用户
+    if not validate_session_ownership(session_id, userid):
+        logger.warning(
+            f"用户 {username} (ID: {userid}) 尝试访问其他用户的会话: {session_id}"
+        )
+        return jsonify({
+            "type": "error",
+            "content": "无权访问该会话"
+        }), 403
 
     # 获取 LLM 客户端
     try:
@@ -152,7 +179,7 @@ def knowledge_chat_conversation():
             request.environ.get('REMOTE_ADDR', 'unknown')
         )
         if client_ip == 'unknown':
-            client_ip = get_client_ip()   # 这里如果获取不到，就用新的IP获取方法，原来的代码不是我写的hhh，所以不知道什么情况，先保留。
+            client_ip = get_client_ip()
     except RuntimeError:
         client_ip = 'unknown'
 
@@ -331,6 +358,14 @@ def get_user_sessions_list():
     # 获取当前用户信息
     username = g.get('username', 'unknown')
     userid = g.get('userid', 0)
+
+    # ✅ 验证用户ID有效性 - 防止获取到无效用户或所有用户的数据
+    if not userid or userid <= 0:
+        logger.warning(f"无效的用户ID: {userid}，拒绝获取会话列表")
+        return jsonify({
+            "type": "error",
+            "content": "无效的用户认证信息，请重新登录"
+        }), 401
 
     data = request.get_json() or {}
 

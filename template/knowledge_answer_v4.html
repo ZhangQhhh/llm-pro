@@ -280,7 +280,7 @@
 
                 <div class="switch-container">
                     <label class="switch">
-                        <input type="checkbox" id="thinkingModeToggle" checked>
+                        <input type="checkbox" id="thinkingModeToggle">
                         <span class="slider"></span>
                     </label>
                     <span>思考模式</span>
@@ -650,7 +650,7 @@
                             try {
                                 const sourceData = JSON.parse(jsonString);
                                 lastSources.push(sourceData);
-                                if sourceData.canAnswer === true) {
+                                if (sourceData.canAnswer === true) {
                                     selectedNodeIds.add(sourceData.id);
                                 }
 

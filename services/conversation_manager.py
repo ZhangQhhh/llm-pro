@@ -721,6 +721,18 @@ class ConversationManager:
         try:
             logger.info(f"获取用户 {user_id} 的会话列表 (limit={limit}, offset={offset})")
 
+            # ✅ 验证用户ID有效性
+            if not user_id or user_id <= 0:
+                logger.error(f"无效的用户ID: {user_id}")
+                return {
+                    "total": 0,
+                    "sessions": [],
+                    "error": "无效的用户ID"
+                }
+
+            # 确保 user_id 是字符串类型用于前缀匹配
+            user_id_str = str(user_id)
+
             # 确保集合存在
             self._check_and_create_collection()
 
@@ -737,8 +749,19 @@ class ConversationManager:
             for point in scroll_result[0]:
                 session_id = point.payload.get("session_id")
 
-                # 验证 session_id 是否属于该用户
-                if session_id and session_id.startswith(f"{user_id}_"):
+                # ✅ 严格验证 session_id 是否属于该用户
+                # session_id 格式为: {user_id}_{uuid}
+                if session_id and session_id.startswith(f"{user_id_str}_"):
+                    # ✅ 双重验证：检查下划线分隔后的第一部分是否确实匹配用户ID
+                    try:
+                        session_user_id = session_id.split('_')[0]
+                        if session_user_id != user_id_str:
+                            logger.warning(f"会话ID {session_id} 的用户ID部分不匹配，跳过")
+                            continue
+                    except (IndexError, ValueError) as e:
+                        logger.warning(f"会话ID {session_id} 格式异常，跳过: {e}")
+                        continue
+
                     if session_id not in sessions_data:
                         sessions_data[session_id] = {
                             "turns": [],

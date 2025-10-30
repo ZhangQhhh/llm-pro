@@ -34,18 +34,27 @@ from prompts import (
 class KnowledgeHandler:
     """知识问答处理器"""
 
-    def __init__(self, retriever, reranker, llm_wrapper, llm_service=None):
+    def __init__(self, retriever, reranker, llm_wrapper, llm_service=None, intent_classifier=None, multi_kb_retriever=None):
         self.retriever = retriever
         self.reranker = reranker
         self.llm_wrapper = llm_wrapper
         self.llm_service = llm_service
         self.insert_block_filter = None
+        # 新增：意图分类器和多知识库检索器
+        self.intent_classifier = intent_classifier
+        self.multi_kb_retriever = multi_kb_retriever
 
         # 如果提供了 llm_service，初始化 InsertBlock 过滤器
         if llm_service:
             from core.node_filter import InsertBlockFilter
             self.insert_block_filter = InsertBlockFilter(llm_service)
             logger.info("InsertBlock 过滤器已初始化")
+        
+        # 日志记录
+        if intent_classifier:
+            logger.info("意图分类器已初始化")
+        if multi_kb_retriever:
+            logger.info("多知识库检索器已初始化")
 
     def process(
         self,
@@ -82,13 +91,26 @@ class KnowledgeHandler:
                 f"InsertBlock: {use_insert_block}"
             )
 
-            # 1. 检索
-            yield "CONTENT:正在进行混合检索..."
-            full_response += "正在进行混合检索...\n"
+            # 1. 意图识别（如果启用免签功能）
+            is_visa_related = False
+            if Settings.ENABLE_VISA_FREE_FEATURE and self.intent_classifier:
+                is_visa_related = self.intent_classifier.is_visa_related(question)
+                if is_visa_related:
+                    logger.info("检测到免签相关问题，将使用双知识库检索")
+                    yield "CONTENT:检测到免签相关问题...\n"
+                    full_response += "检测到免签相关问题...\n"
 
-            final_nodes = self._retrieve_and_rerank(question, rerank_top_n)
+            # 2. 检索
+            if is_visa_related and self.multi_kb_retriever:
+                yield "CONTENT:正在从免签知识库和通用知识库检索..."
+                full_response += "正在从免签知识库和通用知识库检索...\n"
+                final_nodes = self._retrieve_and_rerank_multi_kb(question, rerank_top_n)
+            else:
+                yield "CONTENT:正在进行混合检索..."
+                full_response += "正在进行混合检索...\n"
+                final_nodes = self._retrieve_and_rerank(question, rerank_top_n)
 
-            # 2. 如果启用 InsertBlock 模式，进行智能过滤
+            # 3. 如果启用 InsertBlock 模式，进行智能过滤
             filtered_results = None
             nodes_for_prompt = final_nodes  # 默认使用原始检索结果
 
@@ -113,7 +135,7 @@ class KnowledgeHandler:
                     # InsertBlock 失败：继续使用原始节点，清空过滤结果
                     filtered_results = None
 
-            # 3. 构造提示词
+            # 4. 构造提示词
             prompt_parts = self._build_prompt(
                 question,
                 enable_thinking,
@@ -121,7 +143,7 @@ class KnowledgeHandler:
                 filtered_results=filtered_results
             )
 
-            # 4. 输出状态
+            # 5. 输出状态
             status_msg = (
                 "已找到相关资料，正在生成回答..."
                 if final_nodes
@@ -130,7 +152,7 @@ class KnowledgeHandler:
             yield f"CONTENT:{status_msg}"
             full_response += status_msg + "\n"
 
-            # 5. 调用 LLM
+            # 6. 调用 LLM
             for result in self._call_llm(llm, prompt_parts, enable_thinking=enable_thinking):
                 # result 是元组 (prefix_type, content)
                 prefix_type, chunk = result
@@ -141,7 +163,7 @@ class KnowledgeHandler:
                     yield f"CONTENT:{chunk}"
                     full_response += chunk
 
-            # 6. 输出参考来源
+            # 7. 输出参考来源
             if use_insert_block and filtered_results:
                 # InsertBlock 模式：返回所有原始节点，但标注哪些被选中
                 yield "CONTENT:\n\n**参考来源（全部检索结果）:**"
@@ -200,7 +222,7 @@ class KnowledgeHandler:
 
             yield "DONE:"
 
-            # 7. 保存日志
+            # 8. 保存日志
             self._save_log(
                 question,
                 full_response,
@@ -249,6 +271,58 @@ class KnowledgeHandler:
             f"经过阈值 {threshold} 过滤后剩下 {len(final_nodes)} 个"
         )
 
+        # 应用最终数量限制
+        return final_nodes[:rerank_top_n]
+
+    def _retrieve_and_rerank_multi_kb(self, question: str, rerank_top_n: int):
+        """
+        从多个知识库检索并重排序
+        
+        Args:
+            question: 用户问题
+            rerank_top_n: 最终返回的文档数量
+            
+        Returns:
+            重排序后的节点列表
+        """
+        if not self.multi_kb_retriever:
+            logger.warning("多知识库检索器未初始化，回退到单知识库检索")
+            return self._retrieve_and_rerank(question, rerank_top_n)
+        
+        # 使用多知识库检索器并行检索
+        query_bundle = QueryBundle(question)
+        retrieved_nodes = self.multi_kb_retriever.retrieve_from_both(query_bundle)
+        
+        # 取前 N 个送入重排
+        reranker_input_top_n = Settings.RERANKER_INPUT_TOP_N
+        reranker_input = retrieved_nodes[:reranker_input_top_n]
+        
+        logger.info(
+            f"多知识库检索找到 {len(retrieved_nodes)} 个节点, "
+            f"选取前 {len(reranker_input)} 个送入重排"
+        )
+        
+        # 重排序
+        if reranker_input:
+            reranked_nodes = self.reranker.postprocess_nodes(
+                reranker_input,
+                query_bundle=query_bundle
+            )
+        else:
+            reranked_nodes = []
+        
+        # 阈值过滤
+        threshold = Settings.RERANK_SCORE_THRESHOLD
+        final_nodes = [
+            node for node in reranked_nodes
+            if node.score >= threshold
+        ]
+        
+        logger.info(
+            f"重排序后有 {len(reranked_nodes)} 个节点, "
+            f"经过阈值 {threshold} 过滤后剩下 {len(final_nodes)} 个"
+        )
+        
         # 应用最终数量限制
         return final_nodes[:rerank_top_n]
 
@@ -323,7 +397,11 @@ class KnowledgeHandler:
 
             # user_template 是列表，需要 join 后再 format
             user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
-            user_prompt = user_prompt_str.format(question=question)
+            # 如果关闭思考模式，自动在问题后追加 /no_think 指令（阿里云文档建议）
+            actual_question = f"{question}/no_think" if not enable_thinking else question
+            if not enable_thinking:
+                logger.info(f"✓ 已在问题后追加 /no_think 指令: '{actual_question}'")
+            user_prompt = user_prompt_str.format(question=actual_question)
 
         else:
             # 没有检索到相关内容
@@ -338,7 +416,11 @@ class KnowledgeHandler:
 
             # user_template 可能是列表或字符串
             user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
-            user_prompt = user_prompt_str.format(question=question)
+            # 如果关闭思考模式，自动在问题后追加 /no_think 指令（阿里云文档建议）
+            actual_question = f"{question}/no_think" if not enable_thinking else question
+            if not enable_thinking:
+                logger.info(f"✓ 已在问题后追加 /no_think 指令: '{actual_question}'")
+            user_prompt = user_prompt_str.format(question=actual_question)
 
         # system_prompt 可能是列表，需要转换为字符串
         if isinstance(system_prompt, list):
@@ -957,7 +1039,9 @@ class KnowledgeHandler:
 
             # user_template 是列表，需要 join 后再 format
             user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
-            user_prompt = user_prompt_str.format(question=question)
+            # 如果关闭思考模式，自动在问题后追加 /no_think 指令（阿里云文档建议）
+            actual_question = f"{question}/no_think" if not enable_thinking else question
+            user_prompt = user_prompt_str.format(question=actual_question)
 
         else:
             # 没有检索到相关内容，只有历史对话
@@ -972,7 +1056,9 @@ class KnowledgeHandler:
 
             # user_template 可能是列表或字符串
             user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
-            user_prompt = user_prompt_str.format(question=question)
+            # 如果关闭思考模式，自动在问题后追加 /no_think 指令（阿里云文档建议）
+            actual_question = f"{question}/no_think" if not enable_thinking else question
+            user_prompt = user_prompt_str.format(question=actual_question)
 
         # system_prompt 可能是列表，需要转换为字符串
         if isinstance(system_prompt, list):

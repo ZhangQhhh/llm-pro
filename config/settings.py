@@ -22,8 +22,12 @@ class Settings:
     # ==================== 路径配置 ====================
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     KNOWLEDGE_BASE_DIR = "/opt/rag_final_project/knowledge_base"
-    EMBED_MODEL_PATH = "/opt/rag_final_project/models/text2vec-base-chinese"
-    RERANKER_MODEL_PATH = "/opt/rag_final_project/models/bge-reranker-v2-m3"
+    # 免签政策专用知识库目录
+    VISA_FREE_KB_DIR = "/opt/rag_final_project/visa_free_knowledge_base"
+    #EMBED_MODEL_PATH = "/opt/rag_final_project/models/text2vec-base-chinese"
+    #RERANKER_MODEL_PATH = "/opt/rag_final_project/models/bge-reranker-v2-m3"
+    EMBED_MODEL_PATH = "/yuanjing/bge-large-zh-v1.5"
+    RERANKER_MODEL_PATH = "/yuanjing/bge-reranker-large"
     STORAGE_PATH = "/opt/rag_final_project/storage"
     LOG_DIR = "/opt/rag_final_project/qa_logs"
 
@@ -70,8 +74,8 @@ class Settings:
 
     # ==================== RAG 核心参数 ====================
     RETRIEVAL_TOP_K = 30
+    RETRIEVAL_TOP_K_BM25 = 30  # BM25检索数量
     RERANK_TOP_N = 10
-    RETRIEVAL_TOP_K_BM25 = 10  # BM25 检索时的 Top K
     RERANKER_INPUT_TOP_N = 20
     RETRIEVAL_SCORE_THRESHOLD = 0.2
     RERANK_SCORE_THRESHOLD = 0.2
@@ -92,6 +96,8 @@ class Settings:
     QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
     QDRANT_PORT = int(os.getenv("QDRANT_PORT", 6333))
     QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "knowledge_base")
+    # 免签政策知识库集合名称
+    VISA_FREE_COLLECTION = os.getenv("VISA_FREE_COLLECTION", "visa_free_knowledge_base")
 
     # 对话管理配置
     CONVERSATION_COLLECTION = os.getenv("CONVERSATION_COLLECTION", "conversations")
@@ -120,6 +126,20 @@ class Settings:
     # ==================== 文档切分配置 ====================
     CHUNK_CHAR_A = "--- 切分点 ---"
     CHUNK_CHAR_B = "|||"
+
+    # ==================== 免签政策功能配置 ====================
+    # 是否启用免签政策功能
+    ENABLE_VISA_FREE_FEATURE = os.getenv("ENABLE_VISA_FREE_FEATURE", "true").lower() == "true"
+    # 免签知识库检索数量（总共10个，免签占6个）
+    VISA_FREE_RETRIEVAL_COUNT = int(os.getenv("VISA_FREE_RETRIEVAL_COUNT", 6))
+    # 通用知识库检索数量（总共10个，通用占4个）
+    GENERAL_RETRIEVAL_COUNT = int(os.getenv("GENERAL_RETRIEVAL_COUNT", 4))
+    # 免签关键词列表（用于快速判断）
+    VISA_FREE_KEYWORDS = [
+        "免签", "签证豁免", "落地签", "电子签", "入境政策", 
+        "签证", "过境签", "免签证", "签证政策", "入境要求",
+        "护照", "停留期", "签证申请", "签证费用", "签证材料"
+    ]
 
     @classmethod
     def resolve_prompt_config_path(cls):

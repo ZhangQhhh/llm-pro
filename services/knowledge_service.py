@@ -28,9 +28,15 @@ class KnowledgeService:
 
     def __init__(self, llm):
         self.llm = llm
+        # 通用知识库
         self.index = None
         self.all_nodes = None
         self.retriever = None
+        # 免签政策知识库
+        self.visa_free_index = None
+        self.visa_free_nodes = None
+        self.visa_free_retriever = None
+        
         self.doc_processor = DocumentProcessor(AppSettings.CHUNK_CHAR_B)
         # 初始化 Qdrant 客户端(Docker 模式)
         self.qdrant_client = QdrantClient(
@@ -61,7 +67,7 @@ class KnowledgeService:
 
     def build_or_load_index(self) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
         """
-        构建或加载知识库索引
+        构建或加载通用知识库索引
 
         Returns:
             (索引, 所有节点) 元组
@@ -78,14 +84,42 @@ class KnowledgeService:
             return None, None
 
         # 检查是否需要重建索引
-        if self._should_rebuild_index(storage_path, hashes_file, kb_dir):
-            return self._build_index(storage_path, kb_dir, hashes_file)
+        if self._should_rebuild_index(storage_path, hashes_file, kb_dir, AppSettings.QDRANT_COLLECTION):
+            return self._build_index(storage_path, kb_dir, hashes_file, AppSettings.QDRANT_COLLECTION)
         else:
             # return self._load_index(storage_path)  先暂时一直重建
-            return self._build_index(storage_path, kb_dir, hashes_file)
+            return self._build_index(storage_path, kb_dir, hashes_file, AppSettings.QDRANT_COLLECTION)
+
+    def build_or_load_visa_free_index(self) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
+        """
+        构建或加载免签政策知识库索引
+
+        Returns:
+            (索引, 所有节点) 元组
+        """
+        if not AppSettings.ENABLE_VISA_FREE_FEATURE:
+            logger.info("免签政策功能未启用，跳过免签知识库构建")
+            return None, None
+
+        storage_path = AppSettings.STORAGE_PATH
+        kb_dir = AppSettings.VISA_FREE_KB_DIR
+        hashes_file = os.path.join(storage_path, "visa_free_kb_hashes.json")
+
+        # 确保知识库目录存在
+        os.makedirs(kb_dir, exist_ok=True)
+
+        if not any(os.scandir(kb_dir)):
+            logger.warning("免签知识库文件夹为空，无法构建索引")
+            return None, None
+
+        # 检查是否需要重建索引
+        if self._should_rebuild_index(storage_path, hashes_file, kb_dir, AppSettings.VISA_FREE_COLLECTION):
+            return self._build_index(storage_path, kb_dir, hashes_file, AppSettings.VISA_FREE_COLLECTION)
+        else:
+            return self._build_index(storage_path, kb_dir, hashes_file, AppSettings.VISA_FREE_COLLECTION)
 
     def create_retriever(self):
-        """创建混合检索器"""
+        """创建通用知识库混合检索器"""
         if self.index is None or self.all_nodes is None:
             logger.error("索引或节点未初始化，无法创建检索器")
             return None
@@ -98,11 +132,31 @@ class KnowledgeService:
         )
         return self.retriever
 
+    def create_visa_free_retriever(self):
+        """创建免签政策知识库混合检索器"""
+        if not AppSettings.ENABLE_VISA_FREE_FEATURE:
+            logger.info("免签政策功能未启用，跳过检索器创建")
+            return None
+
+        if self.visa_free_index is None or self.visa_free_nodes is None:
+            logger.warning("免签索引或节点未初始化，无法创建检索器")
+            return None
+
+        self.visa_free_retriever = RetrieverFactory.create_hybrid_retriever(
+            self.visa_free_index,
+            self.visa_free_nodes,
+            AppSettings.RETRIEVAL_TOP_K,
+            AppSettings.RETRIEVAL_TOP_K_BM25
+        )
+        logger.info("免签政策知识库检索器创建成功")
+        return self.visa_free_retriever
+
     def _should_rebuild_index(
         self,
         storage_path: str,
         hashes_file: str,
-        kb_dir: str
+        kb_dir: str,
+        collection_name: str
     ) -> bool:
         """判断是否需要重建索引"""
         if not os.path.exists(storage_path) or not os.path.exists(hashes_file):
@@ -112,10 +166,10 @@ class KnowledgeService:
         try:
             collections = self.qdrant_client.get_collections().collections
             collection_exists = any(
-                c.name == AppSettings.QDRANT_COLLECTION for c in collections
+                c.name == collection_name for c in collections
             )
             if not collection_exists:
-                logger.info(f"Qdrant 集合 {AppSettings.QDRANT_COLLECTION} 不存在，需要重建索引")
+                logger.info(f"Qdrant 集合 {collection_name} 不存在，需要重建索引")
                 return True
         except Exception as e:
             logger.warning(f"无法检查 Qdrant 集合状态: {e}，将重建索引")
@@ -268,17 +322,18 @@ class KnowledgeService:
         self,
         storage_path: str,
         kb_dir: str,
-        hashes_file: str
+        hashes_file: str,
+        collection_name: str
     ) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
         """构建新索引到 Qdrant"""
-        logger.info("开始构建新索引...")
+        logger.info(f"开始构建新索引: {collection_name}...")
 
         # 删除旧集合
         try:
             self.qdrant_client.delete_collection(
-                collection_name=AppSettings.QDRANT_COLLECTION
+                collection_name=collection_name
             )
-            logger.info(f"已删除旧集合 {AppSettings.QDRANT_COLLECTION}")
+            logger.info(f"已删除旧集合 {collection_name}")
         except Exception as e:
             logger.info(f"无旧集合需要删除: {e}")
 
@@ -308,7 +363,7 @@ class KnowledgeService:
         # 创建向量存储
         vector_store = QdrantVectorStore(
             client=self.qdrant_client,
-            collection_name=AppSettings.QDRANT_COLLECTION
+            collection_name=collection_name
         )
 
         # 构建索引

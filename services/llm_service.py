@@ -16,6 +16,12 @@ class CustomOpenAILike(OpenAI):
 
     # 使用类变量存储所有实例的思考模式设置（避免 Pydantic 验证错误）
     _thinking_modes: Dict[int, bool] = {}
+    
+    def __init__(self, *args, **kwargs):
+        """初始化时设置 default_headers 来传递 enable_thinking"""
+        super().__init__(*args, **kwargs)
+        # 尝试在初始化时就设置 extra_body（如果 OpenAI SDK 支持）
+        logger.info(f"CustomOpenAILike 初始化完成，模型: {kwargs.get('model')}")
 
     @property
     def metadata(self) -> LLMMetadata:
@@ -66,18 +72,18 @@ class CustomOpenAILike(OpenAI):
         current_enable_thinking = self._get_enable_thinking()
 
         # 通过 additional_kwargs 或 extra_body 传递 enable_thinking
-        if current_enable_thinking:
-            # 尝试使用 additional_kwargs（llama-index 的方式）
-            if "additional_kwargs" not in completion_kwargs:
-                completion_kwargs["additional_kwargs"] = {}
-            completion_kwargs["additional_kwargs"]["enable_thinking"] = current_enable_thinking
+        # 注意：始终传递该参数（True 或 False），以明确告诉大模型是否开启思考
+        # 尝试使用 additional_kwargs（llama-index 的方式）
+        if "additional_kwargs" not in completion_kwargs:
+            completion_kwargs["additional_kwargs"] = {}
+        completion_kwargs["additional_kwargs"]["enable_thinking"] = current_enable_thinking
 
-            # 同时尝试 extra_body（OpenAI SDK 1.0+ 的方式）
-            if "extra_body" not in completion_kwargs:
-                completion_kwargs["extra_body"] = {}
-            completion_kwargs["extra_body"]["enable_thinking"] = current_enable_thinking
+        # 同时尝试 extra_body（OpenAI SDK 1.0+ 的方式）
+        if "extra_body" not in completion_kwargs:
+            completion_kwargs["extra_body"] = {}
+        completion_kwargs["extra_body"]["enable_thinking"] = current_enable_thinking
 
-            logger.info(f"✓ 已将 enable_thinking={current_enable_thinking} 添加到请求参数")
+        logger.info(f"✓ 已将 enable_thinking={current_enable_thinking} 添加到请求参数")
 
         return completion_kwargs
 
@@ -97,18 +103,18 @@ class CustomOpenAILike(OpenAI):
         current_enable_thinking = self._get_enable_thinking()
 
         # 通过 additional_kwargs 或 extra_body 传递 enable_thinking
-        if current_enable_thinking:
-            # 尝试使用 additional_kwargs（llama-index 的方式）
-            if "additional_kwargs" not in chat_kwargs:
-                chat_kwargs["additional_kwargs"] = {}
-            chat_kwargs["additional_kwargs"]["enable_thinking"] = current_enable_thinking
+        # 注意：始终传递该参数（True 或 False），以明确告诉大模型是否开启思考
+        # 尝试使用 additional_kwargs（llama-index 的方式）
+        if "additional_kwargs" not in chat_kwargs:
+            chat_kwargs["additional_kwargs"] = {}
+        chat_kwargs["additional_kwargs"]["enable_thinking"] = current_enable_thinking
 
-            # 同时尝试 extra_body（OpenAI SDK 1.0+ 的方式）
-            if "extra_body" not in chat_kwargs:
-                chat_kwargs["extra_body"] = {}
-            chat_kwargs["extra_body"]["enable_thinking"] = current_enable_thinking
+        # 同时尝试 extra_body（OpenAI SDK 1.0+ 的方式）
+        if "extra_body" not in chat_kwargs:
+            chat_kwargs["extra_body"] = {}
+        chat_kwargs["extra_body"]["enable_thinking"] = current_enable_thinking
 
-            logger.info(f"✓ 已将 enable_thinking={current_enable_thinking} 添加到请求参数")
+        logger.info(f"✓ 已将 enable_thinking={current_enable_thinking} 添加到请求参数")
 
         return chat_kwargs
 
