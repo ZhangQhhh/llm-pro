@@ -6,12 +6,24 @@ import unicodedata
 
 
 def clean_for_sse_text(text: str) -> str:
-    """清理文本用于 SSE 传输"""
+    """清理文本用于 SSE 传输
+    
+    注意：SSE 使用 \n\n 作为消息分隔符，所以不能在消息中包含 \n\n
+    我们用 \n 替换 \n\n，用 \\n 字面量替换单个 \n
+    前端需要将 \\n 转换回 \n 进行 markdown 渲染
+    """
     if not isinstance(text, str):
         text = str(text)
 
-    # 替换换行符
-    cleaned = text.replace('\n', '\u2029').replace('\r', '')
+    # 先处理 \r\n 和 \r，统一为 \n
+    cleaned = text.replace('\r\n', '\n').replace('\r', '')
+    
+    # 替换 \n\n 为 \n（避免与 SSE 分隔符冲突）
+    while '\n\n' in cleaned:
+        cleaned = cleaned.replace('\n\n', '\n')
+    
+    # 将 \n 转换为 \\n 字面量（在 SSE 消息中）
+    cleaned = cleaned.replace('\n', '\\n')
 
     # 过滤控制字符
     cleaned_chars = []

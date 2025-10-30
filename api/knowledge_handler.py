@@ -473,6 +473,10 @@ class KnowledgeHandler:
             has_reasoning_content = False  # 标记是否检测到原生 reasoning_content
             think_output_count = 0
             content_output_count = 0
+            
+            # 用于累积原生格式的内容
+            reasoning_buffer = ""
+            content_buffer = ""
 
             for delta in response_stream:
                 # 优先检查阿里云原生的 reasoning_content 字段
@@ -480,17 +484,25 @@ class KnowledgeHandler:
                     has_reasoning_content = True
                     reasoning_text = delta.reasoning_content
                     if reasoning_text:
-                        think_output_count += 1
-                        output = ('THINK', clean_for_sse_text(reasoning_text))
-                        yield output
+                        reasoning_buffer += reasoning_text
+                        # 累积到一定长度后再发送
+                        if len(reasoning_buffer) >= 10:
+                            think_output_count += 1
+                            output = ('THINK', clean_for_sse_text(reasoning_buffer))
+                            yield output
+                            reasoning_buffer = ""
 
                 # 检查正常回答内容（无论是否有 reasoning_content，都要处理）
                 if hasattr(delta, 'content') and delta.content is not None:
                     content_text = delta.content
                     if content_text:
-                        content_output_count += 1
-                        output = ('CONTENT', clean_for_sse_text(content_text))
-                        yield output
+                        content_buffer += content_text
+                        # 累积到一定长度后再发送
+                        if len(content_buffer) >= 10:
+                            content_output_count += 1
+                            output = ('CONTENT', clean_for_sse_text(content_buffer))
+                            yield output
+                            content_buffer = ""
                     # 如果有 reasoning_content 且已处理了 content，则跳过后续的文本标记解析
                     if has_reasoning_content:
                         continue
@@ -567,8 +579,19 @@ class KnowledgeHandler:
                             yield output
                         buffer = ""
 
-            # 输出剩余的buffer（仅在文本标记模式下）
-            if not has_reasoning_content and buffer:
+            # 输出剩余的buffer
+            # 1. 原生格式的剩余内容
+            if has_reasoning_content:
+                if reasoning_buffer:
+                    think_output_count += 1
+                    output = ('THINK', clean_for_sse_text(reasoning_buffer))
+                    yield output
+                if content_buffer:
+                    content_output_count += 1
+                    output = ('CONTENT', clean_for_sse_text(content_buffer))
+                    yield output
+            # 2. 文本标记模式的剩余内容
+            elif buffer:
                 if in_thinking_section and not thinking_complete:
                     # 如果思考区域未完成，剩余内容作为思考输出
                     think_output_count += 1
@@ -583,6 +606,7 @@ class KnowledgeHandler:
                         yield output
         else:
             # 不启用思考模式，所有内容都是正文
+            buffer = ""
             for delta in response_stream:
                 # 获取文本内容
                 if hasattr(delta, 'delta'):
@@ -595,7 +619,15 @@ class KnowledgeHandler:
                     text = str(delta) if delta else ''
 
                 if text:
-                    yield ('CONTENT', clean_for_sse_text(text))
+                    buffer += text
+                    # 累积到一定长度后再发送（提高流畅度，减少消息数量）
+                    if len(buffer) >= 10:  # 每10个字符发送一次
+                        yield ('CONTENT', clean_for_sse_text(buffer))
+                        buffer = ""
+            
+            # 发送剩余内容
+            if buffer:
+                yield ('CONTENT', clean_for_sse_text(buffer))
 
     def _format_sources(self, final_nodes):
         """格式化参考来源"""
