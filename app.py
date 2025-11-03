@@ -83,13 +83,66 @@ def create_app():
         logger.warning(f"对话管理器初始化失败（多轮对话功能不可用）: {e}")
         logger.warning("单轮对话功能不受影响，将继续正常运行")
 
+    # 4.6 初始化免签知识库（可选功能）
+    visa_free_retriever = None
+    multi_kb_retriever = None
+    intent_classifier = None
+    
+    if Settings.ENABLE_VISA_FREE_FEATURE:
+        logger.info("=" * 60)
+        logger.info("初始化免签知识库功能...")
+        logger.info("=" * 60)
+        
+        try:
+            # 构建免签知识库索引
+            visa_index, visa_nodes = knowledge_service.build_or_load_visa_free_index()
+            
+            if visa_index and visa_nodes:
+                # 创建免签检索器
+                visa_free_retriever = knowledge_service.create_visa_free_retriever()
+                logger.info("✓ 免签知识库检索器创建成功")
+                
+                # 创建双库检索器
+                from core import MultiKBRetriever
+                multi_kb_retriever = MultiKBRetriever(
+                    general_retriever=retriever,
+                    visa_free_retriever=visa_free_retriever,
+                    strategy=Settings.DUAL_KB_STRATEGY
+                )
+                logger.info(f"✓ 双库检索器创建成功 | 策略: {Settings.DUAL_KB_STRATEGY}")
+                
+                # 创建意图分类器（如果启用）
+                if Settings.ENABLE_INTENT_CLASSIFIER:
+                    from core import IntentClassifier
+                    classifier_llm = llm_service.get_client(Settings.INTENT_CLASSIFIER_LLM_ID)
+                    intent_classifier = IntentClassifier(classifier_llm)
+                    logger.info("✓ 意图分类器创建成功")
+                else:
+                    logger.info("⊘ 意图分类器未启用（将使用默认策略）")
+                
+                logger.info("=" * 60)
+                logger.info("免签知识库功能初始化完成")
+                logger.info("=" * 60)
+            else:
+                logger.warning("免签知识库为空或构建失败，免签功能不可用")
+                
+        except Exception as e:
+            logger.error(f"免签知识库初始化失败: {e}", exc_info=True)
+            logger.warning("将继续使用通用知识库")
+    else:
+        logger.info("免签知识库功能未启用")
+
     # 5. 初始化业务处理器
     llm_wrapper = LLMStreamWrapper()
     knowledge_handler = KnowledgeHandler(
         retriever=retriever,
         reranker=reranker,
         llm_wrapper=llm_wrapper,
-        llm_service=llm_service
+        llm_service=llm_service,
+        # 免签知识库相关组件（可选）
+        visa_free_retriever=visa_free_retriever,
+        multi_kb_retriever=multi_kb_retriever,
+        intent_classifier=intent_classifier
     )
     judge_handler = JudgeHandler(retriever, reranker, llm_wrapper)
 

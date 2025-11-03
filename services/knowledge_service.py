@@ -33,6 +33,11 @@ class KnowledgeService:
         self.all_nodes = None
         self.retriever = None
         
+        # 免签知识库（完全独立）
+        self.visa_free_index = None
+        self.visa_free_nodes = None
+        self.visa_free_retriever = None
+        
         self.doc_processor = DocumentProcessor(AppSettings.CHUNK_CHAR_B)
         # 初始化 Qdrant 客户端(Docker 模式)
         self.qdrant_client = QdrantClient(
@@ -346,3 +351,61 @@ class KnowledgeService:
         self.index = index
         self.all_nodes = all_nodes
         return index, all_nodes
+
+    # ==================== 免签知识库方法 ====================
+    
+    def build_or_load_visa_free_index(self) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
+        """
+        构建或加载免签知识库索引（完全独立的流程）
+        
+        Returns:
+            (索引, 所有节点) 元组
+        """
+        if not AppSettings.ENABLE_VISA_FREE_FEATURE:
+            logger.info("免签功能未启用，跳过免签知识库构建")
+            return None, None
+        
+        storage_path = AppSettings.VISA_FREE_STORAGE_PATH
+        kb_dir = AppSettings.VISA_FREE_KB_DIR
+        hashes_file = os.path.join(storage_path, "visa_free_kb_hashes.json")
+        collection_name = AppSettings.VISA_FREE_COLLECTION
+        
+        logger.info("=" * 60)
+        logger.info("开始构建/加载免签知识库")
+        logger.info(f"知识库目录: {kb_dir}")
+        logger.info(f"Collection: {collection_name}")
+        logger.info("=" * 60)
+        
+        # 确保知识库目录存在
+        os.makedirs(kb_dir, exist_ok=True)
+        
+        if not any(os.scandir(kb_dir)):
+            logger.warning("免签知识库文件夹为空，无法构建索引")
+            return None, None
+        
+        # 检查是否需要重建索引
+        if self._should_rebuild_index(storage_path, hashes_file, kb_dir, collection_name):
+            return self._build_index(storage_path, kb_dir, hashes_file, collection_name)
+        else:
+            # 暂时总是重建，确保数据最新
+            return self._build_index(storage_path, kb_dir, hashes_file, collection_name)
+    
+    def create_visa_free_retriever(self):
+        """创建免签知识库混合检索器（完全独立）"""
+        if not AppSettings.ENABLE_VISA_FREE_FEATURE:
+            logger.info("免签功能未启用，跳过免签检索器创建")
+            return None
+        
+        if self.visa_free_index is None or self.visa_free_nodes is None:
+            logger.error("免签索引或节点未初始化，无法创建检索器")
+            return None
+        
+        logger.info("创建免签知识库混合检索器...")
+        self.visa_free_retriever = RetrieverFactory.create_hybrid_retriever(
+            self.visa_free_index,
+            self.visa_free_nodes,
+            AppSettings.VISA_FREE_RETRIEVAL_TOP_K,
+            AppSettings.VISA_FREE_RETRIEVAL_TOP_K_BM25
+        )
+        logger.info("✓ 免签检索器创建成功")
+        return self.visa_free_retriever

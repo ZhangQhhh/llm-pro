@@ -4,6 +4,7 @@
 """
 import sys
 import os
+import time
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -21,36 +22,44 @@ def test_intent_classifier():
     print("意图分类器测试")
     print("=" * 60)
     
+    # 检查配置
+    print(f"\n配置检查:")
+    print(f"ENABLE_INTENT_CLASSIFIER: {Settings.ENABLE_INTENT_CLASSIFIER}")
+    print(f"INTENT_CLASSIFIER_TIMEOUT: {Settings.INTENT_CLASSIFIER_TIMEOUT}s")
+    print(f"INTENT_CLASSIFIER_LLM_ID: {Settings.INTENT_CLASSIFIER_LLM_ID}")
+    
     # 1. 初始化 LLM 服务
     print("\n1. 初始化 LLM 服务...")
     try:
         llm_service = LLMService()
+        llm_service.initialize()
+        llm_client = llm_service.get_client(Settings.INTENT_CLASSIFIER_LLM_ID)
         print("✓ LLM 服务初始化成功")
     except Exception as e:
         print(f"✗ LLM 服务初始化失败: {e}")
-        return
+        return False
     
     # 2. 初始化意图分类器
     print("\n2. 初始化意图分类器...")
     try:
-        classifier = IntentClassifier(llm_service, enabled=True)
+        classifier = IntentClassifier(llm_client)
         print("✓ 意图分类器初始化成功")
-        print(f"  配置: {classifier.get_stats()}")
     except Exception as e:
         print(f"✗ 意图分类器初始化失败: {e}")
-        return
+        return False
     
     # 3. 测试用例
     test_cases = [
-        # (问题, 预期结果, 描述)
-        ("去泰国需要签证吗？", True, "免签相关问题"),
-        ("中国护照可以免签去哪些国家？", True, "免签相关问题"),
-        ("持普通护照去日本需要办理签证吗？", True, "免签相关问题"),
-        ("落地签和免签有什么区别？", True, "免签相关问题"),
-        ("如何办理护照？", False, "非免签问题"),
-        ("边检的职责是什么？", False, "非免签问题"),
-        ("JS0和JS1是什么意思？", False, "非免签问题"),
-        ("出入境手续如何办理？", False, "非免签问题"),
+        # (问题, 预期策略, 描述)
+        ("去泰国需要签证吗？", "both", "免签相关问题"),
+        ("中国护照可以免签去哪些国家？", "both", "免签相关问题"),
+        ("持普通护照去日本需要办理签证吗？", "both", "免签相关问题"),
+        ("落地签和免签有什么区别？", "both", "免签相关问题"),
+        ("新加坡对中国免签吗？", "both", "免签相关问题"),
+        ("如何办理护照？", "general", "非免签问题"),
+        ("边检的职责是什么？", "general", "非免签问题"),
+        ("JS0和JS1是什么意思？", "general", "非免签问题"),
+        ("港澳通行证怎么办理？", "general", "非免签问题"),
     ]
     
     print("\n3. 执行测试用例...")
@@ -62,17 +71,16 @@ def test_intent_classifier():
     for i, (question, expected, description) in enumerate(test_cases, 1):
         print(f"\n测试 {i}/{len(test_cases)}: {description}")
         print(f"问题: {question}")
-        print(f"预期: {'免签相关' if expected else '非免签'}")
+        print(f"预期策略: {expected}")
         
         try:
-            result = classifier.is_visa_related(question)
-            actual = "免签相关" if result else "非免签"
+            result = classifier.classify(question)
             
             if result == expected:
-                print(f"✓ 通过 - 实际: {actual}")
+                print(f"✓ 通过 - 实际策略: {result}")
                 passed += 1
             else:
-                print(f"✗ 失败 - 实际: {actual}")
+                print(f"✗ 失败 - 实际策略: {result}")
                 failed += 1
                 
         except Exception as e:
@@ -84,36 +92,27 @@ def test_intent_classifier():
     print("\n4. 测试缓存功能...")
     test_question = "去泰国需要签证吗？"
     
-    import time
+    # 清空缓存
+    classifier.clear_cache()
     
     # 第一次调用（不使用缓存）
     start = time.time()
-    result1 = classifier.is_visa_related(test_question)
+    result1 = classifier.classify(test_question)
     time1 = time.time() - start
     print(f"第一次调用: {time1:.3f}s - 结果: {result1}")
     
     # 第二次调用（使用缓存）
     start = time.time()
-    result2 = classifier.is_visa_related(test_question)
+    result2 = classifier.classify(test_question)
     time2 = time.time() - start
     print(f"第二次调用: {time2:.3f}s - 结果: {result2}")
     
     if time2 < time1 / 10:  # 缓存应该快至少 10 倍
-        print("✓ 缓存功能正常")
+        print(f"✓ 缓存功能正常（加速 {time1/time2:.1f}x）")
     else:
         print("✗ 缓存可能未生效")
     
-    # 5. 测试统计信息
-    print("\n" + "-" * 60)
-    print("\n5. 统计信息...")
-    stats = classifier.get_stats()
-    print(f"缓存大小: {stats['cache_size']}")
-    print(f"启用状态: {stats['enabled']}")
-    print(f"超时时间: {stats['timeout']}s")
-    print(f"最大重试: {stats['max_retries']}")
-    print(f"LLM ID: {stats['llm_id']}")
-    
-    # 6. 总结
+    # 5. 总结
     print("\n" + "=" * 60)
     print("测试总结")
     print("=" * 60)
@@ -123,6 +122,10 @@ def test_intent_classifier():
     
     if failed == 0:
         print("\n✓ 所有测试通过！")
+        print("\n下一步:")
+        print("  - 设置环境变量: export ENABLE_INTENT_CLASSIFIER=true")
+        print("  - 集成到 KnowledgeHandler")
+        print("  - 在 app.py 中初始化")
     else:
         print(f"\n✗ {failed} 个测试失败")
     

@@ -34,18 +34,44 @@ from prompts import (
 class KnowledgeHandler:
     """知识问答处理器"""
 
-    def __init__(self, retriever, reranker, llm_wrapper, llm_service=None):
+    def __init__(
+        self, 
+        retriever, 
+        reranker, 
+        llm_wrapper, 
+        llm_service=None,
+        # 免签知识库相关组件（可选）
+        visa_free_retriever=None,
+        multi_kb_retriever=None,
+        intent_classifier=None
+    ):
+        # 通用知识库组件
         self.retriever = retriever
         self.reranker = reranker
         self.llm_wrapper = llm_wrapper
         self.llm_service = llm_service
         self.insert_block_filter = None
+        
+        # 免签知识库组件
+        self.visa_free_retriever = visa_free_retriever
+        self.multi_kb_retriever = multi_kb_retriever
+        self.intent_classifier = intent_classifier
 
         # 如果提供了 llm_service，初始化 InsertBlock 过滤器
         if llm_service:
             from core.node_filter import InsertBlockFilter
             self.insert_block_filter = InsertBlockFilter(llm_service)
             logger.info("InsertBlock 过滤器已初始化")
+        
+        # 日志：免签功能状态
+        if self.multi_kb_retriever and self.intent_classifier:
+            logger.info("✓ 免签知识库功能已启用（双库检索 + 意图分类）")
+        elif self.multi_kb_retriever:
+            logger.info("✓ 免签知识库功能已启用（双库检索，无意图分类）")
+        elif self.visa_free_retriever:
+            logger.info("✓ 免签知识库功能已启用（单独检索）")
+        else:
+            logger.info("⊘ 免签知识库功能未启用")
 
     def process(
         self,
@@ -82,10 +108,10 @@ class KnowledgeHandler:
                 f"InsertBlock: {use_insert_block}"
             )
 
-            # 1. 检索
+            # 1. 智能路由检索（根据意图选择知识库）
             yield ('CONTENT', "正在进行混合检索...\n")
             full_response += "正在进行混合检索...\n"
-            final_nodes = self._retrieve_and_rerank(question, rerank_top_n)
+            final_nodes = self._smart_retrieve_and_rerank(question, rerank_top_n)
 
 
             # 2. 如果启用 InsertBlock 模式，进行智能过滤
@@ -953,9 +979,12 @@ class KnowledgeHandler:
                 full_response += "\n\n参考来源:"
 
                 for source_msg in self._format_sources(final_nodes):
-                    yield source_msg
-                    if source_msg.startswith("SOURCE:"):
-                        data = json.loads(source_msg[7:])
+                    # _format_sources 返回元组 ('SOURCE', json_data)
+                    prefix_type, json_data = source_msg
+                    if prefix_type == 'SOURCE':
+                        formatted_msg = f"SOURCE:{json_data}"
+                        yield formatted_msg
+                        data = json.loads(json_data)
                         full_response += (
                             f"\n[{data['id']}] 文件: {data['fileName']}, "
                             f"重排分: {data['rerankedScore']}"
@@ -1113,3 +1142,94 @@ class KnowledgeHandler:
             "assistant_context": assistant_context,
             "fallback_prompt": "\n\n".join(fallback_parts)
         }
+    
+    def _smart_retrieve_and_rerank(self, question: str, rerank_top_n: int):
+        """
+        智能路由检索：根据意图分类选择合适的知识库
+        
+        Args:
+            question: 用户问题
+            rerank_top_n: 重排序后返回的文档数量
+            
+        Returns:
+            重排序后的节点列表
+        """
+        # 1. 意图分类（如果启用）
+        strategy = "general"  # 默认策略：只用通用库
+        
+        if self.intent_classifier:
+            try:
+                strategy = self.intent_classifier.classify(question)
+                logger.info(f"[智能路由] 意图分类结果: {strategy}")
+            except Exception as e:
+                logger.warning(f"[智能路由] 意图分类失败: {e}，使用默认策略: general")
+                strategy = "general"
+        else:
+            logger.info("[智能路由] 意图分类器未启用，使用默认策略: general")
+        
+        # 2. 根据策略选择检索器
+        if strategy == "both" and self.multi_kb_retriever:
+            # 双库检索
+            logger.info("[智能路由] 使用双库检索（免签库 + 通用库）")
+            retriever = self.multi_kb_retriever
+        elif strategy == "visa_free" and self.visa_free_retriever:
+            # 只用免签库
+            logger.info("[智能路由] 使用免签知识库")
+            retriever = self.visa_free_retriever
+        else:
+            # 只用通用库（默认）
+            logger.info("[智能路由] 使用通用知识库")
+            retriever = self.retriever
+        
+        # 3. 执行检索和重排序
+        return self._retrieve_and_rerank_with_retriever(
+            question, 
+            rerank_top_n, 
+            retriever
+        )
+    
+    def _retrieve_and_rerank_with_retriever(
+        self, 
+        question: str, 
+        rerank_top_n: int,
+        retriever
+    ):
+        """
+        使用指定检索器进行检索和重排序
+        
+        Args:
+            question: 用户问题
+            rerank_top_n: 重排序后返回的文档数量
+            retriever: 检索器实例
+            
+        Returns:
+            重排序后的节点列表
+        """
+        query_bundle = QueryBundle(query_str=question)
+        retrieved_nodes = retriever.retrieve(query_bundle)
+        
+        logger.info(f"检索到 {len(retrieved_nodes)} 个初步结果")
+        
+        if not retrieved_nodes:
+            logger.warning("未检索到任何相关文档")
+            return []
+        
+        # 重排序
+        reranked_nodes = self.reranker.postprocess_nodes(
+            retrieved_nodes,
+            query_bundle=query_bundle
+        )
+        
+        logger.info(f"重排序后保留 {len(reranked_nodes)} 个结果")
+        
+        # 取 top N
+        final_nodes = reranked_nodes[:rerank_top_n]
+        
+        if final_nodes:
+            logger.info(
+                f"最终返回 {len(final_nodes)} 个文档 | "
+                f"最高分: {final_nodes[0].score:.4f} | "
+                f"最低分: {final_nodes[-1].score:.4f}"
+            )
+        
+        return final_nodes

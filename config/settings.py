@@ -110,6 +110,30 @@ class Settings:
     # 可选:内嵌模式路径(不使用 Docker 时启用) 现在用的是docker，用不到hhhhhhhhhhh
     # QDRANT_PATH = os.getenv("QDRANT_PATH", "./qdrant_data")
 
+    # ==================== 免签知识库配置 ====================
+    # 免签功能开关（默认关闭，不影响现有系统）
+    ENABLE_VISA_FREE_FEATURE = os.getenv("ENABLE_VISA_FREE_FEATURE", "false").lower() == "true"
+    
+    # 免签知识库路径（完全独立的目录）
+    VISA_FREE_KB_DIR = "/opt/rag_final_project/visa_free_knowledge_base"
+    VISA_FREE_STORAGE_PATH = "/opt/rag_final_project/visa_free_storage"
+    VISA_FREE_COLLECTION = "visa_free_kb"  # 独立的 Qdrant collection
+    
+    # 免签检索参数（独立配置，不影响通用库）
+    VISA_FREE_RETRIEVAL_TOP_K = 30
+    VISA_FREE_RETRIEVAL_TOP_K_BM25 = 30
+    VISA_FREE_RERANK_TOP_N = 15
+    
+    # 意图分类器配置
+    ENABLE_INTENT_CLASSIFIER = os.getenv("ENABLE_INTENT_CLASSIFIER", "false").lower() == "true"
+    INTENT_CLASSIFIER_TIMEOUT = 5  # 意图分类超时时间（秒）
+    INTENT_CLASSIFIER_LLM_ID = "qwen3-32b"  # 用于意图分类的LLM
+    
+    # 双库检索策略（当判断为混合问题时）
+    DUAL_KB_STRATEGY = "adaptive"  # adaptive(自适应) 或 fixed(固定比例)
+    VISA_FREE_RETRIEVAL_COUNT = 5  # 免签库取5条
+    GENERAL_RETRIEVAL_COUNT = 5    # 通用库取5条
+
     # ==================== 服务器配置 ====================
     # SERVER_HOST = "0.0.0.0"
     SERVER_HOST = "127.0.0.1" # 只能监听本机，通过nginx代理访问
