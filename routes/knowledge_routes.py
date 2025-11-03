@@ -195,7 +195,22 @@ def knowledge_chat_conversation():
             use_insert_block=use_insert_block,
             insert_block_llm_id=insert_block_llm_id
         ):
-            yield format_sse_text(item)
+            # item 是元组格式: ('THINK', content) 或 ('CONTENT', content)
+            if isinstance(item, tuple) and len(item) == 2:
+                prefix_type, content = item
+                # 格式化为 SSE 消息
+                if prefix_type == 'THINK':
+                    formatted_item = f"THINK:{content}"
+                elif prefix_type == 'CONTENT':
+                    formatted_item = f"CONTENT:{content}"
+                else:
+                    # 兼容其他格式
+                    formatted_item = f"{prefix_type}:{content}"
+            else:
+                # 兼容旧格式（直接是字符串）
+                formatted_item = item
+            
+            yield format_sse_text(formatted_item)
 
     # 使用 stream_with_context 确保在流式响应期间保留应用/请求上下文
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
@@ -685,7 +700,7 @@ def knowledge_chat():
 
     # 参数解析
     user_question = data.get('question', '').strip()
-    enable_thinking_str = data.get('thinking', 'true')
+    enable_thinking_str = data.get('thinking', 'false')  # 默认关闭思考模式，避免无限思考
     enable_thinking = str(enable_thinking_str).lower() == 'true'
     requested_model_id = data.get('model_id', Settings.DEFAULT_LLM_ID)
 
@@ -765,7 +780,20 @@ def knowledge_chat():
             use_insert_block=use_insert_block,
             insert_block_llm_id=insert_block_llm_id
         ):
-            yield item
+            # item 是元组格式: ('THINK', content) 或 ('CONTENT', content)
+            if isinstance(item, tuple) and len(item) == 2:
+                prefix_type, content = item
+                # 格式化为 SSE 消息
+                if prefix_type == 'THINK':
+                    yield f"THINK:{content}"
+                elif prefix_type == 'CONTENT':
+                    yield f"CONTENT:{content}"
+                else:
+                    # 兼容其他格式
+                    yield f"{prefix_type}:{content}"
+            else:
+                # 兼容旧格式（直接是字符串）
+                yield item
 
     return Response(
         stream_with_context((format_sse_text(item) for item in generate())),

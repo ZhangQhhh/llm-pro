@@ -20,10 +20,8 @@ class CustomOpenAILike(OpenAI):
     def __init__(self, *args, **kwargs):
         """初始化时设置 default_headers 来传递 enable_thinking"""
         super().__init__(*args, **kwargs)
-        # 🔥 关键修复：为每个实例设置默认的思考模式为 False
-        self._thinking_modes[id(self)] = False
         # 尝试在初始化时就设置 extra_body（如果 OpenAI SDK 支持）
-        logger.info(f"CustomOpenAILike 初始化完成，模型: {kwargs.get('model')}, 默认 enable_thinking=False")
+        logger.info(f"CustomOpenAILike 初始化完成，模型: {kwargs.get('model')}")
 
     @property
     def metadata(self) -> LLMMetadata:

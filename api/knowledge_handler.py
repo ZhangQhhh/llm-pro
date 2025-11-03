@@ -34,27 +34,18 @@ from prompts import (
 class KnowledgeHandler:
     """知识问答处理器"""
 
-    def __init__(self, retriever, reranker, llm_wrapper, llm_service=None, intent_classifier=None, multi_kb_retriever=None):
+    def __init__(self, retriever, reranker, llm_wrapper, llm_service=None):
         self.retriever = retriever
         self.reranker = reranker
         self.llm_wrapper = llm_wrapper
         self.llm_service = llm_service
         self.insert_block_filter = None
-        # 新增：意图分类器和多知识库检索器
-        self.intent_classifier = intent_classifier
-        self.multi_kb_retriever = multi_kb_retriever
 
         # 如果提供了 llm_service，初始化 InsertBlock 过滤器
         if llm_service:
             from core.node_filter import InsertBlockFilter
             self.insert_block_filter = InsertBlockFilter(llm_service)
             logger.info("InsertBlock 过滤器已初始化")
-        
-        # 日志记录
-        if intent_classifier:
-            logger.info("意图分类器已初始化")
-        if multi_kb_retriever:
-            logger.info("多知识库检索器已初始化")
 
     def process(
         self,
@@ -91,31 +82,18 @@ class KnowledgeHandler:
                 f"InsertBlock: {use_insert_block}"
             )
 
-            # 1. 意图识别（如果启用免签功能）
-            is_visa_related = False
-            if Settings.ENABLE_VISA_FREE_FEATURE and self.intent_classifier:
-                is_visa_related = self.intent_classifier.is_visa_related(question)
-                if is_visa_related:
-                    logger.info("检测到免签相关问题，将使用双知识库检索")
-                    yield "CONTENT:检测到免签相关问题...\n"
-                    full_response += "检测到免签相关问题...\n"
+            # 1. 检索
+            yield ('CONTENT', "正在进行混合检索...\n")
+            full_response += "正在进行混合检索...\n"
+            final_nodes = self._retrieve_and_rerank(question, rerank_top_n)
 
-            # 2. 检索
-            if is_visa_related and self.multi_kb_retriever:
-                yield "CONTENT:正在从免签知识库和通用知识库检索..."
-                full_response += "正在从免签知识库和通用知识库检索...\n"
-                final_nodes = self._retrieve_and_rerank_multi_kb(question, rerank_top_n)
-            else:
-                yield "CONTENT:正在进行混合检索..."
-                full_response += "正在进行混合检索...\n"
-                final_nodes = self._retrieve_and_rerank(question, rerank_top_n)
 
-            # 3. 如果启用 InsertBlock 模式，进行智能过滤
+            # 2. 如果启用 InsertBlock 模式，进行智能过滤
             filtered_results = None
             nodes_for_prompt = final_nodes  # 默认使用原始检索结果
 
             if use_insert_block and final_nodes and self.insert_block_filter:
-                yield "CONTENT:正在使用 InsertBlock 智能过滤..."
+                yield ('CONTENT', "正在使用 InsertBlock 智能过滤...")
                 full_response += "正在使用 InsertBlock 智能过滤...\n"
 
                 filtered_results = self.insert_block_filter.filter_nodes(
@@ -125,17 +103,17 @@ class KnowledgeHandler:
                 )
 
                 if filtered_results:
-                    yield f"CONTENT:找到 {len(filtered_results)} 个可回答的节点"
+                    yield ('CONTENT', f"找到 {len(filtered_results)} 个可回答的节点")
                     full_response += f"找到 {len(filtered_results)} 个可回答的节点\n"
                     # InsertBlock 成功：只使用过滤后的节点
                     nodes_for_prompt = None  # 不再传入原始节点
                 else:
-                    yield "CONTENT:未找到可直接回答的节点，将使用原始检索结果"
+                    yield ('CONTENT', "未找到可直接回答的节点，将使用原始检索结果")
                     full_response += "未找到可直接回答的节点，将使用原始检索结果\n"
                     # InsertBlock 失败：继续使用原始节点，清空过滤结果
                     filtered_results = None
 
-            # 4. 构造提示词
+            # 3. 构造提示词
             prompt_parts = self._build_prompt(
                 question,
                 enable_thinking,
@@ -143,30 +121,30 @@ class KnowledgeHandler:
                 filtered_results=filtered_results
             )
 
-            # 5. 输出状态
+            # 4. 输出状态
             status_msg = (
                 "已找到相关资料，正在生成回答..."
                 if final_nodes
                 else "未找到高相关性资料，基于通用知识回答..."
             )
-            yield f"CONTENT:{status_msg}"
+            yield ('CONTENT', status_msg)
             full_response += status_msg + "\n"
 
-            # 6. 调用 LLM
+            # 5. 调用 LLM
             for result in self._call_llm(llm, prompt_parts, enable_thinking=enable_thinking):
                 # result 是元组 (prefix_type, content)
                 prefix_type, chunk = result
                 if prefix_type == 'THINK':
-                    yield f"THINK:{chunk}"
+                    yield ('THINK', chunk)
                     # 思考内容不计入 full_response
                 elif prefix_type == 'CONTENT':
-                    yield f"CONTENT:{chunk}"
+                    yield ('CONTENT', chunk)
                     full_response += chunk
 
-            # 7. 输出参考来源
+            # 6. 输出参考来源
             if use_insert_block and filtered_results:
                 # InsertBlock 模式：返回所有原始节点，但标注哪些被选中
-                yield "CONTENT:\n\n**参考来源（全部检索结果）:**"
+                yield ('CONTENT', "\n\n**参考来源（全部检索结果）:**")
                 full_response += "\n\n参考来源（全部检索结果）:"
 
                 # 构建过滤结果的映射（用于快速查找）
@@ -197,7 +175,7 @@ class KnowledgeHandler:
                         "keyPassage": filtered_info.get('key_passage', '') if filtered_info else ''
                     }
 
-                    yield f"SOURCE:{json.dumps(source_data, ensure_ascii=False)}"
+                    yield ('SOURCE', json.dumps(source_data, ensure_ascii=False))
 
                     full_response += (
                         f"\n[{source_data['id']}] 文件: {source_data['fileName']}, "
@@ -207,22 +185,22 @@ class KnowledgeHandler:
 
             elif final_nodes:
                 # 普通模式：显示所有检索结果
-                yield "CONTENT:\n\n**参考来源:**"
+                yield ('CONTENT', "\n\n**参考来源:**")
                 full_response += "\n\n参考来源:"
 
                 for source_msg in self._format_sources(final_nodes):
                     yield source_msg
-                    if source_msg.startswith("SOURCE:"):
-                        data = json.loads(source_msg[7:])
+                    if isinstance(source_msg, tuple) and source_msg[0] == "SOURCE":
+                        data = json.loads(source_msg[1])
                         full_response += (
                             f"\n[{data['id']}] 文件: {data['fileName']}, "
                             f"初始分: {data['initialScore']}, "
                             f"重排分: {data['rerankedScore']}"
                         )
 
-            yield "DONE:"
+            yield ('DONE', '')
 
-            # 8. 保存日志
+            # 7. 保存日志
             self._save_log(
                 question,
                 full_response,
@@ -234,29 +212,81 @@ class KnowledgeHandler:
         except Exception as e:
             error_msg = f"处理错误: {str(e)}"
             logger.error(f"知识问答处理出错: {e}", exc_info=True)
-            yield f"ERROR:{error_msg}"
+            yield ('ERROR', error_msg)
 
     def _retrieve_and_rerank(self, question: str, rerank_top_n: int):
         """检索和重排序"""
         # 初始检索
+        logger.info(f"[单知识库检索] 开始检索问题: {question}")
+        logger.info(f"🔍 [DEBUG] 使用的检索器对象ID: {id(self.retriever)}")
+        logger.info(f"🔍 [DEBUG] 检索器类型: {type(self.retriever).__name__}")
         retrieved_nodes = self.retriever.retrieve(question)
+        
+        # 🔍 DEBUG: 记录初始检索得分
+        if retrieved_nodes:
+            initial_scores = [f"{n.score:.4f}" for n in retrieved_nodes[:5]]
+            logger.info(f"[DEBUG] 单知识库初始检索Top5得分: {', '.join(initial_scores)}")
 
         # 取前 N 个送入重排
         reranker_input_top_n = Settings.RERANKER_INPUT_TOP_N
+        logger.info(f"[单知识库检索] 配置检查 - RERANKER_INPUT_TOP_N: {reranker_input_top_n}")
+        
+        # 详细检查 retrieved_nodes
+        logger.info(f"[单知识库检索] retrieved_nodes 类型: {type(retrieved_nodes)}")
+        logger.info(f"[单知识库检索] retrieved_nodes 长度: {len(retrieved_nodes) if retrieved_nodes else 'None'}")
+        
+        if retrieved_nodes and len(retrieved_nodes) > 0:
+            logger.info(f"[单知识库检索] 第一个节点预览: {retrieved_nodes[0].node.get_content()[:100]}...")
+        
         reranker_input = retrieved_nodes[:reranker_input_top_n]
 
         logger.info(
-            f"初检索找到 {len(retrieved_nodes)} 个节点, "
+            f"[单知识库检索] 初检索找到 {len(retrieved_nodes)} 个节点, "
             f"选取前 {len(reranker_input)} 个送入重排"
         )
+        
+        # 如果初始检索为空，打印警告
+        if len(retrieved_nodes) == 0:
+            logger.warning(
+                f"[单知识库检索] ⚠️ 初始检索结果为空！\n"
+                f"  问题: {question}\n"
+                f"  检索器状态: {self.retriever is not None}\n"
+                f"  可能原因: 知识库为空、索引损坏、或问题与知识库完全不相关"
+            )
 
         # 重排序
+        logger.info(f"[单知识库检索] 准备重排序 - reranker_input 长度: {len(reranker_input)}")
+        
         if reranker_input:
-            reranked_nodes = self.reranker.postprocess_nodes(
+            logger.info(f"[单知识库检索] ✓ 进入重排序分支，开始调用 Reranker 模型")
+            logger.info(f"🔍 [DEBUG] Reranker 对象ID: {id(self.reranker)}")
+            logger.info(f"🔍 [DEBUG] Reranker 类型: {type(self.reranker).__name__}")
+            logger.info(f"🔍 [DEBUG] Reranker top_n: {self.reranker.top_n}")
+            logger.info(f"🔍 [DEBUG] 问题长度: {len(question)} 字符")
+            logger.info(f"🔍 [DEBUG] 问题内容: {question[:100]}...")
+            
+            # 🧪 临时实验：重新创建 Reranker 来验证是否是状态污染问题
+            logger.warning("🧪 [实验] 临时重新创建 Reranker 来测试...")
+            from llama_index.core.postprocessor import SentenceTransformerRerank
+            temp_reranker = SentenceTransformerRerank(
+                model=Settings.RERANKER_MODEL_PATH,
+                top_n=Settings.RERANK_TOP_N,
+                device=Settings.DEVICE
+            )
+            logger.info(f"🧪 [实验] 临时 Reranker 对象ID: {id(temp_reranker)}")
+            
+            reranked_nodes = temp_reranker.postprocess_nodes(
                 reranker_input,
                 query_bundle=QueryBundle(question)
             )
+            logger.info("🧪 [实验] 使用临时 Reranker 完成重排序")
+            logger.info(f"[单知识库检索] ✓ Reranker 处理完成，得到 {len(reranked_nodes)} 个节点")
+            # 🔍 DEBUG: 记录重排序后得分
+            if reranked_nodes:
+                rerank_scores = [f"{n.score:.4f}" for n in reranked_nodes[:5]]
+                logger.info(f"[DEBUG] 单知识库重排序后Top5得分: {', '.join(rerank_scores)}")
         else:
+            logger.warning(f"[单知识库检索] ⚠️ reranker_input 为空，跳过重排序！")
             reranked_nodes = []
 
         # 阈值过滤
@@ -265,66 +295,33 @@ class KnowledgeHandler:
             node for node in reranked_nodes
             if node.score >= threshold
         ]
+        
+        # 🔍 DEBUG: 记录过滤后得分
+        if final_nodes:
+            final_scores = [f"{n.score:.4f}" for n in final_nodes[:5]]
+            logger.info(f"[DEBUG] 单知识库阈值过滤后Top5得分: {', '.join(final_scores)}")
 
         logger.info(
-            f"重排序后有 {len(reranked_nodes)} 个节点, "
+            f"[单知识库检索] 重排序后有 {len(reranked_nodes)} 个节点, "
             f"经过阈值 {threshold} 过滤后剩下 {len(final_nodes)} 个"
         )
-
-        # 应用最终数量限制
-        return final_nodes[:rerank_top_n]
-
-    def _retrieve_and_rerank_multi_kb(self, question: str, rerank_top_n: int):
-        """
-        从多个知识库检索并重排序
         
-        Args:
-            question: 用户问题
-            rerank_top_n: 最终返回的文档数量
-            
-        Returns:
-            重排序后的节点列表
-        """
-        if not self.multi_kb_retriever:
-            logger.warning("多知识库检索器未初始化，回退到单知识库检索")
-            return self._retrieve_and_rerank(question, rerank_top_n)
-        
-        # 使用多知识库检索器并行检索
-        query_bundle = QueryBundle(question)
-        retrieved_nodes = self.multi_kb_retriever.retrieve_from_both(query_bundle)
-        
-        # 取前 N 个送入重排
-        reranker_input_top_n = Settings.RERANKER_INPUT_TOP_N
-        reranker_input = retrieved_nodes[:reranker_input_top_n]
-        
-        logger.info(
-            f"多知识库检索找到 {len(retrieved_nodes)} 个节点, "
-            f"选取前 {len(reranker_input)} 个送入重排"
-        )
-        
-        # 重排序
-        if reranker_input:
-            reranked_nodes = self.reranker.postprocess_nodes(
-                reranker_input,
-                query_bundle=query_bundle
+        # 如果阈值过滤后为空，打印详细信息
+        if len(reranked_nodes) > 0 and len(final_nodes) == 0:
+            max_score = max(node.score for node in reranked_nodes) if reranked_nodes else 0.0
+            logger.warning(
+                f"[单知识库检索] ⚠️ 阈值过滤后结果为空！\n"
+                f"  重排序节点数: {len(reranked_nodes)}\n"
+                f"  最高分数: {max_score:.4f}\n"
+                f"  阈值: {threshold}\n"
+                f"  建议: 降低 RERANK_SCORE_THRESHOLD 或检查 Reranker 模型"
             )
-        else:
-            reranked_nodes = []
-        
-        # 阈值过滤
-        threshold = Settings.RERANK_SCORE_THRESHOLD
-        final_nodes = [
-            node for node in reranked_nodes
-            if node.score >= threshold
-        ]
-        
-        logger.info(
-            f"重排序后有 {len(reranked_nodes)} 个节点, "
-            f"经过阈值 {threshold} 过滤后剩下 {len(final_nodes)} 个"
-        )
-        
+
         # 应用最终数量限制
-        return final_nodes[:rerank_top_n]
+        result = final_nodes[:rerank_top_n]
+        logger.info(f"[单知识库检索] 最终返回 {len(result)} 个节点")
+        return result
+
 
     def _build_prompt(
         self,
@@ -620,8 +617,10 @@ class KnowledgeHandler:
 
                 if text:
                     buffer += text
-                    # 累积到一定长度后再发送（提高流畅度，减少消息数量）
-                    if len(buffer) >= 10:  # 每10个字符发送一次
+                    # 智能发送策略：
+                    # 1. 遇到换行符立即发送（保持换行的及时性）
+                    # 2. 或者 buffer 达到 20 个字符发送（平衡性能）
+                    if '\n' in buffer or len(buffer) >= 20:
                         yield ('CONTENT', clean_for_sse_text(buffer))
                         buffer = ""
             
@@ -640,7 +639,7 @@ class KnowledgeHandler:
                 "rerankedScore": f"{node.score:.4f}",
                 "content": node.node.text.strip()
             }
-            yield f"SOURCE:{json.dumps(source_data, ensure_ascii=False)}"
+            yield ('SOURCE', json.dumps(source_data, ensure_ascii=False))
 
     def _format_filtered_sources(self, filtered_results):
         """格式化 InsertBlock 过滤后的参考来源"""

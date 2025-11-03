@@ -13,8 +13,8 @@ load_dotenv()
 
 from config import Settings
 from utils import logger
-from services import LLMService, EmbeddingService, KnowledgeService, IntentClassifier
-from core import LLMStreamWrapper, MultiKBRetrieverFactory
+from services import LLMService, EmbeddingService, KnowledgeService
+from core import LLMStreamWrapper
 from api import JudgeHandler, KnowledgeHandler
 from routes import knowledge_bp
 from middleware.auth_decorator import create_auth_manager
@@ -63,40 +63,17 @@ def create_app():
         logger.info(f"【验证】内部 LLM 上下文窗口: {context_window}")
         logger.info("=" * 60)
 
-    # 3.5 初始化免签政策知识库（如果启用）
-    visa_free_index = None
-    visa_free_nodes = None
-    if Settings.ENABLE_VISA_FREE_FEATURE:
-        logger.info("免签政策功能已启用，开始构建免签知识库...")
-        visa_free_index, visa_free_nodes = knowledge_service.build_or_load_visa_free_index()
-        knowledge_service.visa_free_index = visa_free_index
-        knowledge_service.visa_free_nodes = visa_free_nodes
-        
-        if visa_free_index:
-            logger.info("【验证】免签政策知识库索引已创建")
-        else:
-            logger.warning("免签政策知识库索引创建失败或为空")
-    else:
-        logger.info("免签政策功能未启用")
-
     # 4. 创建检索器
     retriever = None
-    visa_free_retriever = None
     
     if index and all_nodes:
         retriever = knowledge_service.create_retriever()
         logger.info("通用知识库混合检索器创建成功")
+        logger.info(f"🔍 [DEBUG] 通用检索器对象ID: {id(retriever)}")
+        logger.info(f"🔍 [DEBUG] 通用检索器类型: {type(retriever).__name__}")
     else:
         logger.error("通用知识库索引或节点加载失败")
         return None
-    
-    # 创建免签知识库检索器（如果启用）
-    if Settings.ENABLE_VISA_FREE_FEATURE and visa_free_index and visa_free_nodes:
-        visa_free_retriever = knowledge_service.create_visa_free_retriever()
-        if visa_free_retriever:
-            logger.info("免签政策知识库检索器创建成功")
-        else:
-            logger.warning("免签政策知识库检索器创建失败")
 
     # 4.5 初始化对话管理器（用于多轮对话功能）
     try:
@@ -106,42 +83,19 @@ def create_app():
         logger.warning(f"对话管理器初始化失败（多轮对话功能不可用）: {e}")
         logger.warning("单轮对话功能不受影响，将继续正常运行")
 
-    # 5. 初始化意图分类器和多知识库检索器
-    intent_classifier = None
-    multi_kb_retriever = None
-    
-    if Settings.ENABLE_VISA_FREE_FEATURE:
-        # 创建意图分类器
-        intent_classifier = IntentClassifier(llm_service)
-        logger.info("意图分类器初始化成功")
-        
-        # 创建多知识库检索器
-        if visa_free_retriever:
-            multi_kb_retriever = MultiKBRetrieverFactory.create_multi_kb_retriever(
-                general_retriever=retriever,
-                visa_free_retriever=visa_free_retriever,
-                general_count=Settings.GENERAL_RETRIEVAL_COUNT,
-                visa_free_count=Settings.VISA_FREE_RETRIEVAL_COUNT
-            )
-            logger.info("多知识库检索器初始化成功")
-        else:
-            logger.warning("免签检索器未创建，多知识库功能不可用")
-
-    # 6. 初始化业务处理器
+    # 5. 初始化业务处理器
     llm_wrapper = LLMStreamWrapper()
     knowledge_handler = KnowledgeHandler(
         retriever=retriever,
         reranker=reranker,
         llm_wrapper=llm_wrapper,
-        llm_service=llm_service,
-        intent_classifier=intent_classifier,
-        multi_kb_retriever=multi_kb_retriever
+        llm_service=llm_service
     )
     judge_handler = JudgeHandler(retriever, reranker, llm_wrapper)
 
 
 
-    # 7. 将服务注入应用上下文
+    # 6. 将服务注入应用上下文
     app.llm_service = llm_service
     app.knowledge_handler = knowledge_handler
     app.judge_handler = judge_handler
@@ -149,15 +103,15 @@ def create_app():
     app.retriever = retriever
     app.reranker = reranker
 
-    # 🔥 7.5 初始化并注册认证管理器
+    # 🔥 6.5 初始化并注册认证管理器
     auth_manager = create_auth_manager()
     app.extensions['auth_manager'] = auth_manager
     logger.info(f"认证管理器已注册，Spring Boot URL: {os.getenv('SPRING_BOOT_URL', 'http://localhost:8080')}")
 
-    # 8. 注册路由蓝图
+    # 7. 注册路由蓝图
     app.register_blueprint(knowledge_bp,url_prefix='/api')
 
-    # 9. 注册页面路由
+    # 8. 注册页面路由
     register_page_routes(app)
 
     logger.info("=" * 60)
