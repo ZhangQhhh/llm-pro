@@ -1205,14 +1205,28 @@ class KnowledgeHandler:
         Returns:
             重排序后的节点列表
         """
+        # 创建 QueryBundle（重排序需要）
         query_bundle = QueryBundle(query_str=question)
-        retrieved_nodes = retriever.retrieve(query_bundle)
+        
+        # 判断是否为 MultiKBRetriever
+        from core.multi_kb_retriever import MultiKBRetriever
+        if isinstance(retriever, MultiKBRetriever):
+            # MultiKBRetriever 使用 retrieve_from_both 方法，直接传入 query 字符串
+            retrieved_nodes = retriever.retrieve_from_both(question)
+        else:
+            # 其他检索器使用标准的 retrieve 方法，需要 QueryBundle
+            retrieved_nodes = retriever.retrieve(query_bundle)
         
         logger.info(f"检索到 {len(retrieved_nodes)} 个初步结果")
         
         if not retrieved_nodes:
             logger.warning("未检索到任何相关文档")
             return []
+        
+        # 添加日志：检索后的分数
+        if retrieved_nodes:
+            retrieval_scores = [n.score for n in retrieved_nodes[:5]]
+            logger.info(f"检索阶段Top5得分: {[f'{s:.4f}' for s in retrieval_scores]}")
         
         # 重排序
         reranked_nodes = self.reranker.postprocess_nodes(
@@ -1221,6 +1235,11 @@ class KnowledgeHandler:
         )
         
         logger.info(f"重排序后保留 {len(reranked_nodes)} 个结果")
+        
+        # 添加日志：重排序后的分数
+        if reranked_nodes:
+            rerank_scores = [n.score for n in reranked_nodes[:5]]
+            logger.info(f"重排序阶段Top5得分: {[f'{s:.4f}' for s in rerank_scores]}")
         
         # 取 top N
         final_nodes = reranked_nodes[:rerank_top_n]

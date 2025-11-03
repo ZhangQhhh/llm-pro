@@ -86,10 +86,14 @@ class KnowledgeService:
 
         # 检查是否需要重建索引
         if self._should_rebuild_index(storage_path, hashes_file, kb_dir, AppSettings.QDRANT_COLLECTION):
-            return self._build_index(storage_path, kb_dir, hashes_file, AppSettings.QDRANT_COLLECTION)
+            index, nodes = self._build_index(storage_path, kb_dir, hashes_file, AppSettings.QDRANT_COLLECTION)
         else:
             # return self._load_index(storage_path)  先暂时一直重建
-            return self._build_index(storage_path, kb_dir, hashes_file, AppSettings.QDRANT_COLLECTION)
+            index, nodes = self._build_index(storage_path, kb_dir, hashes_file, AppSettings.QDRANT_COLLECTION)
+        
+        # 注意：_build_index() 已经设置了 self.index 和 self.all_nodes
+        # 这里直接返回即可，保持向后兼容
+        return index, nodes
 
 
     def create_retriever(self):
@@ -147,38 +151,7 @@ class KnowledgeService:
 
         return True
 
-    # def _load_index(
-    #     self,
-    #     storage_path: str
-    # ) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
-    #     """加载已有索引"""
-    #     try:
-    #         logger.info("从本地加载索引...")
-    #
-    #         # 确保全局 Embedding 已设置
-    #         if Settings.embed_model is None:
-    #             raise ValueError("全局 Embed model 未设置")
-    #
-    #         service_context = ServiceContext.from_defaults(
-    #             llm=self.llm,
-    #             embed_model=Settings.embed_model
-    #         )
-    #
-    #         storage_context = StorageContext.from_defaults(persist_dir=storage_path)
-    #         index = load_index_from_storage(storage_context, service_context=service_context)
-    #
-    #         all_nodes = list(storage_context.docstore.docs.values())
-    #         if not all_nodes:
-    #             raise ValueError("未找到任何节点")
-    #
-    #         logger.info(f"成功加载索引，共 {len(all_nodes)} 个节点")
-    #         self.index = index
-    #         self.all_nodes = all_nodes
-    #         return index, all_nodes
-    #
-    #     except Exception as e:
-    #         logger.error(f"加载索引失败: {e}，将重新构建", exc_info=True)
-    #         return None, None
+  
 
     # 这是使用向量数据库的方法，10.17 重构
     def _load_index(
@@ -385,10 +358,18 @@ class KnowledgeService:
         
         # 检查是否需要重建索引
         if self._should_rebuild_index(storage_path, hashes_file, kb_dir, collection_name):
-            return self._build_index(storage_path, kb_dir, hashes_file, collection_name)
+            index, nodes = self._build_index(storage_path, kb_dir, hashes_file, collection_name)
         else:
             # 暂时总是重建，确保数据最新
-            return self._build_index(storage_path, kb_dir, hashes_file, collection_name)
+            index, nodes = self._build_index(storage_path, kb_dir, hashes_file, collection_name)
+        
+        # 重要：将免签库的索引和节点保存到专用的实例变量
+        if index and nodes:
+            self.visa_free_index = index
+            self.visa_free_nodes = nodes
+            logger.info(f"✓ 免签知识库实例变量已设置 | 节点数: {len(nodes)}")
+        
+        return index, nodes
     
     def create_visa_free_retriever(self):
         """创建免签知识库混合检索器（完全独立）"""

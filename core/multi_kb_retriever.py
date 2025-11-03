@@ -67,19 +67,27 @@ class MultiKBRetriever:
         
         # 1. 独立检索免签库
         logger.info("[双库检索] 步骤1: 检索免签知识库...")
-        visa_free_nodes = self.visa_free_retriever.retrieve(query)
-        logger.info(f"[双库检索] 免签库检索完成 | 返回 {len(visa_free_nodes)} 条")
-        if visa_free_nodes:
-            visa_scores = [n.score for n in visa_free_nodes[:5]]
-            logger.info(f"[双库检索] 免签库Top5得分: {[f'{s:.4f}' for s in visa_scores]}")
+        if self.visa_free_retriever is None:
+            logger.warning("[双库检索] 免签检索器未初始化，跳过免签库检索")
+            visa_free_nodes = []
+        else:
+            visa_free_nodes = self.visa_free_retriever.retrieve(query)
+            logger.info(f"[双库检索] 免签库检索完成 | 返回 {len(visa_free_nodes)} 条")
+            if visa_free_nodes:
+                visa_scores = [n.score for n in visa_free_nodes[:5]]
+                logger.info(f"[双库检索] 免签库Top5得分: {[f'{s:.4f}' for s in visa_scores]}")
         
         # 2. 独立检索通用库
         logger.info("[双库检索] 步骤2: 检索通用知识库...")
-        general_nodes = self.general_retriever.retrieve(query)
-        logger.info(f"[双库检索] 通用库检索完成 | 返回 {len(general_nodes)} 条")
-        if general_nodes:
-            general_scores = [n.score for n in general_nodes[:5]]
-            logger.info(f"[双库检索] 通用库Top5得分: {[f'{s:.4f}' for s in general_scores]}")
+        if self.general_retriever is None:
+            logger.warning("[双库检索] 通用检索器未初始化，跳过通用库检索")
+            general_nodes = []
+        else:
+            general_nodes = self.general_retriever.retrieve(query)
+            logger.info(f"[双库检索] 通用库检索完成 | 返回 {len(general_nodes)} 条")
+            if general_nodes:
+                general_scores = [n.score for n in general_nodes[:5]]
+                logger.info(f"[双库检索] 通用库Top5得分: {[f'{s:.4f}' for s in general_scores]}")
         
         # 3. 根据策略合并
         if self.strategy == "adaptive":
