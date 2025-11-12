@@ -4,10 +4,12 @@
 用于对检索到的节点进行智能过滤和提取
 """
 import json
+import time
 from typing import List, Dict, Any, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from utils import logger
 from prompts import get_insertblock_system_all, get_insertblock_user_all
+from config import Settings
 
 
 class InsertBlockFilter:
@@ -16,14 +18,15 @@ class InsertBlockFilter:
     对每个节点判断是否能回答问题，并提取关键段落
     """
 
-    def __init__(self, llm_service, max_workers: int = 5):
+    def __init__(self, llm_service, max_workers: int = None):
         """
         Args:
             llm_service: LLM 服务实例
-            max_workers: 并发处理的最大线程数
+            max_workers: 并发处理的最大线程数（None 则使用配置值）
         """
         self.llm_service = llm_service
-        self.max_workers = max_workers
+        self.max_workers = max_workers or Settings.INSERTBLOCK_MAX_WORKERS
+        logger.info(f"InsertBlockFilter 初始化 | 并发数: {self.max_workers}")
 
     def filter_nodes(
         self,
@@ -56,7 +59,8 @@ class InsertBlockFilter:
         if not nodes:
             return []
 
-        logger.info(f"开始使用 InsertBlock 过滤器处理 {len(nodes)} 个节点")
+        start_time = time.time()
+        logger.info(f"开始使用 InsertBlock 过滤器处理 {len(nodes)} 个节点 | 并发数: {self.max_workers}")
 
         # 获取 LLM 实例
         llm = self.llm_service.get_client(llm_id)
@@ -113,6 +117,10 @@ class InsertBlockFilter:
                         f"错误: {e}"
                     )
 
+        # 计算处理时间
+        elapsed_time = time.time() - start_time
+        avg_time_per_node = elapsed_time / len(nodes) if nodes else 0
+        
         # 输出详细统计
         logger.info("=" * 60)
         logger.info(f"InsertBlock 过滤完成统计:")
@@ -120,6 +128,9 @@ class InsertBlockFilter:
         logger.info(f"  通过筛选: {len(filtered_results)} 个节点")
         logger.info(f"  被拒绝: {len(rejected_nodes)} 个节点")
         logger.info(f"  处理失败: {len(nodes) - len(filtered_results) - len(rejected_nodes)} 个节点")
+        logger.info(f"  总处理时间: {elapsed_time:.2f} 秒")
+        logger.info(f"  平均每节点: {avg_time_per_node:.2f} 秒")
+        logger.info(f"  并发数: {self.max_workers}")
         logger.info(f"\n  涉及文件数: {len(file_stats)}")
 
         # 按文件输出统计

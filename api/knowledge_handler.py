@@ -4,7 +4,9 @@
 处理知识库问答的业务逻辑
 """
 import json
-from typing import Generator, Dict, Any, Optional
+import os
+from datetime import datetime
+from typing import Generator, Dict, Any, Optional, List
 from llama_index.core import QueryBundle
 from config import Settings
 from utils import logger, clean_for_sse_text
@@ -42,6 +44,9 @@ class KnowledgeHandler:
         llm_service=None,
         # 免签知识库相关组件（可选）
         visa_free_retriever=None,
+        # 航司知识库相关组件（可选）
+        airline_retriever=None,
+        # 多库检索器和意图分类器
         multi_kb_retriever=None,
         intent_classifier=None
     ):
@@ -54,6 +59,9 @@ class KnowledgeHandler:
         
         # 免签知识库组件
         self.visa_free_retriever = visa_free_retriever
+        # 航司知识库组件
+        self.airline_retriever = airline_retriever
+        # 多库检索器和意图分类器
         self.multi_kb_retriever = multi_kb_retriever
         self.intent_classifier = intent_classifier
 
@@ -63,15 +71,19 @@ class KnowledgeHandler:
             self.insert_block_filter = InsertBlockFilter(llm_service)
             logger.info("InsertBlock 过滤器已初始化")
         
-        # 日志：免签功能状态
+        # 日志：知识库功能状态
+        enabled_features = []
         if self.multi_kb_retriever and self.intent_classifier:
-            logger.info("✓ 免签知识库功能已启用（双库检索 + 意图分类）")
-        elif self.multi_kb_retriever:
-            logger.info("✓ 免签知识库功能已启用（双库检索，无意图分类）")
-        elif self.visa_free_retriever:
-            logger.info("✓ 免签知识库功能已启用（单独检索）")
+            enabled_features.append("多库检索+意图分类")
+        if self.visa_free_retriever:
+            enabled_features.append("免签库")
+        if self.airline_retriever:
+            enabled_features.append("航司库")
+        
+        if enabled_features:
+            logger.info(f"✓ 知识库功能已启用: {', '.join(enabled_features)}")
         else:
-            logger.info("⊘ 免签知识库功能未启用")
+            logger.info("⊘ 仅使用通用知识库")
 
     def process(
         self,
@@ -116,6 +128,7 @@ class KnowledgeHandler:
 
             # 2. 如果启用 InsertBlock 模式，进行智能过滤
             filtered_results = None
+            filtered_map = None
             nodes_for_prompt = final_nodes  # 默认使用原始检索结果
 
             if use_insert_block and final_nodes and self.insert_block_filter:
@@ -133,6 +146,10 @@ class KnowledgeHandler:
                     full_response += f"找到 {len(filtered_results)} 个可回答的节点\n"
                     # InsertBlock 成功：只使用过滤后的节点
                     nodes_for_prompt = None  # 不再传入原始节点
+                    filtered_map = {}
+                    for result in filtered_results:
+                        key = f"{result['file_name']}_{result['reranked_score']}"
+                        filtered_map[key] = result
                 else:
                     yield ('CONTENT', "未找到可直接回答的节点，将使用原始检索结果")
                     full_response += "未找到可直接回答的节点，将使用原始检索结果\n"
@@ -168,17 +185,12 @@ class KnowledgeHandler:
                     full_response += chunk
 
             # 6. 输出参考来源
+            reference_entries = self._build_reference_log_entries(final_nodes, filtered_map)
+
             if use_insert_block and filtered_results:
                 # InsertBlock 模式：返回所有原始节点，但标注哪些被选中
                 yield ('CONTENT', "\n\n**参考来源（全部检索结果）:**")
                 full_response += "\n\n参考来源（全部检索结果）:"
-
-                # 构建过滤结果的映射（用于快速查找）
-                filtered_map = {}
-                for result in filtered_results:
-                    # 通过文件名和内容匹配原始节点
-                    key = f"{result['file_name']}_{result['reranked_score']}"
-                    filtered_map[key] = result
 
                 # 遍历所有原始节点，标注哪些被选中
                 for i, node in enumerate(final_nodes):
@@ -189,17 +201,40 @@ class KnowledgeHandler:
                     # 检查该节点是否在过滤结果中
                     filtered_info = filtered_map.get(key)
 
+                    # 提取检索元数据
+                    retrieval_sources = node.node.metadata.get('retrieval_sources', [])
+                    vector_score = node.node.metadata.get('vector_score', 0.0)
+                    bm25_score = node.node.metadata.get('bm25_score', 0.0)
+                    vector_rank = node.node.metadata.get('vector_rank')
+                    bm25_rank = node.node.metadata.get('bm25_rank')
+                    
                     source_data = {
                         "id": i + 1,
                         "fileName": file_name,
                         "initialScore": f"{initial_score:.4f}",
                         "rerankedScore": f"{node.score:.4f}",
                         "content": node.node.text.strip(),
-                        # 新增字段
+                        # 检索元数据
+                        "retrievalSources": retrieval_sources,
+                        "vectorScore": f"{vector_score:.4f}",
+                        "bm25Score": f"{bm25_score:.4f}",
+                        # InsertBlock 特有字段
                         "canAnswer": filtered_info is not None,
                         "reasoning": filtered_info.get('reasoning', '') if filtered_info else '',
                         "keyPassage": filtered_info.get('key_passage', '') if filtered_info else ''
                     }
+                    
+                    # 添加排名信息（如果存在）
+                    if vector_rank is not None:
+                        source_data['vectorRank'] = vector_rank
+                    if bm25_rank is not None:
+                        source_data['bm25Rank'] = bm25_rank
+                    
+                    # 添加匹配的关键词（如果是关键词检索）
+                    if 'keyword' in retrieval_sources:
+                        matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
+                        if matched_keywords:
+                            source_data['matchedKeywords'] = matched_keywords
 
                     yield ('SOURCE', json.dumps(source_data, ensure_ascii=False))
 
@@ -223,6 +258,12 @@ class KnowledgeHandler:
                             f"初始分: {data['initialScore']}, "
                             f"重排分: {data['rerankedScore']}"
                         )
+
+            self._log_reference_details(
+                question=question,
+                references=reference_entries,
+                mode="single"
+            )
 
             yield ('DONE', '')
 
@@ -370,13 +411,13 @@ class KnowledgeHandler:
                 if key_passage:
                     # 如果有关键段落，先展示关键段落，再展示完整内容
                     block = (
-                        f"### 来源 {i + 1} - {file_name}:\n"
+                        f"### 业务规定 {i + 1} - {file_name}:\n"
                         # f"**【关键段落】**\n> {key_passage}\n\n"
                         f"**【完整内容】**\n> {full_content}"
                     )
                 else:
                     # 如果没有关键段落，只展示完整内容
-                    block = f"### 来源 {i + 1} - {file_name}:\n> {full_content}"
+                    block = f"### 业务规定 {i + 1} - {file_name}:\n> {full_content}"
                     logger.warning(f"节点通过筛选但没有关键段落: {file_name}")
 
                 context_blocks.append(block)
@@ -394,7 +435,7 @@ class KnowledgeHandler:
             for i, node in enumerate(final_nodes):
                 file_name = node.node.metadata.get('file_name', '未知文件')
                 content = node.node.get_content().strip()
-                block = f"### 来源 {i + 1} - {file_name}:\n> {content}"
+                block = f"### 业务规定 {i + 1} - {file_name}:\n> {content}"
                 context_blocks.append(block)
 
             formatted_context = "\n\n".join(context_blocks)
@@ -406,8 +447,6 @@ class KnowledgeHandler:
         if has_rag:
             # 获取前缀
             assistant_prefix = get_knowledge_assistant_context_prefix()
-
-            # 组合 assistant_context
             assistant_context = assistant_prefix + formatted_context
 
             # 根据思考模式选择不同的 system 和 user prompt
@@ -658,13 +697,35 @@ class KnowledgeHandler:
         """格式化参考来源"""
         for i, node in enumerate(final_nodes):
             initial_score = node.node.metadata.get('initial_score', 0.0)
+            retrieval_sources = node.node.metadata.get('retrieval_sources', [])
+            vector_score = node.node.metadata.get('vector_score', 0.0)
+            bm25_score = node.node.metadata.get('bm25_score', 0.0)
+            vector_rank = node.node.metadata.get('vector_rank')
+            bm25_rank = node.node.metadata.get('bm25_rank')
+            
             source_data = {
                 "id": i + 1,
                 "fileName": node.node.metadata.get('file_name', '未知'),
                 "initialScore": f"{initial_score:.4f}",
                 "rerankedScore": f"{node.score:.4f}",
-                "content": node.node.text.strip()
+                "content": node.node.text.strip(),
+                "retrievalSources": retrieval_sources,
+                "vectorScore": f"{vector_score:.4f}",
+                "bm25Score": f"{bm25_score:.4f}"
             }
+            
+            # 添加排名信息（如果存在）
+            if vector_rank is not None:
+                source_data['vectorRank'] = vector_rank
+            if bm25_rank is not None:
+                source_data['bm25Rank'] = bm25_rank
+            
+            # 添加匹配的关键词（如果是关键词检索）
+            if 'keyword' in retrieval_sources:
+                matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
+                if matched_keywords:
+                    source_data['matchedKeywords'] = matched_keywords
+            
             yield ('SOURCE', json.dumps(source_data, ensure_ascii=False))
 
     def _format_filtered_sources(self, filtered_results):
@@ -681,6 +742,54 @@ class KnowledgeHandler:
                 "content": result['node'].node.text.strip()
             }
             yield f"SOURCE:{json.dumps(source_data, ensure_ascii=False)}"
+
+    def _build_reference_log_entries(self, final_nodes, filtered_map=None):
+        """构建用于日志记录的参考文献条目"""
+        entries = []
+        if not final_nodes:
+            return entries
+
+        for i, node in enumerate(final_nodes):
+            file_name = node.node.metadata.get('file_name', '未知')
+            initial_score = node.node.metadata.get('initial_score', 0.0)
+            key = f"{file_name}_{node.score}"
+            filtered_info = filtered_map.get(key) if filtered_map else None
+
+            entries.append({
+                "id": i + 1,
+                "fileName": file_name,
+                "initialScore": round(float(initial_score), 6),
+                "rerankedScore": round(float(node.score or 0.0), 6),
+                "canAnswer": (filtered_info is not None) if filtered_map else None,
+                "reasoning": filtered_info.get('reasoning', '') if filtered_info else '',
+                "keyPassage": filtered_info.get('key_passage', '') if filtered_info else '',
+                "content": node.node.text.strip()
+            })
+
+        return entries
+
+    def _log_reference_details(
+        self,
+        question: str,
+        references: list,
+        mode: str,
+        session_id: Optional[str] = None
+    ):
+        """记录参考文献详情到日志文件"""
+        try:
+            os.makedirs(Settings.LOG_DIR, exist_ok=True)
+            log_path = os.path.join(Settings.LOG_DIR, "reference_logs.jsonl")
+            payload = {
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "mode": mode,
+                "session_id": session_id,
+                "question": question,
+                "references": references
+            }
+            with open(log_path, "a", encoding="utf-8") as log_file:
+                log_file.write(json.dumps(payload, ensure_ascii=False) + "\n")
+        except Exception as e:
+            logger.warning(f"记录参考文献日志失败: {e}")
 
     def _save_log(self, question: str, response: str, client_ip: str, has_rag: bool, use_insert_block: bool = False):
         """保存问答日志"""
@@ -761,6 +870,7 @@ class KnowledgeHandler:
 
             # 2. 如果启用 InsertBlock 模式，进行智能过滤
             filtered_results = None
+            filtered_map = None
             nodes_for_prompt = final_nodes
 
             if use_insert_block and final_nodes and self.insert_block_filter:
@@ -777,6 +887,10 @@ class KnowledgeHandler:
                     yield f"CONTENT:找到 {len(filtered_results)} 个可回答的节点"
                     full_response += f"找到 {len(filtered_results)} 个可回答的节点\n"
                     nodes_for_prompt = None
+                    filtered_map = {}
+                    for result in filtered_results:
+                        key = f"{result['file_name']}_{result['reranked_score']}"
+                        filtered_map[key] = result
                 else:
                     yield "CONTENT:未找到可直接回答的节点，将使用原始检索结果"
                     full_response += "未找到可直接回答的节点，将使用原始检索结果\n"
@@ -938,15 +1052,9 @@ class KnowledgeHandler:
                 parent_turn_id=parent_turn_id
             )
 
-            # 9. 输出参考来源
             if use_insert_block and filtered_results:
                 yield "CONTENT:\n\n**参考来源（全部检索结果）:**"
                 full_response += "\n\n参考来源（全部检索结果）:"
-
-                filtered_map = {}
-                for result in filtered_results:
-                    key = f"{result['file_name']}_{result['reranked_score']}"
-                    filtered_map[key] = result
 
                 for i, node in enumerate(final_nodes):
                     file_name = node.node.metadata.get('file_name', '未知')
@@ -955,16 +1063,40 @@ class KnowledgeHandler:
 
                     filtered_info = filtered_map.get(key)
 
+                    # 提取检索元数据
+                    retrieval_sources = node.node.metadata.get('retrieval_sources', [])
+                    vector_score = node.node.metadata.get('vector_score', 0.0)
+                    bm25_score = node.node.metadata.get('bm25_score', 0.0)
+                    vector_rank = node.node.metadata.get('vector_rank')
+                    bm25_rank = node.node.metadata.get('bm25_rank')
+
                     source_data = {
                         "id": i + 1,
                         "fileName": file_name,
                         "initialScore": f"{initial_score:.4f}",
                         "rerankedScore": f"{node.score:.4f}",
                         "content": node.node.text.strip(),
+                        # 检索元数据
+                        "retrievalSources": retrieval_sources,
+                        "vectorScore": f"{vector_score:.4f}",
+                        "bm25Score": f"{bm25_score:.4f}",
+                        # InsertBlock 特有字段
                         "canAnswer": filtered_info is not None,
                         "reasoning": filtered_info.get('reasoning', '') if filtered_info else '',
                         "keyPassage": filtered_info.get('key_passage', '') if filtered_info else ''
                     }
+                    
+                    # 添加排名信息（如果存在）
+                    if vector_rank is not None:
+                        source_data['vectorRank'] = vector_rank
+                    if bm25_rank is not None:
+                        source_data['bm25Rank'] = bm25_rank
+                    
+                    # 添加匹配的关键词（如果是关键词检索）
+                    if 'keyword' in retrieval_sources:
+                        matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
+                        if matched_keywords:
+                            source_data['matchedKeywords'] = matched_keywords
 
                     yield f"SOURCE:{json.dumps(source_data, ensure_ascii=False)}"
 
@@ -989,6 +1121,15 @@ class KnowledgeHandler:
                             f"\n[{data['id']}] 文件: {data['fileName']}, "
                             f"重排分: {data['rerankedScore']}"
                         )
+
+            reference_entries = self._build_reference_log_entries(final_nodes, filtered_map)
+
+            self._log_reference_details(
+                question=question,
+                references=reference_entries,
+                mode="conversation",
+                session_id=session_id
+            )
 
             yield "DONE:"
 
@@ -1036,7 +1177,7 @@ class KnowledgeHandler:
             for i, result in enumerate(filtered_results):
                 file_name = result['file_name']
                 full_content = result['node'].node.text.strip()
-                block = f"### 来源 {i + 1} - {file_name}:\n> {full_content}"
+                block = f"### 业务规定 {i + 1} - {file_name}:\n> {full_content}"
                 context_blocks.append(block)
             knowledge_context = "\n\n".join(context_blocks) if context_blocks else None
 
@@ -1046,7 +1187,7 @@ class KnowledgeHandler:
             for i, node in enumerate(final_nodes):
                 file_name = node.node.metadata.get('file_name', '未知文件')
                 content = node.node.get_content().strip()
-                block = f"### 来源 {i + 1} - {file_name}:\n> {content}"
+                block = f"### 业务规定 {i + 1} - {file_name}:\n> {content}"
                 context_blocks.append(block)
             knowledge_context = "\n\n".join(context_blocks)
 
@@ -1228,6 +1369,21 @@ class KnowledgeHandler:
             retrieval_scores = [n.score for n in retrieved_nodes[:5]]
             logger.info(f"检索阶段Top5得分: {[f'{s:.4f}' for s in retrieval_scores]}")
         
+        # 保存原始节点的检索元数据（重排序可能会丢失）
+        original_metadata = {}
+        for node in retrieved_nodes:
+            node_id = node.node.node_id
+            original_metadata[node_id] = {
+                'retrieval_sources': node.node.metadata.get('retrieval_sources', []),
+                'vector_score': node.node.metadata.get('vector_score', 0.0),
+                'bm25_score': node.node.metadata.get('bm25_score', 0.0),
+                'bm25_matched_keywords': node.node.metadata.get('bm25_matched_keywords', []),
+                'bm25_query_keywords': node.node.metadata.get('bm25_query_keywords', []),
+                'vector_rank': node.node.metadata.get('vector_rank'),
+                'bm25_rank': node.node.metadata.get('bm25_rank'),
+                'initial_score': node.node.metadata.get('initial_score', node.score)
+            }
+        
         # 重排序
         reranked_nodes = self.reranker.postprocess_nodes(
             retrieved_nodes,
@@ -1236,19 +1392,157 @@ class KnowledgeHandler:
         
         logger.info(f"重排序后保留 {len(reranked_nodes)} 个结果")
         
+        # 恢复原始节点的检索元数据
+        for node in reranked_nodes:
+            node_id = node.node.node_id
+            if node_id in original_metadata:
+                metadata = original_metadata[node_id]
+                node.node.metadata.update(metadata)
+        
+        logger.info(f"已恢复 {len([n for n in reranked_nodes if n.node.metadata.get('retrieval_sources')])} 个节点的检索元数据")
+        
         # 添加日志：重排序后的分数
         if reranked_nodes:
             rerank_scores = [n.score for n in reranked_nodes[:5]]
             logger.info(f"重排序阶段Top5得分: {[f'{s:.4f}' for s in rerank_scores]}")
         
-        # 取 top N
+        # 方案1+3组合：按得分排序后严格截断到前端要求的数量
+        # 确保按分数从高到低排序
+        reranked_nodes.sort(key=lambda x: x.score, reverse=True)
+        
+        # 严格按照前端传入的 rerank_top_n 参数截断
         final_nodes = reranked_nodes[:rerank_top_n]
         
         if final_nodes:
             logger.info(
-                f"最终返回 {len(final_nodes)} 个文档 | "
+                f"最终返回 {len(final_nodes)} 个文档（严格按前端参数 top_k={rerank_top_n} 截断） | "
                 f"最高分: {final_nodes[0].score:.4f} | "
                 f"最低分: {final_nodes[-1].score:.4f}"
             )
         
         return final_nodes
+
+    def debug_inspect_scores(
+        self,
+        question: str,
+        *,
+        retriever=None,
+        match_substring: Optional[str] = None,
+        match_node_id: Optional[str] = None,
+        max_candidates: int = 50,
+        include_full_text: bool = False,
+        run_reranker: bool = True
+    ) -> Dict[str, Any]:
+        """
+        调试辅助：查看检索/重排序阶段的节点得分。
+        仅在显式调用时执行，不影响现有流程。
+        """
+        if not question:
+            raise ValueError("question 不能为空")
+
+        active_retriever = retriever or self.retriever
+        if active_retriever is None:
+            raise RuntimeError("未配置检索器，无法执行调试")
+
+        if run_reranker and self.reranker is None:
+            raise RuntimeError("未配置重排器，无法执行调试")
+
+        query_bundle = QueryBundle(query_str=question)
+
+        def _execute_retriever() -> List[Any]:
+            """兼容多知识库检索器的调用方式"""
+            try:
+                from core.multi_kb_retriever import MultiKBRetriever
+            except ImportError:
+                MultiKBRetriever = None  # type: ignore
+
+            if MultiKBRetriever and isinstance(active_retriever, MultiKBRetriever):
+                return active_retriever.retrieve_from_all_three(question)
+
+            return active_retriever.retrieve(query_bundle)
+
+        def _serialize_nodes(nodes: List[Any], stage: str) -> List[Dict[str, Any]]:
+            serialized = []
+            for idx, node_score in enumerate(nodes[:max_candidates], start=1):
+                node = node_score.node
+                metadata = node.metadata or {}
+                text = node.get_content()
+                preview = text[:120].replace("\n", " ").strip()
+                vector_rank = metadata.get("vector_rank")
+                bm25_rank = metadata.get("bm25_rank")
+                sources = metadata.get("retrieval_sources") or []
+                source_label = "/".join(sources) if sources else "unknown"
+
+                entry = {
+                    "stage": stage,
+                    "rank": idx,
+                    "node_id": node.node_id,
+                    "score": float(node_score.score or 0.0),
+                    "vector_score": float(metadata.get("vector_score", 0.0)),
+                    "bm25_score": float(metadata.get("bm25_score", 0.0)),
+                    "vector_rank": vector_rank,
+                    "bm25_rank": bm25_rank,
+                    "sources": sources,
+                    "source_label": source_label,
+                    "file_name": metadata.get("file_name"),
+                    "file_path": metadata.get("file_path"),
+                    "text_preview": preview,
+                    "metadata": metadata
+                }
+
+                if include_full_text:
+                    entry["text"] = text
+
+                serialized.append(entry)
+
+            return serialized
+
+        def _is_match(entry: Dict[str, Any]) -> bool:
+            if not match_substring and not match_node_id:
+                return False
+
+            matched = True
+
+            if match_substring:
+                needle = match_substring.lower()
+                haystack = [
+                    (entry.get("text_preview") or "").lower(),
+                    (entry.get("file_name") or "").lower(),
+                ]
+                if include_full_text:
+                    haystack.append((entry.get("text") or "").lower())
+                matched = any(needle in segment for segment in haystack)
+
+            if matched and match_node_id:
+                matched = match_node_id in (entry.get("node_id") or "")
+
+            return matched
+
+        retrieved_nodes = _execute_retriever() or []
+        retrieval_serialized = _serialize_nodes(retrieved_nodes, stage="retrieval")
+
+        rerank_serialized: List[Dict[str, Any]] = []
+        if run_reranker and retrieved_nodes:
+            reranked = self.reranker.postprocess_nodes(
+                retrieved_nodes,
+                query_bundle=query_bundle
+            )
+            reranked.sort(key=lambda x: x.score, reverse=True)
+            rerank_serialized = _serialize_nodes(reranked, stage="rerank")
+
+        matched_entries = []
+        for entry in retrieval_serialized + rerank_serialized:
+            if _is_match(entry):
+                matched_entries.append(entry)
+
+        return {
+            "question": question,
+            "retriever_type": type(active_retriever).__name__,
+            "retrieval": retrieval_serialized,
+            "rerank": rerank_serialized,
+            "matches": matched_entries,
+            "match_conditions": {
+                "substring": match_substring,
+                "node_id": match_node_id
+            }
+        }

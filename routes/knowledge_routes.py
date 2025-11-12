@@ -195,7 +195,7 @@ def knowledge_chat_conversation():
             use_insert_block=use_insert_block,
             insert_block_llm_id=insert_block_llm_id
         ):
-            # item 是元组格式: ('THINK', content) 或 ('CONTENT', content)
+            # item 是元组格式: ('THINK', content) 或 ('CONTENT', content) 或 ('SOURCE', json_data)
             if isinstance(item, tuple) and len(item) == 2:
                 prefix_type, content = item
                 # 格式化为 SSE 消息
@@ -203,6 +203,10 @@ def knowledge_chat_conversation():
                     formatted_item = f"THINK:{content}"
                 elif prefix_type == 'CONTENT':
                     formatted_item = f"CONTENT:{content}"
+                elif prefix_type == 'SOURCE':
+                    formatted_item = f"SOURCE:{content}"
+                elif prefix_type == 'DONE':
+                    formatted_item = f"DONE:{content}"
                 else:
                     # 兼容其他格式
                     formatted_item = f"{prefix_type}:{content}"
@@ -780,7 +784,7 @@ def knowledge_chat():
             use_insert_block=use_insert_block,
             insert_block_llm_id=insert_block_llm_id
         ):
-            # item 是元组格式: ('THINK', content) 或 ('CONTENT', content)
+            # item 是元组格式: ('THINK', content) 或 ('CONTENT', content) 或 ('SOURCE', json_data)
             if isinstance(item, tuple) and len(item) == 2:
                 prefix_type, content = item
                 # 格式化为 SSE 消息
@@ -788,6 +792,10 @@ def knowledge_chat():
                     yield f"THINK:{content}"
                 elif prefix_type == 'CONTENT':
                     yield f"CONTENT:{content}"
+                elif prefix_type == 'SOURCE':
+                    yield f"SOURCE:{content}"
+                elif prefix_type == 'DONE':
+                    yield f"DONE:{content}"
                 else:
                     # 兼容其他格式
                     yield f"{prefix_type}:{content}"

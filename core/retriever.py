@@ -19,14 +19,47 @@ class CleanBM25Retriever(BaseRetriever):
     def __init__(self, nodes: List[TextNode], similarity_top_k: int = 2):
         self._id_to_original_node = {node.node_id: node for node in nodes}
 
-        # 使用 jieba 分词
-        tokenized_corpus = [
-            " ".join(jieba.lcut(node.get_content()))
-            for node in nodes
-        ]
+        # 使用 jieba 分词，并过滤异常节点
+        tokenized_corpus = []
+        valid_nodes = []
+        
+        for node in nodes:
+            # 获取节点内容
+            content = node.get_content() if hasattr(node, 'get_content') else (node.text or "")
+            
+            # 验证内容是否有效（不是JSON格式的元数据）
+            # 检查是否是 JSON 序列化的节点对象
+            content_stripped = content.strip()
+            is_json_node = (
+                content_stripped.startswith('{"id_"') or 
+                content_stripped.startswith('{"class_name"') or
+                (content_stripped.startswith('{') and '"text":' in content_stripped and '"metadata":' in content_stripped)
+            )
+            
+            if not content or is_json_node:
+                logger.warning(f"跳过异常节点 {node.node_id[:8]}...: 内容为空或为元数据格式")
+                logger.debug(f"  内容预览: {content[:100]}...")
+                continue
+            
+            # 分词
+            tokenized_text = " ".join(jieba.lcut(content))
+            tokenized_corpus.append(tokenized_text)
+            valid_nodes.append(node)
+        
+        # 更新映射，只包含有效节点
+        self._id_to_original_node = {node.node_id: node for node in valid_nodes}
+        
+        logger.info(f"BM25检索器初始化: 总节点{len(nodes)}个, 有效节点{len(valid_nodes)}个, 跳过{len(nodes)-len(valid_nodes)}个异常节点")
+        
+        # 检查是否有有效节点
+        if len(valid_nodes) == 0:
+            logger.error("❌ 所有节点都无效！BM25检索器无法初始化")
+            logger.error("请检查 Qdrant 中的数据是否正确，可能需要重建索引")
+            raise ValueError(f"BM25检索器初始化失败: {len(nodes)}个节点全部无效，请重建知识库索引")
+        
         tokenized_docs = [
             Document(text=text, id_=node.id_)
-            for text, node in zip(tokenized_corpus, nodes)
+            for text, node in zip(tokenized_corpus, valid_nodes)
         ]
 
         self._bm25_retriever = OfficialBM25(
@@ -38,19 +71,28 @@ class CleanBM25Retriever(BaseRetriever):
     def _retrieve(self, query_bundle: QueryBundle) -> List[NodeWithScore]:
         """执行检索"""
         # 对查询进行分词
-        tokenized_query = " ".join(jieba.lcut(query_bundle.query_str))
+        query_keywords = jieba.lcut(query_bundle.query_str)
+        tokenized_query = " ".join(query_keywords)
         tokenized_bundle = QueryBundle(query_str=tokenized_query)
 
         # 检索
         retrieved_nodes = self._bm25_retriever.retrieve(tokenized_bundle)
 
-        # 替换回原始节点
+        # 替换回原始节点，并添加匹配关键词信息
         clean_nodes = []
         for node_with_score in retrieved_nodes:
             original_node = self._id_to_original_node.get(
                 node_with_score.node.node_id
             )
             if original_node:
+                # 找出文档中匹配的关键词
+                doc_content = original_node.get_content() if hasattr(original_node, 'get_content') else (original_node.text or "")
+                matched_keywords = [kw for kw in query_keywords if kw in doc_content and len(kw) > 1]
+                
+                # 将匹配的关键词添加到节点元数据
+                original_node.metadata['bm25_matched_keywords'] = matched_keywords
+                original_node.metadata['bm25_query_keywords'] = query_keywords
+                
                 clean_nodes.append(
                     NodeWithScore(node=original_node, score=node_with_score.score)
                 )
@@ -65,11 +107,15 @@ class HybridRetriever(BaseRetriever):
         self,
         automerging_retriever: AutoMergingRetriever,
         bm25_retriever: CleanBM25Retriever,
-        rrf_k: float = 60.0
+        rrf_k: float = 60.0,
+        vector_weight: float = 0.7,
+        bm25_weight: float = 0.3
     ):
         self._automerging = automerging_retriever
         self._bm25 = bm25_retriever
         self._rrf_k = rrf_k
+        self._vector_weight = vector_weight
+        self._bm25_weight = bm25_weight
         super().__init__()
 
     def _retrieve(self, query_bundle: QueryBundle) -> List[NodeWithScore]:
@@ -102,22 +148,33 @@ class HybridRetriever(BaseRetriever):
         vector_scores = {n.node.node_id: n.score for n in automerging_nodes}
         bm25_scores = {n.node.node_id: n.score for n in bm25_nodes}
 
-        # 4. 计算 RRF 分数
+        # 4. 计算加权 RRF 分数
         fused_scores = {}
         for node_id in all_nodes:
             score = 0.0
             if node_id in vector_ranks:
-                score += 1.0 / (self._rrf_k + vector_ranks[node_id])
+                score += self._vector_weight * (1.0 / (self._rrf_k + vector_ranks[node_id]))
             if node_id in bm25_ranks:
-                score += 1.0 / (self._rrf_k + bm25_ranks[node_id])
+                score += self._bm25_weight * (1.0 / (self._rrf_k + bm25_ranks[node_id]))
             fused_scores[node_id] = score
 
         # 5. 构建结果并附加元数据
         fused_results = []
         for node_id, score in fused_scores.items():
             node_obj = all_nodes[node_id]
+            vector_rank = vector_ranks.get(node_id)
+            bm25_rank = bm25_ranks.get(node_id)
+            sources = []
+            if vector_rank is not None:
+                sources.append("vector")
+            if bm25_rank is not None:
+                sources.append("keyword")
+
             node_obj.metadata['vector_score'] = vector_scores.get(node_id, 0.0)
             node_obj.metadata['bm25_score'] = bm25_scores.get(node_id, 0.0)
+            node_obj.metadata['vector_rank'] = vector_rank
+            node_obj.metadata['bm25_rank'] = bm25_rank
+            node_obj.metadata['retrieval_sources'] = sources
             node_obj.metadata['initial_score'] = score
 
             fused_results.append(NodeWithScore(node=node_obj, score=score))
@@ -171,6 +228,13 @@ class RetrieverFactory:
             similarity_top_k=similarity_top_k_bm25
         )
 
-        # 混合检索器
-        return HybridRetriever(automerging_retriever, bm25_retriever)
+        # 混合检索器（使用配置的权重）
+        from config.settings import Settings as AppSettings
+        return HybridRetriever(
+            automerging_retriever, 
+            bm25_retriever,
+            rrf_k=AppSettings.RRF_K,
+            vector_weight=AppSettings.RRF_VECTOR_WEIGHT,
+            bm25_weight=AppSettings.RRF_BM25_WEIGHT
+        )
 

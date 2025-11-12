@@ -73,11 +73,16 @@ class Settings:
     # ==================== RAG 核心参数 ====================
     RETRIEVAL_TOP_K = 30
     RETRIEVAL_TOP_K_BM25 = 30  # BM25检索数量
-    RERANK_TOP_N = 15  # 重排序后返回数量（适配新的15条检索策略）
-    RERANKER_INPUT_TOP_N = 30  # 送入重排序的数量（增加以确保质量）
+    RERANK_TOP_N = 20  # 重排序后返回数量（适配三库检索30条策略）
+    RERANKER_INPUT_TOP_N = 30  # 送入重排序的数量（三库检索最大30条）
     RETRIEVAL_SCORE_THRESHOLD = 0.2
     RERANK_SCORE_THRESHOLD = 0.2
     DEVICE = "npu" if NPU_AVAILABLE else "cpu"
+    
+    # RRF 融合权重配置
+    RRF_K = 60.0  # RRF 平滑参数
+    RRF_VECTOR_WEIGHT = 0.7  # 向量检索权重（0-1）
+    RRF_BM25_WEIGHT = 0.3    # BM25 检索权重（0-1）
 
     # ==================== LLM 行为参数 ====================
     LLM_REQUEST_TIMEOUT = 1800.0
@@ -85,10 +90,11 @@ class Settings:
     LLM_MAX_TOKENS = 8192
     LLM_MAX_RETRIES = 2
     TEMPERATURE_DISASSEMBLY = 0.0
-    TEMPERATURE_ANALYSIS_ON = 0.3
+    TEMPERATURE_ANALYSIS_ON = 0.5
     TEMPERATURE_ANALYSIS_OFF = 0.0
     TEMPERATURE_REDUCTION = 0.0
-    TOP_P = 0.95  # 添加top_p参数，默认值0.95
+    TOP_P = 0.95  # 采样 top_p（默认0.95）
+    TOP_K = 20    # 采样 top_k（默认20）
 
     # Qdrant 配置
     QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
@@ -129,10 +135,35 @@ class Settings:
     INTENT_CLASSIFIER_TIMEOUT = 5  # 意图分类超时时间（秒）
     INTENT_CLASSIFIER_LLM_ID = "qwen3-32b"  # 用于意图分类的LLM
     
+    # InsertBlock 精准检索配置
+    INSERTBLOCK_MAX_WORKERS = 10  # 并发处理的最大线程数（默认5，提高到10可加快处理速度）
+    
+    # 问题改写和独立重排序功能开关（需要先启用意图分类器）
+    ENABLE_QUESTION_REWRITE = os.getenv("ENABLE_QUESTION_REWRITE", "false").lower() == "true"  # 默认关闭
+    
     # 双库检索策略（当判断为混合问题时）
     DUAL_KB_STRATEGY = "adaptive"  # adaptive(自适应) 或 fixed(固定比例)
-    VISA_FREE_RETRIEVAL_COUNT = 5  # 免签库取5条
-    GENERAL_RETRIEVAL_COUNT = 5    # 通用库取5条
+    VISA_FREE_RETRIEVAL_COUNT = 10  # 免签库取10条（三库检索时）
+    GENERAL_RETRIEVAL_COUNT = 5     # 通用库取5条（保底）
+    
+    # ==================== 航司知识库配置 ====================
+    # 航司功能开关（默认关闭）
+    ENABLE_AIRLINE_FEATURE = os.getenv("ENABLE_AIRLINE_FEATURE", "false").lower() == "true"
+    
+    # 航司知识库路径（独立目录）
+    AIRLINE_KB_DIR = "/opt/rag_final_project/airline_knowledge_base"
+    AIRLINE_STORAGE_PATH = "/opt/rag_final_project/airline_storage"
+    AIRLINE_COLLECTION = "airline_kb"  # 独立的 Qdrant collection
+    
+    # 航司检索参数
+    AIRLINE_RETRIEVAL_TOP_K = 30
+    AIRLINE_RETRIEVAL_TOP_K_BM25 = 30
+    AIRLINE_RERANK_TOP_N = 20  # 适配三库检索30条策略
+    AIRLINE_RETRIEVAL_COUNT = 10  # 航司库取10条（三库检索时）
+
+    # ==================== 特殊规定配置 ====================
+    # 特殊规定文件夹路径（直接从文件读取，不使用向量数据库）
+    SPECIAL_RULES_DIR = "/opt/rag_final_project/special_rules"
 
     # ==================== 服务器配置 ====================
     # SERVER_HOST = "0.0.0.0"

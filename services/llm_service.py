@@ -68,6 +68,7 @@ class CustomOpenAILike(OpenAI):
         completion_kwargs = super()._get_completion_kwargs(**kwargs)
         completion_kwargs["max_tokens"] = Settings.LLM_MAX_TOKENS
         completion_kwargs["top_p"] = Settings.TOP_P
+        completion_kwargs["top_k"] = Settings.TOP_K
         completion_kwargs.pop("stop", None)
 
         # 获取当前实例的思考模式设置
@@ -99,6 +100,7 @@ class CustomOpenAILike(OpenAI):
         chat_kwargs = super()._get_chat_kwargs(**kwargs)
         chat_kwargs["max_tokens"] = Settings.LLM_MAX_TOKENS
         chat_kwargs["top_p"] = Settings.TOP_P
+        chat_kwargs["top_k"] = Settings.TOP_K
         chat_kwargs.pop("stop", None)
 
         # 获取当前实例的思考模式设置

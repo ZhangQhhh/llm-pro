@@ -1,0 +1,163 @@
+================================================================================
+Question: 问题:下列做法正确的是?候选答案:中国籍船员丁某(62岁)于8月1日持用海员证(2022年签发，有效期5年)申请登船，检查员直接为其办理登船手续。 
+Retriever: HybridRetriever
+================================================================================
+
+[Retrieval] 共 56 条（已按得分排序）
+  #01 score=0.0164 vector=0.7389 bm25=0.0000 src=vector ranks=vec#1 id=91724ac4-17b2-4a8c-9eac-3eb9cbbe441a file=补充知识库.docx
+     preview: |||  中国籍船员在国内港口登本人服务境外船舶的，登船港边检站凭船方申报，查验其有效出入境证件并实施人证对照后办理登船手续，不加盖验讫章。
+  #02 score=0.0164 vector=0.0000 bm25=4.5748 src=keyword ranks=bm25#1 id=81193964-b14b-42ff-87ab-3eaa6ecd1f0d file=补充知识库.docx
+     preview: {"id_": "81193964-b14b-42ff-87ab-3eaa6ecd1f0d", "embedding": null, "metadata": {"file_name": "\u8865\u5145\u77e5\u8bc6\u
+  #03 score=0.0161 vector=0.7386 bm25=0.0000 src=vector ranks=vec#2 id=82965af3-9482-42a0-a738-5f44d0e68148 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 3.船员登陆手续办理 （1）中国籍船员登陆 中国籍船员凭本人《中华人民共和国海员证》等有效出境入境证件登陆、返船。港澳地区船员凭本人所持有效《港澳居民来往内地通行证》登陆、返船。台湾地区船员凭本人所持有效《台湾居民来往大陆通行
+  #04 score=0.0161 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#2 id=fff13c56-32b9-4945-b3e6-acf9ee26452a file=补充知识库.docx
+     preview: {"id_": "fff13c56-32b9-4945-b3e6-acf9ee26452a", "embedding": null, "metadata": {"file_name": "\u8865\u5145\u77e5\u8bc6\u
+  #05 score=0.0159 vector=0.7362 bm25=0.0000 src=vector ranks=vec#3 id=0f733f6f-0687-424d-a931-22fe5592a726 file=补充知识库.docx
+     preview: |||  中国籍船员在国内港口登本人服务外国籍及港澳台船舶的，登船港边检站凭船方提供列有其姓名的船员名单或准其登船的证明，查验其有效出入境证件办理登船手续。
+  #06 score=0.0159 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#3 id=5699bff5-3dc2-4559-9192-1f603a53e152 file=（修订稿）1第一章 出入境边防检查概述.md
+     preview: {"id_": "5699bff5-3dc2-4559-9192-1f603a53e152", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #07 score=0.0156 vector=0.7343 bm25=0.0000 src=vector ranks=vec#4 id=e48d39da-56b2-4ce9-b4b1-19b002ab76a2 file=补充知识库.docx
+     preview: |||  外国籍船员乘其他交通运输工具入境后登本人服务国际航行船舶的，登船港边检站凭船方申报，查验其有效出入境证件、有效签证和停留期限，并实施人证对照后办理登船手续，不加盖验讫章。如其登船时已超过签证允许的停留期、免签入境已超过免签停留期以
+  #08 score=0.0156 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#4 id=569ee679-2b5e-4702-bec7-796366f9404e file=（修订稿）1第一章 出入境边防检查概述.md
+     preview: {"id_": "569ee679-2b5e-4702-bec7-796366f9404e", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #09 score=0.0154 vector=0.7319 bm25=0.0000 src=vector ranks=vec#5 id=adf3e755-e09b-4699-bbda-ba563e9d7565 file=补充知识库.docx
+     preview: |||  美国船员随服务船舶来华应事先办妥我签证，凡无我有效签证的美籍船员（包括船长），一律不准上岸。  关于无我有效签证的美国籍船员因疾病等特殊情况需离船登陆的问题：（一）出于人道主义考虑，原则上可允许其离船登陆；（二）边检站在遇有上述情
+  #10 score=0.0154 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#5 id=569bf9bb-890b-48fb-8915-3246de869144 file=di14zhang.md
+     preview: {"id_": "569bf9bb-890b-48fb-8915-3246de869144", "embedding": null, "metadata": {"file_name": "di14zhang.md", "file_path"
+  #11 score=0.0152 vector=0.7313 bm25=0.0000 src=vector ranks=vec#6 id=04c590e3-99b0-46f7-8565-084e0bdbad90 file=补充知识库.docx
+     preview: |||  中国籍船员凭本人《中华人民共和国海员证》等有效出境入境证件登陆、返船；港澳地区船员凭本人所持有效《港澳居民来往内地通行证》登陆、返船；，台湾地区船员凭本人所持有效《台湾居民来往大陆通行证》登陆、返船。
+  #12 score=0.0152 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#6 id=5601348e-69c6-44db-b374-92ba965e00e7 file=（修订稿）7第七章 出入境证件真伪识别认定 - 副本.md
+     preview: {"id_": "5601348e-69c6-44db-b374-92ba965e00e7", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #13 score=0.0149 vector=0.7298 bm25=0.0000 src=vector ranks=vec#7 id=137cd50b-d485-4be6-a03f-2ecfd2276aca file=补充知识库.docx
+     preview: |||  船员随服务的境外船舶入境后提出离船申请的，由离船港边检站查验其有效出入境证件并实施人证对照后，办理离船手续。对离船入境的中国籍和外国籍船员，加盖离船当日的验讫章。对外国籍船员申请在港口城市换乘其他交通运输工具或者从陆地口岸徒步出境
+  #14 score=0.0149 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#7 id=56052d3e-ff52-4bad-9618-920d1f7e17c1 file=（修订稿）10第十章 数据核查研判系统平台.md
+     preview: {"id_": "56052d3e-ff52-4bad-9618-920d1f7e17c1", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #15 score=0.0147 vector=0.7271 bm25=0.0000 src=vector ranks=vec#8 id=7d043eb6-16ce-42cb-8d67-1b94241f2e50 file=补充知识库.docx
+     preview: |||  船员随服务船舶出入境，应当查验其有效出入境证件，一般情况下不加盖验讫章，持用一次有效出入境证件的我国船员（含港澳台），以及按照双边协议享受免签政策（离船）入境，或者按规定需要我国签证方可入境，或者本人要求使用有效签证的外国籍船员除
+  #16 score=0.0147 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#8 id=56113a0d-a098-46de-9ffa-ee23007e788c file=di14zhang.md
+     preview: {"id_": "56113a0d-a098-46de-9ffa-ee23007e788c", "embedding": null, "metadata": {"file_name": "di14zhang.md", "file_path"
+  #17 score=0.0145 vector=0.7265 bm25=0.0000 src=vector ranks=vec#9 id=cc1230a6-d3ae-4f74-bd84-dff0d9784462 file=补充知识库.docx
+     preview: |||  未持有效《港澳居民来往内地通行证》、《台湾居民来往大陆通行证》，但持有能证明其香港、澳门、台湾船员及其随行家属身份的其他证件（台湾当局签发的护照除外），且随入境船舶抵达口岸需登陆的人员，由其服务船舶负责人或出境入境代理单位按规定向
+  #18 score=0.0145 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#9 id=56146326-a0f0-4d8f-83a3-947c6650e6ea file=di14zhang.md
+     preview: {"id_": "56146326-a0f0-4d8f-83a3-947c6650e6ea", "embedding": null, "metadata": {"file_name": "di14zhang.md", "file_path"
+  #19 score=0.0143 vector=0.7255 bm25=0.0000 src=vector ranks=vec#10 id=f7967582-df71-47d3-9134-836e095c8c5f file=补充知识库.docx
+     preview: |||  关于无我有效签证的美国籍船员因疾病等特殊情况需离船登陆的问题：1、出于人道主义考虑，原则上可允许其离船登陆；2、边检站在遇有上述情况时个案上报，经国家移民管理局批准后，由相关边检站和出入境管理部门为其补办签证及相关手续；3、对于上
+  #20 score=0.0143 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#10 id=56173937-e287-41fb-835a-cc6eada78ebe file=中华人民共和国出入境管理法.txt
+     preview: {"id_": "56173937-e287-41fb-835a-cc6eada78ebe", "embedding": null, "metadata": {"file_name": "\u4e2d\u534e\u4eba\u6c11\u
+  #21 score=0.0141 vector=0.7252 bm25=0.0000 src=vector ranks=vec#11 id=86620a76-37ab-4b8d-8ff8-082cf3e5dde8 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 2.船籍 船籍是指船舶的国籍。《联合国海洋法公约》第九十一条“船舶的国籍”规定：“每个国家应确定对船舶给予国籍、船舶在其领土内登记及船舶悬挂该国旗帜的条件。船舶具有其有权悬挂的旗帜所属国家的国籍。国家和船舶之间必须有真正联系。每
+  #22 score=0.0141 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#11 id=561bae54-c0b2-434c-bc3f-98ac2107b2f0 file=（修订稿）11第十一章 出入境边防检查机关执法办案 - 副本.md
+     preview: {"id_": "561bae54-c0b2-434c-bc3f-98ac2107b2f0", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #23 score=0.0139 vector=0.7249 bm25=0.0000 src=vector ranks=vec#12 id=e15e07d5-137b-4358-8c71-cef73c1489df file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 1.船员出入境证件 （1）中国籍船员出入境所持证件 ①中国籍船员。中国公民以海员身份出境入境和在国外船舶从事工作的，应当依法申请海员证，随服务船舶出境入境的，凭本人有效《中华人民共和国海员证》或其他出境入境证件放行。 ②中国
+  #24 score=0.0139 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#12 id=5622bf8c-ec87-411f-b837-0d43c7ec2c15 file=补充知识库.docx
+     preview: {"id_": "5622bf8c-ec87-411f-b837-0d43c7ec2c15", "embedding": null, "metadata": {"file_name": "\u8865\u5145\u77e5\u8bc6\u
+  #25 score=0.0137 vector=0.7249 bm25=0.0000 src=vector ranks=vec#13 id=5db2dc0f-be35-4a2d-8b78-c17e443d376f file=补充知识库.docx
+     preview: |||  未持有效《港澳居民来往内地通行证》《台湾居民来往大陆通行证》，但持有能证明其香港、澳门、台湾船员及其随行家属身份的其他证件（台湾当局签发的护照除外），且随入境船舶抵达口岸需登陆的人员，由其服务船舶负责人或出境入境代理单位按规定向出
+  #26 score=0.0137 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#13 id=56248a3d-b8ca-4d9a-b18b-de5bb235870d file=（修订稿）2第二章 出入境证件.md
+     preview: {"id_": "56248a3d-b8ca-4d9a-b18b-de5bb235870d", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #27 score=0.0135 vector=0.7240 bm25=0.0000 src=vector ranks=vec#14 id=95195dda-0f1c-4d24-a6c3-1ffd6d2d9480 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 2.对上下外国船舶人员进行监管 主要通过查验上下船舶人员的证件，核实身份及登、离船目的，从而对上下船舶人员（如登陆船员、因维修作业原因需登轮的人员等）实施有效管理。人员违反规定上下外国船舶的行为有： （1）外国船员及其随行家属
+  #28 score=0.0135 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#14 id=5625f809-e3fc-4b64-b90c-4c9b495440f4 file=通识知识点.md
+     preview: {"id_": "5625f809-e3fc-4b64-b90c-4c9b495440f4", "embedding": null, "metadata": {"file_name": "\u901a\u8bc6\u77e5\u8bc6\u
+  #29 score=0.0133 vector=0.7216 bm25=0.0000 src=vector ranks=vec#15 id=afd0a807-7537-4b39-9892-4e2425998812 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （3）船舶出入境检查一般程序第三步：入境手续办理第一步： ①入境船舶靠泊码头前，边检站应当确认船舶靠泊情况，根据风险评估结果确定的检查管理措施实施接船。实施电子接船的，应当截取留存船舶AIS轨迹，监控船舶驶入监控镜头至入境正检手
+  #30 score=0.0133 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#15 id=562cb64c-adf7-48a9-93d2-117f34af6fa8 file=（修订稿）10第十章 数据核查研判系统平台.md
+     preview: {"id_": "562cb64c-adf7-48a9-93d2-117f34af6fa8", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #31 score=0.0132 vector=0.7210 bm25=0.0000 src=vector ranks=vec#16 id=ef55702d-6999-4ae9-8ba0-562c2f1e7ed9 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （2）外国籍船员登陆 外国籍船员登陆港口所在城市的，应当向边检站提出申请，边检站根据相关规定签发船员临时入境许可。 ①持船员临时入境许可登陆港口所在城市，停留时间不超过15日，本航次在我国各港口通用。外国籍船员及其随行家属随服
+  #32 score=0.0132 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#16 id=563550a1-c672-4e07-9b12-e129912a3fab file=（修订稿）10第十章 数据核查研判系统平台.md
+     preview: {"id_": "563550a1-c672-4e07-9b12-e129912a3fab", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #33 score=0.0130 vector=0.7206 bm25=0.0000 src=vector ranks=vec#17 id=e517703b-1c6d-4211-b32a-07ee61476648 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 三、出入境船舶船员检查管理 （一）出入境船舶检查基本知识 1.出入境船舶检查地点 对入境船舶的边防检查，在其最先抵达的口岸进行；对出境船舶的边防检查，在其最后离开的口岸进行。坚持“最先、最后口岸”原则是国际通行做法，有利于对
+  #34 score=0.0130 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#17 id=563608eb-a493-4aa6-9838-fa384fe576b6 file=中华人民共和国出境入境边防检查条例.txt
+     preview: {"id_": "563608eb-a493-4aa6-9838-fa384fe576b6", "embedding": null, "metadata": {"file_name": "\u4e2d\u534e\u4eba\u6c11\u
+  #35 score=0.0128 vector=0.7204 bm25=0.0000 src=vector ranks=vec#18 id=4a551485-26e7-45b3-b1cc-8e592b703001 file=补充知识库.docx
+     preview: |||  外籍换班船员登本人服务国际航行船舶的，登船港边检站凭船方提供列有该人姓名的船员名单或准其登船的证明，查验其持用的有效出入境证件、签证后办理船员登船手续。如其登船时已超过签证允许的停留期、免签入境已超过免签停留期以及未按规定办理居留
+  #36 score=0.0128 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#18 id=564074af-b74a-40e1-965f-b77fb70d3a1b file=补充知识库.docx
+     preview: {"id_": "564074af-b74a-40e1-965f-b77fb70d3a1b", "embedding": null, "metadata": {"file_name": "\u8865\u5145\u77e5\u8bc6\u
+  #37 score=0.0127 vector=0.7196 bm25=0.0000 src=vector ranks=vec#19 id=091ebdb3-3252-4317-b2a7-7221537fcdb4 file=补充知识库.docx
+     preview: |||  对持用《海员证》前往香港、澳门或经香港、澳门登船到第三国（地区），以及从国内港口登外国籍服务船舶的中国海员，不再查验《海员出境证明》。对乘坐服务船舶以外交通运输工具出境的，边检机关只查验《海员证》，并提醒当事人应办妥签证，如未被允
+  #38 score=0.0127 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#19 id=5646f660-4246-4e81-b94a-db9bda7e672d file=（修订稿）2第二章 出入境证件.md
+     preview: {"id_": "5646f660-4246-4e81-b94a-db9bda7e672d", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #39 score=0.0125 vector=0.7194 bm25=0.0000 src=vector ranks=vec#20 id=b9bb7f6a-d3c6-40b6-9912-6e0a6d59975c file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 2.船员变更手续办理 （1）本港登船 ①中国籍船员在国内港口登本人服务境外船舶的，登船港边检站凭船方申报，查验其有效出入境证件并实施人证对照后办理登船手续，不加盖验讫章。出境时，由出境港边检站办理出境手续，加盖验讫章。 ②港
+  #40 score=0.0125 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#20 id=56496877-4810-40a6-a4fd-b6744e334d39 file=补充知识库.docx
+     preview: {"id_": "56496877-4810-40a6-a4fd-b6744e334d39", "embedding": null, "metadata": {"file_name": "\u8865\u5145\u77e5\u8bc6\u
+  #41 score=0.0123 vector=0.7188 bm25=0.0000 src=vector ranks=vec#21 id=1d224a96-e9ba-4c28-a0c5-75f8fcb8bdc0 file=补充知识库.docx
+     preview: |||  船员随服务的境外船舶入境后提出离船申请的，由离船港边检站查验其有效出入境证件并实施人证对照后，办理离船手续。对离船入境的中国籍和外国籍船员，加盖离船当日的验讫章。
+  #42 score=0.0123 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#21 id=564db608-b97b-41d8-b616-710c1d1f4d9b file=补充知识库.docx
+     preview: {"id_": "564db608-b97b-41d8-b616-710c1d1f4d9b", "embedding": null, "metadata": {"file_name": "\u8865\u5145\u77e5\u8bc6\u
+  #43 score=0.0122 vector=0.7179 bm25=0.0000 src=vector ranks=vec#22 id=b6155ea7-d088-4a30-9542-ffdbd6fc6232 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （6）船员出入境、登陆、返船管理要求 边检机关根据船方申报信息办理船员入出境边检手续。对随访问邮轮抵港、不登陆的国际邮轮船员，根据船方申请，可免予交验出入境证件，边检机关根据船方申报信息办理入出境边检手续。对申请登陆的外籍船员，
+  #44 score=0.0122 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#22 id=5655624b-fde5-4148-a7a1-b3708eba00de file=补充知识库.docx
+     preview: {"id_": "5655624b-fde5-4148-a7a1-b3708eba00de", "embedding": null, "metadata": {"file_name": "\u8865\u5145\u77e5\u8bc6\u
+  #45 score=0.0120 vector=0.7160 bm25=0.0000 src=vector ranks=vec#23 id=ead8b237-b4b3-4a44-8e79-17a8d8a81be9 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （3）登船后不随船出境 对外国籍船员登船后不能随船出境的，签发船员临时入境许可并办理离船手续，对从港口所在城市以外地区出境的，应当办理停留证件。上述船员中免签入境的换班船员，自其离船之日起重新启算在华停留期。对登船后，在本港或随
+  #46 score=0.0120 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#23 id=5657359e-2d74-4244-b069-dffd84a35c2a file=补充知识库.docx
+     preview: {"id_": "5657359e-2d74-4244-b069-dffd84a35c2a", "embedding": null, "metadata": {"file_name": "\u8865\u5145\u77e5\u8bc6\u
+  #47 score=0.0119 vector=0.7156 bm25=0.0000 src=vector ranks=vec#24 id=bb79ee7b-9293-456b-8584-184766ac6382 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （三）其他船舶手续办理 1.客运船舶 搭乘客运船舶出入境的旅客适用旅客出入境检查程序。船舶靠泊码头设有旅客检查大厅的，应当通过检查大厅的查验通道办理出入境检查手续；未设旅客检查大厅的，可登轮或者在临时检查现场办理出入境检查手续
+  #48 score=0.0119 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#24 id=5658daad-aa81-4229-98d1-4926be9f19be file=补充知识库.docx
+     preview: {"id_": "5658daad-aa81-4229-98d1-4926be9f19be", "embedding": null, "metadata": {"file_name": "\u8865\u5145\u77e5\u8bc6\u
+  #49 score=0.0118 vector=0.7153 bm25=0.0000 src=vector ranks=vec#25 id=1e84b3c1-9965-45fd-84b8-420e8ab1a65e file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （2）随船入境离船 船员随服务的境外船舶入境后提出离船申请的，由离船港边检站查验其有效出入境证件并实施人证对照后，办理离船手续。对离船入境的中国籍和外国籍船员，加盖离船当日的验讫章。对离船入境的外国籍船员，具备条件的边检站按照应
+  #50 score=0.0118 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#25 id=567fc30c-d027-47f1-80ac-61e00b1aa12a file=（修订稿）14第十四章 出入境人员实质性审查及打击口岸违法犯罪活动.md
+     preview: {"id_": "567fc30c-d027-47f1-80ac-61e00b1aa12a", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #51 score=0.0116 vector=0.7150 bm25=0.0000 src=vector ranks=vec#26 id=7bbc1dce-1ae8-4538-94fb-07018ad21314 file=补充知识库.docx
+     preview: |||  船员入出境同时持用有效海员证和护照的，入境时，在符合入境条件的出入境证件上办理入境手续；两本出入境证件都符合入境条件的，可根据其来华目的或本人意愿选择其一办理入境手续。出境时，在办理入境手续的有效出入境证件上办理出境手续。
+  #52 score=0.0116 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#26 id=5686ee84-1c14-4c03-b786-7d44ed846f24 file=（修订稿）2第二章 出入境证件.md
+     preview: {"id_": "5686ee84-1c14-4c03-b786-7d44ed846f24", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #53 score=0.0115 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#27 id=56876f15-5047-442e-83dc-822e8b0342dd file=（修订稿）4第四章 出入境旅客检查（一队.md
+     preview: {"id_": "56876f15-5047-442e-83dc-822e8b0342dd", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #54 score=0.0114 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#28 id=5688c9a6-ec21-47eb-8da4-5c427c6adbea file=（修订稿）13第十三章 出入境边防检查口岸查控.md
+     preview: {"id_": "5688c9a6-ec21-47eb-8da4-5c427c6adbea", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #55 score=0.0112 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#29 id=56903f83-a26e-4eae-a009-d06c3b6102f7 file=（修订稿）13第十三章 出入境边防检查口岸查控.md
+     preview: {"id_": "56903f83-a26e-4eae-a009-d06c3b6102f7", "embedding": null, "metadata": {"file_name": "\uff08\u4fee\u8ba2\u7a3f\u
+  #56 score=0.0111 vector=0.0000 bm25=0.0000 src=keyword ranks=bm25#30 id=55d81351-7e1f-470c-b00b-74d449de65a6 file=非法移民遣返机构工作规定.txt
+     preview: {"id_": "55d81351-7e1f-470c-b00b-74d449de65a6", "embedding": null, "metadata": {"file_name": "\u975e\u6cd5\u79fb\u6c11\u
+
+[Rerank] 共 20 条（已按得分排序）
+  #01 score=0.9895 vector=0.7389 bm25=0.0000 src=vector ranks=vec#1 id=91724ac4-17b2-4a8c-9eac-3eb9cbbe441a file=补充知识库.docx
+     preview: |||  中国籍船员在国内港口登本人服务境外船舶的，登船港边检站凭船方申报，查验其有效出入境证件并实施人证对照后办理登船手续，不加盖验讫章。
+  #02 score=0.9746 vector=0.7362 bm25=0.0000 src=vector ranks=vec#3 id=0f733f6f-0687-424d-a931-22fe5592a726 file=补充知识库.docx
+     preview: |||  中国籍船员在国内港口登本人服务外国籍及港澳台船舶的，登船港边检站凭船方提供列有其姓名的船员名单或准其登船的证明，查验其有效出入境证件办理登船手续。
+  #03 score=0.9565 vector=0.7343 bm25=0.0000 src=vector ranks=vec#4 id=e48d39da-56b2-4ce9-b4b1-19b002ab76a2 file=补充知识库.docx
+     preview: |||  外国籍船员乘其他交通运输工具入境后登本人服务国际航行船舶的，登船港边检站凭船方申报，查验其有效出入境证件、有效签证和停留期限，并实施人证对照后办理登船手续，不加盖验讫章。如其登船时已超过签证允许的停留期、免签入境已超过免签停留期以
+  #04 score=0.9219 vector=0.7204 bm25=0.0000 src=vector ranks=vec#18 id=4a551485-26e7-45b3-b1cc-8e592b703001 file=补充知识库.docx
+     preview: |||  外籍换班船员登本人服务国际航行船舶的，登船港边检站凭船方提供列有该人姓名的船员名单或准其登船的证明，查验其持用的有效出入境证件、签证后办理船员登船手续。如其登船时已超过签证允许的停留期、免签入境已超过免签停留期以及未按规定办理居留
+  #05 score=0.9127 vector=0.7194 bm25=0.0000 src=vector ranks=vec#20 id=b9bb7f6a-d3c6-40b6-9912-6e0a6d59975c file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 2.船员变更手续办理 （1）本港登船 ①中国籍船员在国内港口登本人服务境外船舶的，登船港边检站凭船方申报，查验其有效出入境证件并实施人证对照后办理登船手续，不加盖验讫章。出境时，由出境港边检站办理出境手续，加盖验讫章。 ②港
+  #06 score=0.7555 vector=0.7150 bm25=0.0000 src=vector ranks=vec#26 id=7bbc1dce-1ae8-4538-94fb-07018ad21314 file=补充知识库.docx
+     preview: |||  船员入出境同时持用有效海员证和护照的，入境时，在符合入境条件的出入境证件上办理入境手续；两本出入境证件都符合入境条件的，可根据其来华目的或本人意愿选择其一办理入境手续。出境时，在办理入境手续的有效出入境证件上办理出境手续。
+  #07 score=0.7497 vector=0.7313 bm25=0.0000 src=vector ranks=vec#6 id=04c590e3-99b0-46f7-8565-084e0bdbad90 file=补充知识库.docx
+     preview: |||  中国籍船员凭本人《中华人民共和国海员证》等有效出境入境证件登陆、返船；港澳地区船员凭本人所持有效《港澳居民来往内地通行证》登陆、返船；，台湾地区船员凭本人所持有效《台湾居民来往大陆通行证》登陆、返船。
+  #08 score=0.6324 vector=0.7196 bm25=0.0000 src=vector ranks=vec#19 id=091ebdb3-3252-4317-b2a7-7221537fcdb4 file=补充知识库.docx
+     preview: |||  对持用《海员证》前往香港、澳门或经香港、澳门登船到第三国（地区），以及从国内港口登外国籍服务船舶的中国海员，不再查验《海员出境证明》。对乘坐服务船舶以外交通运输工具出境的，边检机关只查验《海员证》，并提醒当事人应办妥签证，如未被允
+  #09 score=0.4205 vector=0.7160 bm25=0.0000 src=vector ranks=vec#23 id=ead8b237-b4b3-4a44-8e79-17a8d8a81be9 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （3）登船后不随船出境 对外国籍船员登船后不能随船出境的，签发船员临时入境许可并办理离船手续，对从港口所在城市以外地区出境的，应当办理停留证件。上述船员中免签入境的换班船员，自其离船之日起重新启算在华停留期。对登船后，在本港或随
+  #10 score=0.4166 vector=0.7210 bm25=0.0000 src=vector ranks=vec#16 id=ef55702d-6999-4ae9-8ba0-562c2f1e7ed9 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （2）外国籍船员登陆 外国籍船员登陆港口所在城市的，应当向边检站提出申请，边检站根据相关规定签发船员临时入境许可。 ①持船员临时入境许可登陆港口所在城市，停留时间不超过15日，本航次在我国各港口通用。外国籍船员及其随行家属随服
+  #11 score=0.2881 vector=0.7153 bm25=0.0000 src=vector ranks=vec#25 id=1e84b3c1-9965-45fd-84b8-420e8ab1a65e file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （2）随船入境离船 船员随服务的境外船舶入境后提出离船申请的，由离船港边检站查验其有效出入境证件并实施人证对照后，办理离船手续。对离船入境的中国籍和外国籍船员，加盖离船当日的验讫章。对离船入境的外国籍船员，具备条件的边检站按照应
+  #12 score=0.2471 vector=0.7298 bm25=0.0000 src=vector ranks=vec#7 id=137cd50b-d485-4be6-a03f-2ecfd2276aca file=补充知识库.docx
+     preview: |||  船员随服务的境外船舶入境后提出离船申请的，由离船港边检站查验其有效出入境证件并实施人证对照后，办理离船手续。对离船入境的中国籍和外国籍船员，加盖离船当日的验讫章。对外国籍船员申请在港口城市换乘其他交通运输工具或者从陆地口岸徒步出境
+  #13 score=0.2345 vector=0.7249 bm25=0.0000 src=vector ranks=vec#12 id=e15e07d5-137b-4358-8c71-cef73c1489df file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 1.船员出入境证件 （1）中国籍船员出入境所持证件 ①中国籍船员。中国公民以海员身份出境入境和在国外船舶从事工作的，应当依法申请海员证，随服务船舶出境入境的，凭本人有效《中华人民共和国海员证》或其他出境入境证件放行。 ②中国
+  #14 score=0.2130 vector=0.7188 bm25=0.0000 src=vector ranks=vec#21 id=1d224a96-e9ba-4c28-a0c5-75f8fcb8bdc0 file=补充知识库.docx
+     preview: |||  船员随服务的境外船舶入境后提出离船申请的，由离船港边检站查验其有效出入境证件并实施人证对照后，办理离船手续。对离船入境的中国籍和外国籍船员，加盖离船当日的验讫章。
+  #15 score=0.2100 vector=0.7179 bm25=0.0000 src=vector ranks=vec#22 id=b6155ea7-d088-4a30-9542-ffdbd6fc6232 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| （6）船员出入境、登陆、返船管理要求 边检机关根据船方申报信息办理船员入出境边检手续。对随访问邮轮抵港、不登陆的国际邮轮船员，根据船方申请，可免予交验出入境证件，边检机关根据船方申报信息办理入出境边检手续。对申请登陆的外籍船员，
+  #16 score=0.1927 vector=0.7255 bm25=0.0000 src=vector ranks=vec#10 id=f7967582-df71-47d3-9134-836e095c8c5f file=补充知识库.docx
+     preview: |||  关于无我有效签证的美国籍船员因疾病等特殊情况需离船登陆的问题：1、出于人道主义考虑，原则上可允许其离船登陆；2、边检站在遇有上述情况时个案上报，经国家移民管理局批准后，由相关边检站和出入境管理部门为其补办签证及相关手续；3、对于上
+  #17 score=0.1519 vector=0.7271 bm25=0.0000 src=vector ranks=vec#8 id=7d043eb6-16ce-42cb-8d67-1b94241f2e50 file=补充知识库.docx
+     preview: |||  船员随服务船舶出入境，应当查验其有效出入境证件，一般情况下不加盖验讫章，持用一次有效出入境证件的我国船员（含港澳台），以及按照双边协议享受免签政策（离船）入境，或者按规定需要我国签证方可入境，或者本人要求使用有效签证的外国籍船员除
+  #18 score=0.1510 vector=0.7319 bm25=0.0000 src=vector ranks=vec#5 id=adf3e755-e09b-4699-bbda-ba563e9d7565 file=补充知识库.docx
+     preview: |||  美国船员随服务船舶来华应事先办妥我签证，凡无我有效签证的美籍船员（包括船长），一律不准上岸。  关于无我有效签证的美国籍船员因疾病等特殊情况需离船登陆的问题：（一）出于人道主义考虑，原则上可允许其离船登陆；（二）边检站在遇有上述情
+  #19 score=0.1475 vector=0.7386 bm25=0.0000 src=vector ranks=vec#2 id=82965af3-9482-42a0-a738-5f44d0e68148 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 3.船员登陆手续办理 （1）中国籍船员登陆 中国籍船员凭本人《中华人民共和国海员证》等有效出境入境证件登陆、返船。港澳地区船员凭本人所持有效《港澳居民来往内地通行证》登陆、返船。台湾地区船员凭本人所持有效《台湾居民来往大陆通行
+  #20 score=0.1262 vector=0.7240 bm25=0.0000 src=vector ranks=vec#14 id=95195dda-0f1c-4d24-a6c3-1ffd6d2d9480 file=（修订稿）5第五章 出入境交通运输工具检查、监护与管理 - 副本.md
+     preview: ||| 2.对上下外国船舶人员进行监管 主要通过查验上下船舶人员的证件，核实身份及登、离船目的，从而对上下船舶人员（如登陆船员、因维修作业原因需登轮的人员等）实施有效管理。人员违反规定上下外国船舶的行为有： （1）外国船员及其随行家属
+
+[MATCHES] 命中结果：
+  未找到匹配节点，请尝试放宽匹配条件。

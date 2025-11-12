@@ -1,0 +1,122 @@
+================================================================================
+QdrantVectorStore 实现检查
+================================================================================
+
+1. QdrantVectorStore 可用方法:
+  - Config
+  - aclear
+  - add
+  - adelete
+  - adelete_nodes
+  - aget_nodes
+  - aquery
+  - asparse_vector_name
+  - async_add
+  - ause_old_sparse_encoder
+  - class_name
+  - clear
+  - client
+  - construct
+  - copy
+  - delete
+  - delete_nodes
+  - dict
+  - from_dict
+  - from_json
+  - from_orm
+  - get_default_sparse_doc_encoder
+  - get_default_sparse_query_encoder
+  - get_nodes
+  - json
+  - parse_file
+  - parse_obj
+  - parse_raw
+  - parse_to_query_result
+  - persist
+  - query
+  - schema
+  - schema_json
+  - set_query_functions
+  - sparse_vector_name
+  - to_dict
+  - to_json
+  - update_forward_refs
+  - use_old_sparse_encoder
+  - validate
+
+================================================================================
+2. add() 方法签名:
+================================================================================
+签名: (self, nodes: List[llama_index.core.schema.BaseNode], **add_kwargs: Any) -> List[str]
+
+源代码（前50行）:
+--------------------------------------------------------------------------------
+  1:     def add(self, nodes: List[BaseNode], **add_kwargs: Any) -> List[str]:
+  2:         """
+  3:         Add nodes to index.
+  4: 
+  5:         Args:
+  6:             nodes: List[BaseNode]: list of nodes with embeddings
+  7: 
+  8:         """
+  9:         if len(nodes) > 0 and not self._collection_initialized:
+ 10:             self._create_collection(
+ 11:                 collection_name=self.collection_name,
+ 12:                 vector_size=len(nodes[0].get_embedding()),
+ 13:             )
+ 14: 
+ 15:         sparse_vector_name = self.sparse_vector_name()
+ 16:         points, ids = self._build_points(nodes, sparse_vector_name)
+ 17: 
+ 18:         self._client.upload_points(
+ 19:             collection_name=self.collection_name,
+ 20:             points=points,
+ 21:             batch_size=self.batch_size,
+ 22:             parallel=self.parallel,
+ 23:             max_retries=self.max_retries,
+ 24:             wait=True,
+ 25:         )
+ 26: 
+ 27:         return ids
+ 28: 
+
+================================================================================
+3. 查找节点转换相关方法:
+================================================================================
+  - _build_points
+  - adelete_nodes
+    签名: (self, node_ids: Optional[List[str]] = None, filters: Optional[llama_index.core.vector_stores.types.MetadataFilters] = None, **delete_kwargs: Any) -> None
+  - aget_nodes
+    签名: (self, node_ids: Optional[List[str]] = None, filters: Optional[llama_index.core.vector_stores.types.MetadataFilters] = None) -> List[llama_index.core.schema.BaseNode]
+  - delete_nodes
+    签名: (self, node_ids: Optional[List[str]] = None, filters: Optional[llama_index.core.vector_stores.types.MetadataFilters] = None, **delete_kwargs: Any) -> None
+  - get_nodes
+    签名: (self, node_ids: Optional[List[str]] = None, filters: Optional[llama_index.core.vector_stores.types.MetadataFilters] = None) -> List[llama_index.core.schema.BaseNode]
+
+================================================================================
+4. TextNode 序列化检查:
+================================================================================
+
+dict 存在:
+  键: ['id_', 'embedding', 'metadata', 'excluded_embed_metadata_keys', 'excluded_llm_metadata_keys', 'relationships', 'text', 'start_char_idx', 'end_char_idx', 'text_template', 'metadata_template', 'metadata_seperator', 'class_name']
+  text 字段: 测试文本...
+
+to_dict 存在:
+  键: ['id_', 'embedding', 'metadata', 'excluded_embed_metadata_keys', 'excluded_llm_metadata_keys', 'relationships', 'text', 'start_char_idx', 'end_char_idx', 'text_template', 'metadata_template', 'metadata_seperator', 'class_name']
+  text 字段: 测试文本...
+
+json 存在:
+  类型: <class 'str'>
+  值: {"id_": "029be2ae-e8d0-4cbe-a47c-661694cc7527", "embedding": null, "metadata": {"file_name": "test.t...
+
+to_json 存在:
+  类型: <class 'str'>
+  值: {"id_": "029be2ae-e8d0-4cbe-a47c-661694cc7527", "embedding": null, "metadata": {"file_name": "test.t...
+
+__dict__ 存在:
+  键: ['id_', 'embedding', 'metadata', 'excluded_embed_metadata_keys', 'excluded_llm_metadata_keys', 'relationships', 'text', 'start_char_idx', 'end_char_idx', 'text_template', 'metadata_template', 'metadata_seperator']
+  text 字段: 测试文本...
+
+================================================================================
+5. 查找 payload 生成逻辑:
+================================================================================

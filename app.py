@@ -136,6 +136,60 @@ def create_app():
     else:
         logger.info("免签知识库功能未启用")
 
+    # 4.5 初始化航司知识库（可选）
+    airline_retriever = None
+    if Settings.ENABLE_AIRLINE_FEATURE:
+        logger.info("=" * 60)
+        logger.info("初始化航司知识库功能...")
+        logger.info("=" * 60)
+        
+        try:
+            # 构建航司知识库索引
+            airline_index, airline_nodes = knowledge_service.build_or_load_airline_index()
+            
+            if airline_index and airline_nodes:
+                # 创建航司检索器
+                airline_retriever = knowledge_service.create_airline_retriever()
+                
+                if airline_retriever is None:
+                    logger.error("航司检索器创建失败")
+                else:
+                    logger.info("✓ 航司知识库检索器创建成功")
+                    
+                    # 更新多库检索器，添加航司库支持
+                    if multi_kb_retriever:
+                        logger.info("更新多库检索器，添加航司库支持...")
+                        from core import MultiKBRetriever
+                        multi_kb_retriever = MultiKBRetriever(
+                            general_retriever=retriever,
+                            visa_free_retriever=visa_free_retriever,
+                            airline_retriever=airline_retriever,
+                            strategy=Settings.DUAL_KB_STRATEGY
+                        )
+                        logger.info("✓ 三库检索器创建成功（通用库 + 免签库 + 航司库）")
+                    else:
+                        # 如果没有免签库，创建双库检索器（通用 + 航司）
+                        from core import MultiKBRetriever
+                        multi_kb_retriever = MultiKBRetriever(
+                            general_retriever=retriever,
+                            visa_free_retriever=None,
+                            airline_retriever=airline_retriever,
+                            strategy=Settings.DUAL_KB_STRATEGY
+                        )
+                        logger.info("✓ 双库检索器创建成功（通用库 + 航司库）")
+                
+                logger.info("=" * 60)
+                logger.info("航司知识库功能初始化完成")
+                logger.info("=" * 60)
+            else:
+                logger.warning("航司知识库为空或构建失败，航司功能不可用")
+                
+        except Exception as e:
+            logger.error(f"航司知识库初始化失败: {e}", exc_info=True)
+            logger.warning("将继续使用现有知识库")
+    else:
+        logger.info("航司知识库功能未启用")
+
     # 5. 初始化业务处理器
     llm_wrapper = LLMStreamWrapper()
     knowledge_handler = KnowledgeHandler(
@@ -143,8 +197,9 @@ def create_app():
         reranker=reranker,
         llm_wrapper=llm_wrapper,
         llm_service=llm_service,
-        # 免签知识库相关组件（可选）
+        # 多知识库相关组件（可选）
         visa_free_retriever=visa_free_retriever,
+        airline_retriever=airline_retriever,
         multi_kb_retriever=multi_kb_retriever,
         intent_classifier=intent_classifier
     )

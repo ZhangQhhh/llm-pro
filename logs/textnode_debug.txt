@@ -1,0 +1,93 @@
+================================================================================
+测试 LlamaIndex 节点序列化
+================================================================================
+
+================================================================================
+1. Document 对象
+================================================================================
+
+Document.text: 这是一段测试文本，用于验证节点序列化。
+Document.get_content(): 这是一段测试文本，用于验证节点序列化。
+Document.metadata: {'file_name': 'test.txt', 'file_path': '/path/to/test.txt'}
+
+Document.dict() 键: ['id_', 'embedding', 'metadata', 'excluded_embed_metadata_keys', 'excluded_llm_metadata_keys', 'relationships', 'text', 'start_char_idx', 'end_char_idx', 'text_template', 'metadata_template', 'metadata_seperator', 'class_name']
+Document.dict() 完整内容:
+{
+  "id_": "53abf627-c3cb-4f27-a0ec-84e26e093c17",
+  "embedding": null,
+  "metadata": {
+    "file_name": "test.txt",
+    "file_path": "/path/to/test.txt"
+  },
+  "excluded_embed_metadata_keys": [],
+  "excluded_llm_metadata_keys": [],
+  "relationships": {},
+  "text": "这是一段测试文本，用于验证节点序列化。",
+  "start_char_idx": null,
+  "end_char_idx": null,
+  "text_template": "{metadata_str}\n\n{content}",
+  "metadata_template": "{key}: {value}",
+  "metadata_seperator": "\n",
+  "class_name": "Document"
+}
+
+================================================================================
+2. TextNode 对象
+================================================================================
+
+TextNode.text: 这是一段测试文本，用于验证节点序列化。
+TextNode.get_content(): 这是一段测试文本，用于验证节点序列化。
+TextNode.metadata: {'file_name': 'test.txt', 'file_path': '/path/to/test.txt'}
+
+TextNode.dict() 键: ['id_', 'embedding', 'metadata', 'excluded_embed_metadata_keys', 'excluded_llm_metadata_keys', 'relationships', 'text', 'start_char_idx', 'end_char_idx', 'text_template', 'metadata_template', 'metadata_seperator', 'class_name']
+TextNode.dict() 完整内容:
+{
+  "id_": "5a78d5c7-955e-40b1-b8ef-4da44e6e85c3",
+  "embedding": null,
+  "metadata": {
+    "file_name": "test.txt",
+    "file_path": "/path/to/test.txt"
+  },
+  "excluded_embed_metadata_keys": [],
+  "excluded_llm_metadata_keys": [],
+  "relationships": {},
+  "text": "这是一段测试文本，用于验证节点序列化。",
+  "start_char_idx": null,
+  "end_char_idx": null,
+  "text_template": "{metadata_str}\n\n{content}",
+  "metadata_template": "{key}: {value}",
+  "metadata_seperator": "\n",
+  "class_name": "TextNode"
+}
+
+================================================================================
+3. Document -> TextNode 转换
+================================================================================
+
+转换后的 TextNode.text: 这是一段测试文本，用于验证节点序列化。
+转换后的 TextNode.get_content(): 这是一段测试文本，用于验证节点序列化。
+
+================================================================================
+4. 检查序列化方法
+================================================================================
+
+TextNode 可用方法:
+  - dict
+  - from_dict
+  - from_json
+  - json
+  - schema_json
+  - to_dict
+  - to_json
+
+================================================================================
+5. 测试内容获取方法
+================================================================================
+TextNode.get_text(): 这是一段测试文本，用于验证节点序列化。
+TextNode.text 属性: 这是一段测试文本，用于验证节点序列化。
+
+================================================================================
+6. LlamaIndex 版本信息
+================================================================================
+无法获取 llama_index 版本
+llama_index.core 版本: 0.10.43

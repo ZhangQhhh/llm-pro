@@ -719,11 +719,11 @@ class ConversationManager:
             包含会话列表和总数的字典
         """
         try:
-            logger.info(f"获取用户 {user_id} 的会话列表 (limit={limit}, offset={offset})")
+            logger.info(f"🔍 获取用户 {user_id} 的会话列表 (limit={limit}, offset={offset})")
 
             # ✅ 验证用户ID有效性
             if not user_id or user_id <= 0:
-                logger.error(f"无效的用户ID: {user_id}")
+                logger.error(f"❌ 无效的用户ID: {user_id}")
                 return {
                     "total": 0,
                     "sessions": [],
@@ -732,49 +732,81 @@ class ConversationManager:
 
             # 确保 user_id 是字符串类型用于前缀匹配
             user_id_str = str(user_id)
+            logger.info(f"🔑 查询用户ID: {user_id_str}")
 
             # 确保集合存在
             self._check_and_create_collection()
 
-            # 获取所有该用户的对话点（通过 session_id 前缀匹配）
-            # 注意：Qdrant 不支持前缀匹配，我们需要获取所有点然后在内存中过滤
+            # 🔥 使用 Qdrant Filter 在数据库层面过滤
+            # 由于 Qdrant 不支持前缀匹配 payload 字段，我们需要先添加 user_id 字段
+            # 作为临时方案，我们先获取所有数据，但添加更严格的过滤和日志
+
             scroll_result = self.qdrant_client.scroll(
                 collection_name=self.collection_name,
                 limit=10000,  # 假设不会超过这个数量
-                with_payload=True
+                with_payload=True,
+                with_vectors=False  # 不需要向量数据，节省带宽
             )
+
+            logger.info(f"📊 从 Qdrant 获取到 {len(scroll_result[0])} 条对话记录")
 
             # 按 session_id 分组
             sessions_data = {}
+            skipped_count = 0
+            matched_count = 0
+
             for point in scroll_result[0]:
                 session_id = point.payload.get("session_id")
 
+                # 🔍 调试日志：记录每个 session_id
+                if not session_id:
+                    logger.debug(f"⚠️ 跳过没有 session_id 的记录: point_id={point.id}")
+                    skipped_count += 1
+                    continue
+
                 # ✅ 严格验证 session_id 是否属于该用户
                 # session_id 格式为: {user_id}_{uuid}
-                if session_id and session_id.startswith(f"{user_id_str}_"):
-                    # ✅ 双重验证：检查下划线分隔后的第一部分是否确实匹配用户ID
-                    try:
-                        session_user_id = session_id.split('_')[0]
-                        if session_user_id != user_id_str:
-                            logger.warning(f"会话ID {session_id} 的用户ID部分不匹配，跳过")
-                            continue
-                    except (IndexError, ValueError) as e:
-                        logger.warning(f"会话ID {session_id} 格式异常，跳过: {e}")
+                if not session_id.startswith(f"{user_id_str}_"):
+                    logger.debug(f"🚫 会话 {session_id} 不属于用户 {user_id_str}，跳过")
+                    skipped_count += 1
+                    continue
+
+                # ✅ 双重验证：检查下划线分隔后的第一部分是否确实匹配用户ID
+                try:
+                    parts = session_id.split('_', 1)  # 只分割一次，避免 UUID 中的下划线影响
+                    if len(parts) < 2:
+                        logger.warning(f"⚠️ 会话ID {session_id} 格式异常（缺少下划线），跳过")
+                        skipped_count += 1
                         continue
 
-                    if session_id not in sessions_data:
-                        sessions_data[session_id] = {
-                            "turns": [],
-                            "total_tokens": 0
-                        }
+                    session_user_id = parts[0]
+                    if session_user_id != user_id_str:
+                        logger.warning(f"⚠️ 会话ID {session_id} 的用户ID部分 ({session_user_id}) 不匹配目标用户 ({user_id_str})，跳过")
+                        skipped_count += 1
+                        continue
+                except (IndexError, ValueError) as e:
+                    logger.warning(f"⚠️ 会话ID {session_id} 解析失败，跳过: {e}")
+                    skipped_count += 1
+                    continue
 
-                    sessions_data[session_id]["turns"].append({
-                        "user_query": point.payload.get("user_query"),
-                        "assistant_response": point.payload.get("assistant_response"),
-                        "timestamp": point.payload.get("timestamp"),
-                        "token_count": point.payload.get("token_count", 0)
-                    })
-                    sessions_data[session_id]["total_tokens"] += point.payload.get("token_count", 0)
+                # ✅ 验证通过，添加到会话数据
+                matched_count += 1
+
+                if session_id not in sessions_data:
+                    sessions_data[session_id] = {
+                        "turns": [],
+                        "total_tokens": 0
+                    }
+
+                sessions_data[session_id]["turns"].append({
+                    "user_query": point.payload.get("user_query"),
+                    "assistant_response": point.payload.get("assistant_response"),
+                    "timestamp": point.payload.get("timestamp"),
+                    "token_count": point.payload.get("token_count", 0)
+                })
+                sessions_data[session_id]["total_tokens"] += point.payload.get("token_count", 0)
+
+            logger.info(f"✅ 匹配到 {matched_count} 条属于用户 {user_id} 的记录，跳过 {skipped_count} 条")
 
             # 构建会话列表
             sessions = []
@@ -813,7 +845,7 @@ class ConversationManager:
             total = len(sessions)
             sessions_page = sessions[offset:offset + limit]
 
-            logger.info(f"找到用户 {user_id} 的 {total} 个会话，返回第 {offset}-{offset+len(sessions_page)} 个")
+            logger.info(f"📋 用户 {user_id} 共有 {total} 个会话，返回第 {offset+1}-{offset+len(sessions_page)} 个")
 
             return {
                 "total": total,
@@ -823,7 +855,7 @@ class ConversationManager:
             }
 
         except Exception as e:
-            logger.error(f"获取用户会话列表失败: {e}", exc_info=True)
+            logger.error(f"❌ 获取用户会话列表失败: {e}", exc_info=True)
             return {
                 "total": 0,
                 "sessions": [],
