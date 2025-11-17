@@ -453,3 +453,33 @@ class MultiKBRetriever:
         file_name = node.node.metadata.get('file_name', '')
         # 简单判断：包含"民航"、"机组"等关键词
         return any(keyword in file_name for keyword in ['民航', '机组', '航司', 'airline'])
+    
+    def retrieve(self, query: str) -> List[NodeWithScore]:
+        """
+        统一检索接口（兼容LlamaIndex标准接口）
+        根据初始化时的retriever配置自动选择合适的检索策略
+        
+        Args:
+            query: 查询文本
+            
+        Returns:
+            检索节点列表
+        """
+        # 判断有哪些retriever可用
+        has_visa_free = self.visa_free_retriever is not None
+        has_airline = self.airline_retriever is not None
+        
+        # 根据可用的retriever选择策略
+        if has_airline and has_visa_free:
+            # 三库都有，使用三库检索
+            logger.debug(f"[多库检索] 使用三库检索（通用+免签+航司）")
+            return self.retrieve_from_all_three(query)
+        elif has_visa_free:
+            # 只有免签库，使用双库检索（通用+免签）
+            logger.debug(f"[多库检索] 使用双库检索（通用+免签）")
+            return self.retrieve_from_both(query)
+        else:
+            # 只有通用库，直接返回通用库结果
+            logger.debug(f"[多库检索] 仅使用通用库")
+            from llama_index.core import QueryBundle
+            return self.general_retriever.retrieve(QueryBundle(query_str=query))

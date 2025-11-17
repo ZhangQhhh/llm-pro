@@ -190,6 +190,32 @@ def create_app():
     else:
         logger.info("航司知识库功能未启用")
 
+    # 4.7 初始化子问题分解器（可选功能）
+    sub_question_decomposer = None
+    if Settings.ENABLE_SUBQUESTION_DECOMPOSITION:
+        logger.info("=" * 60)
+        logger.info("初始化子问题分解器...")
+        logger.info("=" * 60)
+        
+        try:
+            sub_question_decomposer = knowledge_service.create_sub_question_decomposer(
+                llm_service=llm_service,
+                reranker=reranker
+            )
+            
+            if sub_question_decomposer:
+                logger.info("=" * 60)
+                logger.info("子问题分解器初始化完成")
+                logger.info("=" * 60)
+            else:
+                logger.warning("子问题分解器创建失败")
+                
+        except Exception as e:
+            logger.error(f"子问题分解器初始化失败: {e}", exc_info=True)
+            logger.warning("将继续使用标准检索流程")
+    else:
+        logger.info("子问题分解功能未启用")
+
     # 5. 初始化业务处理器
     llm_wrapper = LLMStreamWrapper()
     knowledge_handler = KnowledgeHandler(
@@ -201,7 +227,9 @@ def create_app():
         visa_free_retriever=visa_free_retriever,
         airline_retriever=airline_retriever,
         multi_kb_retriever=multi_kb_retriever,
-        intent_classifier=intent_classifier
+        intent_classifier=intent_classifier,
+        # 子问题分解器（可选）
+        sub_question_decomposer=sub_question_decomposer
     )
     judge_handler = JudgeHandler(retriever, reranker, llm_wrapper)
 

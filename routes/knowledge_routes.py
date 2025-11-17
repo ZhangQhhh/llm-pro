@@ -117,8 +117,8 @@ def knowledge_chat_conversation():
 
     # 验证 rerank_top_n
     default_top_n = Settings.RERANK_TOP_N
-    MIN_RERANK_N = 1
-    MAX_RERANK_N = 15
+    MIN_RERANK_N = 0  # 允许设置为 0，表示不检索
+    MAX_RERANK_N = 30  # 放宽限制，允许前端传入更多参考文献
 
     custom_top_n = data.get('rerank_top_n', default_top_n)
     try:
@@ -715,8 +715,8 @@ def knowledge_chat():
 
     # 验证 rerank_top_n
     default_top_n = Settings.RERANK_TOP_N
-    MIN_RERANK_N = 1
-    MAX_RERANK_N = 15
+    MIN_RERANK_N = 0  # 允许设置为 0，表示不检索
+    MAX_RERANK_N = 30  # 放宽限制，允许前端传入更多参考文献
 
     custom_top_n = data.get('rerank_top_n', default_top_n)
     try:
@@ -784,7 +784,7 @@ def knowledge_chat():
             use_insert_block=use_insert_block,
             insert_block_llm_id=insert_block_llm_id
         ):
-            # item 是元组格式: ('THINK', content) 或 ('CONTENT', content) 或 ('SOURCE', json_data)
+            # item 是元组格式: ('THINK', content) 或 ('CONTENT', content) 或 ('SOURCE', json_data) 或 ('SUB_QUESTIONS', data)
             if isinstance(item, tuple) and len(item) == 2:
                 prefix_type, content = item
                 # 格式化为 SSE 消息
@@ -794,6 +794,10 @@ def knowledge_chat():
                     yield f"CONTENT:{content}"
                 elif prefix_type == 'SOURCE':
                     yield f"SOURCE:{content}"
+                elif prefix_type == 'SUB_QUESTIONS':
+                    # 子问题数据，转换为 JSON
+                    import json
+                    yield f"SUB_QUESTIONS:{json.dumps(content, ensure_ascii=False)}"
                 elif prefix_type == 'DONE':
                     yield f"DONE:{content}"
                 else:

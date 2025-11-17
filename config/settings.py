@@ -80,7 +80,7 @@ class Settings:
     DEVICE = "npu" if NPU_AVAILABLE else "cpu"
     
     # RRF 融合权重配置
-    RRF_K = 60.0  # RRF 平滑参数
+    RRF_K = 10.0  # RRF 平滑参数（降低以增加排名差异影响）
     RRF_VECTOR_WEIGHT = 0.7  # 向量检索权重（0-1）
     RRF_BM25_WEIGHT = 0.3    # BM25 检索权重（0-1）
 
@@ -164,6 +164,36 @@ class Settings:
     # ==================== 特殊规定配置 ====================
     # 特殊规定文件夹路径（直接从文件读取，不使用向量数据库）
     SPECIAL_RULES_DIR = "/opt/rag_final_project/special_rules"
+
+    # ==================== 子问题分解配置 ====================
+    # 子问题分解功能开关（默认关闭，插件式设计）
+    ENABLE_SUBQUESTION_DECOMPOSITION = os.getenv("ENABLE_SUBQUESTION_DECOMPOSITION", "false").lower() == "true"
+    
+    # 子问题分解引擎选择：custom（自定义）或 llamaindex（LlamaIndex原生）
+    SUBQUESTION_ENGINE_TYPE = os.getenv("SUBQUESTION_ENGINE_TYPE", "custom")  # custom 或 llamaindex
+    
+    # 是否使用LLM判断是否需要分解（仅对custom引擎有效）
+    # True: LLM判断是否分解（智能模式）
+    # False: 跳过判断，直接分解所有问题（强制分解模式）
+    SUBQUESTION_USE_LLM_JUDGE = os.getenv("SUBQUESTION_USE_LLM_JUDGE", "true").lower() == "true"
+    
+    # 子问题分解参数
+    SUBQUESTION_MAX_DEPTH = int(os.getenv("SUBQUESTION_MAX_DEPTH", "3"))  # 最大子问题数量
+    SUBQUESTION_MIN_SCORE = float(os.getenv("SUBQUESTION_MIN_SCORE", "0.3"))  # 子问题检索最低分数阈值
+    SUBQUESTION_COMPLEXITY_THRESHOLD = int(os.getenv("SUBQUESTION_COMPLEXITY_THRESHOLD", "50"))  # 触发分解的最小查询长度
+    SUBQUESTION_DECOMP_LLM_ID = os.getenv("SUBQUESTION_DECOMP_LLM_ID", "qwen3-32b")  # 用于子问题分解的LLM
+    SUBQUESTION_DECOMP_TIMEOUT = int(os.getenv("SUBQUESTION_DECOMP_TIMEOUT", "10"))  # 分解超时时间（秒）
+    SUBQUESTION_SYNTHESIS_TIMEOUT = int(os.getenv("SUBQUESTION_SYNTHESIS_TIMEOUT", "30"))  # 答案合成超时时间（秒）
+    SUBQUESTION_ENABLE_ENTITY_CHECK = os.getenv("SUBQUESTION_ENABLE_ENTITY_CHECK", "true").lower() == "true"  # 启用命名实体检测
+    SUBQUESTION_MIN_ENTITIES = int(os.getenv("SUBQUESTION_MIN_ENTITIES", "2"))  # 触发分解的最小实体数
+    
+    # 对话历史压缩配置（用于多轮场景）
+    SUBQUESTION_HISTORY_COMPRESS_TURNS = int(os.getenv("SUBQUESTION_HISTORY_COMPRESS_TURNS", "5"))  # 压缩最近N轮对话
+    SUBQUESTION_HISTORY_MAX_TOKENS = int(os.getenv("SUBQUESTION_HISTORY_MAX_TOKENS", "500"))  # 历史摘要最大token数
+    
+    # 健康度指标配置
+    SUBQUESTION_MAX_EMPTY_RESULTS = int(os.getenv("SUBQUESTION_MAX_EMPTY_RESULTS", "2"))  # 允许的最大空结果子问题数
+    SUBQUESTION_FALLBACK_ON_ERROR = os.getenv("SUBQUESTION_FALLBACK_ON_ERROR", "true").lower() == "true"  # 错误时回退到标准检索
 
     # ==================== 服务器配置 ====================
     # SERVER_HOST = "0.0.0.0"

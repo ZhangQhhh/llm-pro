@@ -5,8 +5,8 @@
 """
 import json
 import time
-from typing import List, Dict, Any, Optional
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Dict, Any, Optional, Callable
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
 from utils import logger
 from prompts import get_insertblock_system_all, get_insertblock_user_all
 from config import Settings
@@ -18,21 +18,26 @@ class InsertBlockFilter:
     对每个节点判断是否能回答问题，并提取关键段落
     """
 
-    def __init__(self, llm_service, max_workers: int = None):
+    def __init__(self, llm_service, max_workers: int = None, timeout: int = 15, max_retries: int = 1):
         """
         Args:
             llm_service: LLM 服务实例
             max_workers: 并发处理的最大线程数（None 则使用配置值）
+            timeout: 单个节点处理超时时间（秒）
+            max_retries: 失败重试次数
         """
         self.llm_service = llm_service
         self.max_workers = max_workers or Settings.INSERTBLOCK_MAX_WORKERS
-        logger.info(f"InsertBlockFilter 初始化 | 并发数: {self.max_workers}")
+        self.timeout = timeout
+        self.max_retries = max_retries
+        logger.info(f"InsertBlockFilter 初始化 | 并发数: {self.max_workers} | 超时: {timeout}s | 重试: {max_retries}次")
 
     def filter_nodes(
         self,
         question: str,
         nodes: List[Any],
-        llm_id: Optional[str] = None
+        llm_id: Optional[str] = None,
+        progress_callback: Optional[Callable[[int, int], None]] = None
     ) -> List[Dict[str, Any]]:
         """
         并发处理多个节点，判断每个节点是否能回答问题
@@ -71,13 +76,16 @@ class InsertBlockFilter:
         filtered_results = []
         rejected_nodes = []  # 记录被拒绝的节点
         file_stats = {}  # 统计每个文件的节点数
+        processed_count = 0  # 已处理节点数
+        timeout_count = 0  # 超时节点数
+        error_count = 0  # 错误节点数
 
         # 使用线程池并发处理
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # 提交所有任务
             future_to_node = {
                 executor.submit(
-                    self._process_single_node,
+                    self._process_single_node_with_retry,
                     question,
                     node,
                     llm
@@ -88,8 +96,14 @@ class InsertBlockFilter:
             # 收集结果
             for future in as_completed(future_to_node):
                 node = future_to_node[future]
+                processed_count += 1
+                
+                # 调用进度回调
+                if progress_callback:
+                    progress_callback(processed_count, len(nodes))
+                
                 try:
-                    result = future.result()
+                    result = future.result(timeout=self.timeout + 5)  # 额外5秒容错
                     if result:
                         file_name = result['file_name']
                         # 统计文件
@@ -110,10 +124,17 @@ class InsertBlockFilter:
                             )
                     else:
                         file_name = node.node.metadata.get('file_name', '未知')
-                        logger.debug(f"节点处理返回 None: {file_name}")
+                        error_count += 1
+                        logger.warning(f"节点处理返回 None: {file_name}")
+                except TimeoutError:
+                    file_name = node.node.metadata.get('file_name', '未知')
+                    timeout_count += 1
+                    logger.error(f"⏱ 节点处理超时: {file_name} | 超时限制: {self.timeout}s")
                 except Exception as e:
+                    file_name = node.node.metadata.get('file_name', '未知')
+                    error_count += 1
                     logger.error(
-                        f"处理节点失败: {node.node.metadata.get('file_name', '未知')} | "
+                        f"处理节点失败: {file_name} | "
                         f"错误: {e}"
                     )
 
@@ -127,10 +148,11 @@ class InsertBlockFilter:
         logger.info(f"  总节点数: {len(nodes)}")
         logger.info(f"  通过筛选: {len(filtered_results)} 个节点")
         logger.info(f"  被拒绝: {len(rejected_nodes)} 个节点")
-        logger.info(f"  处理失败: {len(nodes) - len(filtered_results) - len(rejected_nodes)} 个节点")
+        logger.info(f"  超时: {timeout_count} 个节点")
+        logger.info(f"  错误: {error_count} 个节点")
         logger.info(f"  总处理时间: {elapsed_time:.2f} 秒")
         logger.info(f"  平均每节点: {avg_time_per_node:.2f} 秒")
-        logger.info(f"  并发数: {self.max_workers}")
+        logger.info(f"  并发数: {self.max_workers} | 超时限制: {self.timeout}s")
         logger.info(f"\n  涉及文件数: {len(file_stats)}")
 
         # 按文件输出统计
@@ -142,6 +164,51 @@ class InsertBlockFilter:
         logger.info("=" * 60)
 
         return filtered_results
+
+    def _process_single_node_with_retry(
+        self,
+        question: str,
+        node: Any,
+        llm: Any
+    ) -> Optional[Dict[str, Any]]:
+        """
+        带重试的节点处理
+        
+        Args:
+            question: 用户问题
+            node: 节点对象
+            llm: LLM 实例
+            
+        Returns:
+            处理结果字典或 None
+        """
+        file_name = node.node.metadata.get('file_name', '未知文件')
+        
+        for attempt in range(self.max_retries + 1):
+            try:
+                if attempt > 0:
+                    logger.info(f"重试节点 [{attempt}/{self.max_retries}]: {file_name}")
+                
+                result = self._process_single_node(question, node, llm)
+                if result:
+                    return result
+                    
+            except TimeoutError:
+                if attempt < self.max_retries:
+                    logger.warning(f"节点处理超时，准备重试: {file_name}")
+                    time.sleep(0.5)  # 短暂延迟后重试
+                else:
+                    logger.error(f"节点处理超时，已达最大重试次数: {file_name}")
+                    raise
+            except Exception as e:
+                if attempt < self.max_retries:
+                    logger.warning(f"节点处理失败，准备重试: {file_name} | 错误: {e}")
+                    time.sleep(0.5)
+                else:
+                    logger.error(f"节点处理失败，已达最大重试次数: {file_name} | 错误: {e}")
+                    raise
+        
+        return None
 
     def _process_single_node(
         self,
@@ -199,9 +266,30 @@ class InsertBlockFilter:
             # 组合为单一 prompt
             full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
-            # 调用 LLM
-            response = llm.complete(full_prompt)
-            response_text = response.text.strip()
+            # 调用 LLM（添加超时保护）
+            import signal
+            
+            def timeout_handler(signum, frame):
+                raise TimeoutError(f"LLM 调用超时: {self.timeout}s")
+            
+            # 设置超时（仅 Unix 系统）
+            try:
+                if hasattr(signal, 'SIGALRM'):
+                    signal.signal(signal.SIGALRM, timeout_handler)
+                    signal.alarm(self.timeout)
+                
+                response = llm.complete(full_prompt)
+                response_text = response.text.strip()
+                
+                if hasattr(signal, 'SIGALRM'):
+                    signal.alarm(0)  # 取消超时
+            except TimeoutError:
+                logger.error(f"LLM 调用超时: {file_name} | 超时限制: {self.timeout}s")
+                raise
+            except Exception as e:
+                if hasattr(signal, 'SIGALRM'):
+                    signal.alarm(0)
+                raise
 
             # 解析 JSON 响应
             # 尝试提取 JSON（可能包含在 markdown 代码块中）

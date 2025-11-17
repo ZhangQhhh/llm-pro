@@ -27,7 +27,7 @@ def test_airline_intent():
     # 初始化 LLM 服务
     logger.info("初始化 LLM 服务...")
     llm_service = LLMService()
-    llm_client = llm_service.get_llm(Settings.INTENT_CLASSIFIER_LLM_ID)
+    llm_client = llm_service.get_client(Settings.INTENT_CLASSIFIER_LLM_ID)
     
     # 初始化意图分类器
     logger.info("初始化意图分类器...")
@@ -105,7 +105,7 @@ def test_edge_cases():
     
     # 初始化
     llm_service = LLMService()
-    llm_client = llm_service.get_llm(Settings.INTENT_CLASSIFIER_LLM_ID)
+    llm_client = llm_service.get_client(Settings.INTENT_CLASSIFIER_LLM_ID)
     classifier = IntentClassifier(llm_client)
     
     edge_cases = [

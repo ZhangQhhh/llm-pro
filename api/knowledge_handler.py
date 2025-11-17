@@ -10,6 +10,7 @@ from typing import Generator, Dict, Any, Optional, List
 from llama_index.core import QueryBundle
 from config import Settings
 from utils import logger, clean_for_sse_text
+from pathlib import Path
 from prompts import (
     get_knowledge_assistant_context_prefix,
     get_knowledge_system_rag_simple,
@@ -48,7 +49,9 @@ class KnowledgeHandler:
         airline_retriever=None,
         # 多库检索器和意图分类器
         multi_kb_retriever=None,
-        intent_classifier=None
+        intent_classifier=None,
+        # 子问题分解器（可选）
+        sub_question_decomposer=None
     ):
         # 通用知识库组件
         self.retriever = retriever
@@ -64,6 +67,11 @@ class KnowledgeHandler:
         # 多库检索器和意图分类器
         self.multi_kb_retriever = multi_kb_retriever
         self.intent_classifier = intent_classifier
+        # 子问题分解器
+        self.sub_question_decomposer = sub_question_decomposer
+        
+        # 子问题答案合成（用于传递到提示词）
+        self._last_synthesized_answer = None
 
         # 如果提供了 llm_service，初始化 InsertBlock 过滤器
         if llm_service:
@@ -79,6 +87,8 @@ class KnowledgeHandler:
             enabled_features.append("免签库")
         if self.airline_retriever:
             enabled_features.append("航司库")
+        if self.sub_question_decomposer:
+            enabled_features.append("子问题分解")
         
         if enabled_features:
             logger.info(f"✓ 知识库功能已启用: {', '.join(enabled_features)}")
@@ -111,6 +121,10 @@ class KnowledgeHandler:
             SSE 格式的响应流
         """
         full_response = ""
+        
+        # 清空上一次的子问题答案和合成答案，防止串题
+        self._last_sub_answers = None
+        self._last_synthesized_answer = None
 
         try:
             logger.info(
@@ -121,9 +135,44 @@ class KnowledgeHandler:
             )
 
             # 1. 智能路由检索（根据意图选择知识库）
-            yield ('CONTENT', "正在进行混合检索...\n")
-            full_response += "正在进行混合检索...\n"
-            final_nodes = self._smart_retrieve_and_rerank(question, rerank_top_n)
+            # 如果前端设置参考数量为 0，跳过检索
+            if rerank_top_n == 0:
+                logger.info("[检索跳过] 前端设置参考数量为 0，跳过检索和子问题分解")
+                final_nodes = []
+                result = None
+            else:
+                yield ('CONTENT', "正在进行混合检索...\n")
+                full_response += "正在进行混合检索...\n"
+                
+                # 调用检索，获取节点和元数据
+                result = self._smart_retrieve_and_rerank(question, rerank_top_n)
+            
+            # 检查是否返回了元数据（子问题分解）
+            if result and isinstance(result, tuple) and len(result) == 2:
+                final_nodes, retrieval_metadata = result
+                
+                # 如果有子问题，输出到前端
+                if retrieval_metadata.get('decomposed') and retrieval_metadata.get('sub_questions'):
+                    sub_questions = retrieval_metadata['sub_questions']
+                    sub_answers = retrieval_metadata.get('sub_answers', [])
+                    
+                    # 构建完整的子问题数据
+                    sub_questions_data = {
+                        'sub_questions': sub_questions,
+                        'count': len(sub_questions),
+                        'sub_answers': sub_answers  # 包含每个子问题的答案摘要
+                    }
+                    
+                    yield ('SUB_QUESTIONS', sub_questions_data)
+                    logger.info(
+                        f"[前端输出] 已发送子问题到前端 | "
+                        f"子问题数: {len(sub_questions)} | "
+                        f"答案数: {len(sub_answers)}"
+                    )
+            else:
+                # 兼容旧版本（只返回节点）
+                final_nodes = result
+                retrieval_metadata = None
 
 
             # 2. 如果启用 InsertBlock 模式，进行智能过滤
@@ -132,13 +181,20 @@ class KnowledgeHandler:
             nodes_for_prompt = final_nodes  # 默认使用原始检索结果
 
             if use_insert_block and final_nodes and self.insert_block_filter:
-                yield ('CONTENT', "正在使用 InsertBlock 智能过滤...")
-                full_response += "正在使用 InsertBlock 智能过滤...\n"
+                yield ('CONTENT', f"正在使用 InsertBlock 智能过滤 {len(final_nodes)} 个节点...")
+                full_response += f"正在使用 InsertBlock 智能过滤 {len(final_nodes)} 个节点...\n"
+
+                # 定义进度回调函数
+                def progress_callback(processed, total):
+                    progress_msg = f"[精准检索进度] {processed}/{total} 个节点已处理"
+                    logger.info(progress_msg)
+                    # 不发送到前端，避免刷屏，只记录日志
 
                 filtered_results = self.insert_block_filter.filter_nodes(
                     question=question,
                     nodes=final_nodes,
-                    llm_id=insert_block_llm_id
+                    llm_id=insert_block_llm_id,
+                    progress_callback=progress_callback
                 )
 
                 if filtered_results:
@@ -281,9 +337,71 @@ class KnowledgeHandler:
             logger.error(f"知识问答处理出错: {e}", exc_info=True)
             yield ('ERROR', error_msg)
 
-    def _retrieve_and_rerank(self, question: str, rerank_top_n: int):
-        """检索和重排序"""
-        # 初始检索
+    def _retrieve_and_rerank(self, question: str, rerank_top_n: int, conversation_history: Optional[List[Dict]] = None):
+        """
+        检索和重排序（支持子问题分解）
+        
+        Args:
+            question: 用户查询
+            rerank_top_n: 重排序返回数量
+            conversation_history: 对话历史（用于多轮场景）
+            
+        Returns:
+            检索节点列表
+        """
+        # 如果启用了子问题分解器，尝试使用分解检索
+        if self.sub_question_decomposer and self.sub_question_decomposer.enabled:
+            logger.info("[检索策略] 尝试使用子问题分解检索（多轮）")
+            try:
+                # 注意：多轮场景使用默认retriever，因为没有意图分类
+                # 如果需要支持多轮+意图路由，需要在这里也添加意图分类逻辑
+                nodes, metadata = self.sub_question_decomposer.retrieve_with_decomposition(
+                    query=question,
+                    rerank_top_n=rerank_top_n,
+                    conversation_history=conversation_history
+                )
+                
+                # 记录分解元数据
+                if metadata.get('decomposed'):
+                    logger.info(
+                        f"[子问题检索] 分解检索完成 | "
+                        f"子问题数: {len(metadata['sub_questions'])} | "
+                        f"返回节点数: {len(nodes)}"
+                    )
+                    # 记录详细的子问题信息到日志
+                    for i, sub_result in enumerate(metadata['sub_results'], 1):
+                        logger.info(
+                            f"  子问题{i}: {sub_result['sub_question']} | "
+                            f"节点数: {sub_result['node_count']} | "
+                            f"最高分: {sub_result['top_score']:.4f}"
+                        )
+                    
+                    # 可选：生成子问题答案合成（如果有sub_answers）
+                    if metadata.get('sub_answers') and len(metadata['sub_answers']) > 0:
+                        try:
+                            synthesized_answer = self.sub_question_decomposer.synthesize_answer(
+                                original_query=question,
+                                sub_answers=metadata['sub_answers']
+                            )
+                            if synthesized_answer:
+                                # 将合成答案添加到metadata，供后续使用
+                                metadata['synthesized_answer'] = synthesized_answer
+                                # 存储为实例变量，供_build_prompt使用
+                                self._last_synthesized_answer = synthesized_answer
+                                logger.info(f"[答案合成] 已生成合成答案 | 长度: {len(synthesized_answer)}")
+                        except Exception as synth_e:
+                            logger.warning(f"[答案合成] 合成失败: {synth_e}")
+                else:
+                    logger.info("[子问题检索] 未分解，使用标准检索")
+                
+                return nodes
+                
+            except Exception as e:
+                logger.error(f"[子问题检索] 分解检索失败: {e}", exc_info=True)
+                logger.info("[子问题检索] 回退到标准检索流程")
+                # 继续执行标准检索
+        
+        # 标准检索流程
         logger.info(f"[单知识库检索] 开始检索问题: {question}")
         logger.info(f"🔍 [DEBUG] 使用的检索器对象ID: {id(self.retriever)}")
         logger.info(f"🔍 [DEBUG] 检索器类型: {type(self.retriever).__name__}")
@@ -402,25 +520,32 @@ class KnowledgeHandler:
         if filtered_results:
             # 同时使用关键段落和完整内容构建上下文
             context_blocks = []
-            for i, result in enumerate(filtered_results):
+            block_index = 1  # 用于编号实际添加的块
+            
+            for result in filtered_results:
                 file_name = result['file_name']
                 key_passage = result.get('key_passage', '')
                 full_content = result['node'].node.text.strip()
+                can_answer = result.get('can_answer', False)
+
+                # 严格过滤：只有 can_answer=True 且 key_passage 不为空才注入上下文
+                if not can_answer:
+                    logger.warning(f"[精准检索过滤] 跳过不可回答的节点: {file_name}")
+                    continue
+                
+                if not key_passage or key_passage.strip() == "":
+                    logger.warning(f"[精准检索过滤] 跳过无关键段落的节点: {file_name} | can_answer={can_answer}")
+                    continue
 
                 # 构建包含关键段落和完整内容的块
-                if key_passage:
-                    # 如果有关键段落，先展示关键段落，再展示完整内容
-                    block = (
-                        f"### 业务规定 {i + 1} - {file_name}:\n"
-                        # f"**【关键段落】**\n> {key_passage}\n\n"
-                        f"**【完整内容】**\n> {full_content}"
-                    )
-                else:
-                    # 如果没有关键段落，只展示完整内容
-                    block = f"### 业务规定 {i + 1} - {file_name}:\n> {full_content}"
-                    logger.warning(f"节点通过筛选但没有关键段落: {file_name}")
-
+                block = (
+                    f"### 业务规定 {block_index} - {file_name}:\n"
+                    # f"**【关键段落】**\n> {key_passage}\n\n"
+                    f"**【完整内容】**\n> {full_content}"
+                )
                 context_blocks.append(block)
+                block_index += 1
+                logger.info(f"[精准检索通过] 节点已注入上下文: {file_name} | 关键段落长度: {len(key_passage)}")
 
             formatted_context = "\n\n".join(context_blocks) if context_blocks else None
             has_rag = bool(context_blocks)
@@ -444,10 +569,44 @@ class KnowledgeHandler:
             formatted_context = None
             has_rag = False
 
-        if has_rag:
+        # 检查是否有子问题答案或合成答案需要注入
+        has_sub_answers = hasattr(self, '_last_sub_answers') and self._last_sub_answers
+        has_synthesis = hasattr(self, '_last_synthesized_answer') and self._last_synthesized_answer
+        
+        # 如果有检索文档或有子问题答案，都需要构建上下文
+        if has_rag or has_sub_answers or has_synthesis:
             # 获取前缀
             assistant_prefix = get_knowledge_assistant_context_prefix()
-            assistant_context = assistant_prefix + formatted_context
+            
+            # 构建基础上下文
+            if has_rag:
+                assistant_context = assistant_prefix + formatted_context
+            else:
+                # 即使没有检索文档，也创建上下文用于注入子问题答案
+                assistant_context = assistant_prefix + "**注意**: 未检索到相关业务规定文档，请基于以下子问题分析回答。\n"
+                logger.info("[提示词构建] 无检索文档，但有子问题答案，创建上下文用于注入")
+            
+            # 如果有子问题答案，添加到上下文中
+            if has_sub_answers:
+                sub_answers_block = "\n\n### 📋 子问题分解与回答:\n"
+                for i, sub_answer in enumerate(self._last_sub_answers, 1):
+                    sub_q = sub_answer.get('sub_question', '')
+                    answer = sub_answer.get('answer', '')
+                    sub_answers_block += f"\n**子问题{i}**: {sub_q}\n**回答{i}**: {answer}\n"
+                
+                sub_answers_block += "\n**注意**: 以上是各子问题的独立回答，请结合这些信息和业务规定给出完整答案。"
+                assistant_context += sub_answers_block
+                logger.info(f"[提示词构建] 已将 {len(self._last_sub_answers)} 个子问题答案注入上下文")
+            
+            # 如果有子问题答案合成，添加到上下文中
+            if self._last_synthesized_answer:
+                synthesis_block = (
+                    f"\n\n###  子问题综合分析:\n"
+                    f"> {self._last_synthesized_answer}\n\n"
+                    f"**注意**: 以上是对多个子问题答案的综合整理，请结合具体业务规定给出最终回答。"
+                )
+                assistant_context += synthesis_block
+                logger.info(f"[提示词构建] 已将合成答案注入上下文 | 长度: {len(self._last_synthesized_answer)}")
 
             # 根据思考模式选择不同的 system 和 user prompt
             if enable_thinking:
@@ -463,7 +622,12 @@ class KnowledgeHandler:
             actual_question = f"{question}/no_think" if not enable_thinking else question
             if not enable_thinking:
                 logger.info(f"✓ 已在问题后追加 /no_think 指令: '{actual_question}'")
-            user_prompt = user_prompt_str.format(question=actual_question)
+            
+            # 将参考资料直接注入到 user_prompt 中，而不是作为单独的 assistant_context
+            user_prompt = user_prompt_str.format(context=assistant_context, question=actual_question)
+            # 清空 assistant_context，因为已经合并到 user_prompt 中
+            assistant_context_for_llm = None
+            logger.info("[提示词构建] 已将参考资料合并到用户问题中（二段式）")
 
         else:
             # 没有检索到相关内容
@@ -488,18 +652,103 @@ class KnowledgeHandler:
         if isinstance(system_prompt, list):
             system_prompt = "\n".join(system_prompt)
 
+        # 确定实际传给 LLM 的 assistant_context
+        # 如果使用二段式（参考资料已合并到 user_prompt），则传 None
+        llm_assistant_context = assistant_context_for_llm if 'assistant_context_for_llm' in locals() else assistant_context
+
         # 构建 fallback_prompt（用于不支持 chat 模式的情况）
         fallback_parts = [system_prompt]
-        if assistant_context:
-            fallback_parts.append(assistant_context)
+        if llm_assistant_context:
+            fallback_parts.append(llm_assistant_context)
         fallback_parts.append(user_prompt)
 
-        return {
+        prompt_result = {
             "system_prompt": system_prompt,
             "user_prompt": user_prompt,
-            "assistant_context": assistant_context,
+            "assistant_context": llm_assistant_context,  # 实际传给 LLM 的
+            "assistant_context_log": assistant_context,  # 用于日志记录
             "fallback_prompt": "\n\n".join(fallback_parts)
         }
+        
+        # 输出上下文到日志文件
+        self._log_prompt_to_file(question, prompt_result)
+        
+        return prompt_result
+
+    def _log_prompt_to_file(self, question: str, prompt_parts: Dict[str, Any]):
+        """
+        将提示词上下文输出到日志文件（每次问答单独保存）
+        
+        Args:
+            question: 用户问题
+            prompt_parts: 提示词字典
+        """
+        try:
+            # 确保 logs 目录存在
+            logs_dir = Path("logs")
+            logs_dir.mkdir(exist_ok=True)
+            
+            # 生成唯一的日志文件名（基于时间戳）
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            log_file = logs_dir / f"prompt_{timestamp}.txt"
+            
+            # 构建日志内容（完整的单次问答上下文）
+            log_content = []
+            log_content.append("=" * 100)
+            log_content.append(f"问答时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            log_content.append("=" * 100)
+            log_content.append("")
+            
+            # 用户问题
+            log_content.append("【用户问题】")
+            log_content.append(question)
+            log_content.append("")
+            log_content.append("-" * 100)
+            log_content.append("")
+            
+            # System Prompt
+            log_content.append("【System Prompt】")
+            log_content.append(prompt_parts.get('system_prompt', 'N/A'))
+            log_content.append("")
+            log_content.append("-" * 100)
+            log_content.append("")
+            
+            # Assistant Context (检索文档 + 子问题答案)
+            # 使用 assistant_context_log 显示完整的参考资料（即使已合并到用户问题中）
+            context_for_log = prompt_parts.get('assistant_context_log') or prompt_parts.get('assistant_context')
+            if context_for_log:
+                log_content.append("【参考资料】（以下内容已注入到用户问题中）")
+                log_content.append(context_for_log)
+                log_content.append("")
+                log_content.append("-" * 100)
+                log_content.append("")
+            else:
+                log_content.append("【参考资料】")
+                log_content.append("无检索文档或子问题答案")
+                log_content.append("")
+                log_content.append("-" * 100)
+                log_content.append("")
+            
+            # User Prompt
+            log_content.append("【User Prompt】")
+            log_content.append(prompt_parts.get('user_prompt', 'N/A'))
+            log_content.append("")
+            log_content.append("=" * 100)
+            
+            # 写入文件（每次问答独立文件）
+            with open(log_file, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(log_content))
+            
+            logger.info(f"[提示词日志] 已保存到 {log_file}")
+            
+            # 同时追加到总日志文件（可选，便于查看所有记录）
+            all_logs_file = logs_dir / "prompts_logs_all.txt"
+            with open(all_logs_file, 'a', encoding='utf-8') as f:
+                f.write('\n'.join(log_content))
+                f.write('\n\n')
+            
+        except Exception as e:
+            logger.error(f"[提示词日志] 保存失败: {e}")
 
     def _call_llm(self, llm, prompt_parts, enable_thinking: bool = False):
         """
@@ -844,6 +1093,9 @@ class KnowledgeHandler:
             SSE 格式的响应流
         """
         full_response = ""
+        
+        # 清空上一次的合成答案（避免污染）
+        self._last_synthesized_answer = None
 
         try:
             logger.info(
@@ -862,11 +1114,33 @@ class KnowledgeHandler:
             # 返回会话ID
             yield f"SESSION:{session_id}"
 
-            # 1. 检索
-            yield "CONTENT:正在进行混合检索..."
-            full_response += "正在进行混合检索...\n"
+            # 1. 获取最近的对话历史（用于子问题分解）
+            from config import Settings as AppSettings
+            recent_turns_for_decomp = getattr(AppSettings, 'SUBQUESTION_HISTORY_COMPRESS_TURNS', 5)
+            
+            try:
+                conversation_history_for_decomp = conversation_manager.get_recent_history(
+                    session_id=session_id,
+                    limit=recent_turns_for_decomp
+                )
+            except Exception as e:
+                logger.warning(f"获取对话历史用于子问题分解失败: {e}")
+                conversation_history_for_decomp = None
+            
+            # 2. 检索
+            # 如果前端设置参考数量为 0，跳过检索
+            if rerank_top_n == 0:
+                logger.info("[对话-检索跳过] 前端设置参考数量为 0，跳过检索和子问题分解")
+                final_nodes = []
+            else:
+                yield "CONTENT:正在进行混合检索..."
+                full_response += "正在进行混合检索...\n"
 
-            final_nodes = self._retrieve_and_rerank(question, rerank_top_n)
+                final_nodes = self._retrieve_and_rerank(
+                    question, 
+                    rerank_top_n,
+                    conversation_history=conversation_history_for_decomp
+                )
 
             # 2. 如果启用 InsertBlock 模式，进行智能过滤
             filtered_results = None
@@ -1174,11 +1448,28 @@ class KnowledgeHandler:
         if filtered_results:
             # 使用 InsertBlock 过滤结果
             context_blocks = []
-            for i, result in enumerate(filtered_results):
+            block_index = 1
+            
+            for result in filtered_results:
                 file_name = result['file_name']
+                key_passage = result.get('key_passage', '')
                 full_content = result['node'].node.text.strip()
-                block = f"### 业务规定 {i + 1} - {file_name}:\n> {full_content}"
+                can_answer = result.get('can_answer', False)
+                
+                # 严格过滤：只有 can_answer=True 且 key_passage 不为空才注入上下文
+                if not can_answer:
+                    logger.warning(f"[对话-精准检索过滤] 跳过不可回答的节点: {file_name}")
+                    continue
+                
+                if not key_passage or key_passage.strip() == "":
+                    logger.warning(f"[对话-精准检索过滤] 跳过无关键段落的节点: {file_name} | can_answer={can_answer}")
+                    continue
+                
+                block = f"### 业务规定 {block_index} - {file_name}:\n> {full_content}"
                 context_blocks.append(block)
+                block_index += 1
+                logger.info(f"[对话-精准检索通过] 节点已注入上下文: {file_name} | 关键段落长度: {len(key_passage)}")
+                
             knowledge_context = "\n\n".join(context_blocks) if context_blocks else None
 
         elif final_nodes:
@@ -1192,6 +1483,16 @@ class KnowledgeHandler:
             knowledge_context = "\n\n".join(context_blocks)
 
         has_rag = bool(knowledge_context)
+        
+        # 如果有子问题答案合成，添加到知识库上下文中
+        if has_rag and self._last_synthesized_answer:
+            synthesis_block = (
+                f"\n\n### 🎯 子问题综合分析:\n"
+                f"> {self._last_synthesized_answer}\n\n"
+                f"**注意**: 以上是对多个子问题答案的综合整理，请结合具体业务规定给出最终回答。"
+            )
+            knowledge_context += synthesis_block
+            logger.info(f"[多轮提示词构建] 已将合成答案注入上下文 | 长度: {len(self._last_synthesized_answer)}")
 
         # 构建历史对话上下文
         history_context = None
@@ -1284,13 +1585,14 @@ class KnowledgeHandler:
             "fallback_prompt": "\n\n".join(fallback_parts)
         }
     
-    def _smart_retrieve_and_rerank(self, question: str, rerank_top_n: int):
+    def _smart_retrieve_and_rerank(self, question: str, rerank_top_n: int, conversation_history: Optional[List[Dict]] = None):
         """
-        智能路由检索：根据意图分类选择合适的知识库
+        智能路由检索：先意图分类选择知识库，再可选子问题分解
         
         Args:
             question: 用户问题
             rerank_top_n: 重排序后返回的文档数量
+            conversation_history: 对话历史（用于子问题分解）
             
         Returns:
             重排序后的节点列表
@@ -1312,21 +1614,77 @@ class KnowledgeHandler:
         if strategy == "both" and self.multi_kb_retriever:
             # 双库检索
             logger.info("[智能路由] 使用双库检索（免签库 + 通用库）")
-            retriever = self.multi_kb_retriever
+            selected_retriever = self.multi_kb_retriever
         elif strategy == "visa_free" and self.visa_free_retriever:
             # 只用免签库
             logger.info("[智能路由] 使用免签知识库")
-            retriever = self.visa_free_retriever
+            selected_retriever = self.visa_free_retriever
         else:
             # 只用通用库（默认）
             logger.info("[智能路由] 使用通用知识库")
-            retriever = self.retriever
+            selected_retriever = self.retriever
         
-        # 3. 执行检索和重排序
+        # 3. 尝试子问题分解（如果启用），使用路由后的检索器
+        if self.sub_question_decomposer and self.sub_question_decomposer.enabled:
+            logger.info(f"[检索策略] 尝试使用子问题分解检索（单轮） | 目标库: {strategy}")
+            try:
+                nodes, metadata = self.sub_question_decomposer.retrieve_with_decomposition(
+                    query=question,
+                    rerank_top_n=rerank_top_n,
+                    conversation_history=conversation_history,
+                    retriever=selected_retriever  # 传入路由后的检索器
+                )
+                
+                # 记录分解元数据
+                if metadata.get('decomposed'):
+                    logger.info(
+                        f"[子问题检索] 分解检索完成 | "
+                        f"子问题数: {len(metadata['sub_questions'])} | "
+                        f"返回节点数: {len(nodes)} | "
+                        f"使用库: {strategy}"
+                    )
+                    
+                    # 保存子问题答案（用于注入上下文和返回前端）
+                    if metadata.get('sub_answers') and len(metadata['sub_answers']) > 0:
+                        # 存储子问题答案，供 _build_prompt 使用
+                        self._last_sub_answers = metadata['sub_answers']
+                        logger.info(f"[子问题答案] 已保存 {len(metadata['sub_answers'])} 个子问题答案，将注入上下文")
+                        
+                        # 可选：生成子问题答案合成
+                        try:
+                            synthesized_answer = self.sub_question_decomposer.synthesize_answer(
+                                original_query=question,
+                                sub_answers=metadata['sub_answers']
+                            )
+                            if synthesized_answer:
+                                # 将合成答案添加到metadata，供后续使用
+                                metadata['synthesized_answer'] = synthesized_answer
+                                # 存储为实例变量，供_build_prompt使用
+                                self._last_synthesized_answer = synthesized_answer
+                                logger.info(f"[答案合成] 已生成合成答案 | 长度: {len(synthesized_answer)}")
+                        except Exception as synth_e:
+                            logger.warning(f"[答案合成] 合成失败: {synth_e}")
+                    
+                    # 返回节点和元数据
+                    return nodes, metadata
+                else:
+                    logger.info("[子问题检索] 未分解，继续标准检索流程")
+                    # 清空子问题答案，避免使用旧数据
+                    self._last_sub_answers = None
+                    # 继续执行标准检索
+                    
+            except Exception as e:
+                logger.error(f"[子问题检索] 分解检索失败: {e}", exc_info=True)
+                logger.info("[子问题检索] 回退到标准检索流程")
+                # 清空子问题答案，避免使用旧数据
+                self._last_sub_answers = None
+                # 继续执行标准检索
+        
+        # 4. 标准检索和重排序
         return self._retrieve_and_rerank_with_retriever(
             question, 
             rerank_top_n, 
-            retriever
+            selected_retriever
         )
     
     def _retrieve_and_rerank_with_retriever(

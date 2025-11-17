@@ -71,7 +71,7 @@ class DocumentProcessor:
             )
 
     def _split_by_pattern(self, text: str) -> List[str]:
-        """按模式切分文本"""
+        """按模式切分文本（切分后自动移除分隔符）"""
         matches = list(self.chunk_pattern.finditer(text))
 
         if not matches:
@@ -81,10 +81,12 @@ class DocumentProcessor:
         last_end = 0
 
         for match in matches:
+            # 提取分隔符之前的内容
             chunk = text[last_end:match.start()].strip()
             if chunk:
                 chunks.append(chunk)
-            last_end = match.start()
+            # 关键修复：跳过分隔符本身，从 match.end() 开始下一段
+            last_end = match.end()
 
         # 添加最后一段
         last_chunk = text[last_end:].strip()

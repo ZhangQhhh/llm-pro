@@ -39,6 +39,9 @@ class KnowledgeService:
         self.visa_free_nodes = None
         self.visa_free_retriever = None
         
+        # 子问题分解器（可选）
+        self.sub_question_decomposer = None
+        
         self.doc_processor = DocumentProcessor(AppSettings.CHUNK_CHAR_B)
         # 初始化 Qdrant 客户端(Docker 模式)
         self.qdrant_client = QdrantClient(
@@ -114,6 +117,39 @@ class KnowledgeService:
             AppSettings.RETRIEVAL_TOP_K_BM25
         )
         return self.retriever
+    
+    def create_sub_question_decomposer(self, llm_service, reranker):
+        """
+        创建子问题分解器（可选功能）
+        
+        Args:
+            llm_service: LLM服务实例
+            reranker: 重排序器实例
+            
+        Returns:
+            子问题分解器实例或None
+        """
+        if not AppSettings.ENABLE_SUBQUESTION_DECOMPOSITION:
+            logger.info("子问题分解功能未启用，跳过创建")
+            return None
+        
+        if self.retriever is None or self.index is None:
+            logger.error("检索器或索引未初始化，无法创建子问题分解器")
+            return None
+        
+        try:
+            from core.sub_question_decomposer import SubQuestionDecomposer
+            self.sub_question_decomposer = SubQuestionDecomposer(
+                llm_service=llm_service,
+                retriever=self.retriever,
+                reranker=reranker,
+                index=self.index  # 传递index用于LlamaIndex原生引擎
+            )
+            logger.info("✓ 子问题分解器创建成功")
+            return self.sub_question_decomposer
+        except Exception as e:
+            logger.error(f"创建子问题分解器失败: {e}", exc_info=True)
+            return None
 
 
     def _should_rebuild_index(

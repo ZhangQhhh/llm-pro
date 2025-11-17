@@ -150,13 +150,39 @@ class HybridRetriever(BaseRetriever):
 
         # 4. 计算加权 RRF 分数
         fused_scores = {}
+        vector_score_threshold = 0.01  # 向量分数阈值，低于此值视为无效
+        bm25_only_count = 0  # 统计纯BM25结果数量
+        
         for node_id in all_nodes:
             score = 0.0
-            if node_id in vector_ranks:
-                score += self._vector_weight * (1.0 / (self._rrf_k + vector_ranks[node_id]))
-            if node_id in bm25_ranks:
-                score += self._bm25_weight * (1.0 / (self._rrf_k + bm25_ranks[node_id]))
+            vector_score = vector_scores.get(node_id, 0.0)
+            bm25_score = bm25_scores.get(node_id, 0.0)
+            
+            # 判断向量检索是否有效（分数 > 阈值）
+            vector_valid = node_id in vector_ranks and vector_score > vector_score_threshold
+            bm25_valid = node_id in bm25_ranks
+            
+            # 如果只有BM25有效（向量检索失败或分数过低），使用BM25原始分数
+            if not vector_valid and bm25_valid:
+                # 纯BM25结果：直接使用BM25分数
+                score = bm25_score * self._bm25_weight
+                bm25_only_count += 1
+            else:
+                # 标准RRF融合
+                if vector_valid:
+                    score += self._vector_weight * (1.0 / (self._rrf_k + vector_ranks[node_id]))
+                if bm25_valid:
+                    score += self._bm25_weight * (1.0 / (self._rrf_k + bm25_ranks[node_id]))
+            
             fused_scores[node_id] = score
+        
+        # 记录纯BM25结果统计
+        if bm25_only_count > 0:
+            from utils import logger
+            logger.debug(
+                f"[RRF融合] 检测到 {bm25_only_count} 个纯BM25结果（向量分数 < {vector_score_threshold}），"
+                f"使用BM25原始分数排序"
+            )
 
         # 5. 构建结果并附加元数据
         fused_results = []
