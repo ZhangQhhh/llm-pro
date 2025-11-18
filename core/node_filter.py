@@ -266,30 +266,10 @@ class InsertBlockFilter:
             # 组合为单一 prompt
             full_prompt = f"{system_prompt}\n\n{user_prompt}"
 
-            # 调用 LLM（添加超时保护）
-            import signal
-            
-            def timeout_handler(signum, frame):
-                raise TimeoutError(f"LLM 调用超时: {self.timeout}s")
-            
-            # 设置超时（仅 Unix 系统）
-            try:
-                if hasattr(signal, 'SIGALRM'):
-                    signal.signal(signal.SIGALRM, timeout_handler)
-                    signal.alarm(self.timeout)
-                
-                response = llm.complete(full_prompt)
-                response_text = response.text.strip()
-                
-                if hasattr(signal, 'SIGALRM'):
-                    signal.alarm(0)  # 取消超时
-            except TimeoutError:
-                logger.error(f"LLM 调用超时: {file_name} | 超时限制: {self.timeout}s")
-                raise
-            except Exception as e:
-                if hasattr(signal, 'SIGALRM'):
-                    signal.alarm(0)
-                raise
+            # 调用 LLM（移除信号超时机制，因为不能在线程中使用）
+            # LLM 客户端通常有内置的超时机制
+            response = llm.complete(full_prompt)
+            response_text = response.text.strip()
 
             # 解析 JSON 响应
             # 尝试提取 JSON（可能包含在 markdown 代码块中）

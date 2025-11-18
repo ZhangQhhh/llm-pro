@@ -7,6 +7,7 @@ from .document_processor import DocumentProcessor
 from .retriever import CleanBM25Retriever, HybridRetriever, RetrieverFactory
 from .multi_kb_retriever import MultiKBRetriever
 from .intent_classifier import IntentClassifier
+from .hidden_kb_retriever import HiddenKBRetriever
 
 __all__ = [
     'LLMStreamWrapper',
@@ -16,5 +17,6 @@ __all__ = [
     'RetrieverFactory',
     'MultiKBRetriever',
     'IntentClassifier',
+    'HiddenKBRetriever',
 ]
 

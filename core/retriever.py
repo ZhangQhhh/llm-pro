@@ -4,6 +4,7 @@
 实现混合检索（BM25 + 向量检索 + RRF 融合）
 """
 import jieba
+import os
 from typing import List
 from llama_index.core import Document, QueryBundle
 from llama_index.core.retrievers import AutoMergingRetriever, BaseRetriever
@@ -11,6 +12,14 @@ from llama_index.core.schema import NodeWithScore, TextNode
 from llama_index.core import VectorStoreIndex
 from llama_index.retrievers.bm25 import BM25Retriever as OfficialBM25
 from utils.logger import logger
+
+# 加载自定义词典
+CUSTOM_DICT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "dict", "custom_dict.txt")
+if os.path.exists(CUSTOM_DICT_PATH):
+    jieba.load_userdict(CUSTOM_DICT_PATH)
+    logger.info(f" 已加载自定义词典: {CUSTOM_DICT_PATH}")
+else:
+    logger.warning(f" 自定义词典不存在: {CUSTOM_DICT_PATH}")
 
 
 class CleanBM25Retriever(BaseRetriever):
@@ -89,9 +98,12 @@ class CleanBM25Retriever(BaseRetriever):
                 doc_content = original_node.get_content() if hasattr(original_node, 'get_content') else (original_node.text or "")
                 matched_keywords = [kw for kw in query_keywords if kw in doc_content and len(kw) > 1]
                 
-                # 将匹配的关键词添加到节点元数据
+                # 将匹配的关键词添加到节点元数据（不在这里限制数量，由前端全局去重限制）
                 original_node.metadata['bm25_matched_keywords'] = matched_keywords
                 original_node.metadata['bm25_query_keywords'] = query_keywords
+                
+                # Add a new metadata field 'bm25_relevance_score'
+                original_node.metadata['bm25_relevance_score'] = node_with_score.score
                 
                 clean_nodes.append(
                     NodeWithScore(node=original_node, score=node_with_score.score)

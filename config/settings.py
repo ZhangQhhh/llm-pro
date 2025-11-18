@@ -72,7 +72,7 @@ class Settings:
 
     # ==================== RAG 核心参数 ====================
     RETRIEVAL_TOP_K = 30
-    RETRIEVAL_TOP_K_BM25 = 30  # BM25检索数量
+    RETRIEVAL_TOP_K_BM25 = 5  # BM25检索数量
     RERANK_TOP_N = 20  # 重排序后返回数量（适配三库检索30条策略）
     RERANKER_INPUT_TOP_N = 30  # 送入重排序的数量（三库检索最大30条）
     RETRIEVAL_SCORE_THRESHOLD = 0.2
@@ -83,6 +83,9 @@ class Settings:
     RRF_K = 10.0  # RRF 平滑参数（降低以增加排名差异影响）
     RRF_VECTOR_WEIGHT = 0.7  # 向量检索权重（0-1）
     RRF_BM25_WEIGHT = 0.3    # BM25 检索权重（0-1）
+    
+    # 关键词显示配置
+    MAX_DISPLAY_KEYWORDS = int(os.getenv("MAX_DISPLAY_KEYWORDS", "5"))  # 前端显示的最大关键词数量
 
     # ==================== LLM 行为参数 ====================
     LLM_REQUEST_TIMEOUT = 1800.0
@@ -127,7 +130,7 @@ class Settings:
     
     # 免签检索参数（独立配置，不影响通用库）
     VISA_FREE_RETRIEVAL_TOP_K = 30
-    VISA_FREE_RETRIEVAL_TOP_K_BM25 = 30
+    VISA_FREE_RETRIEVAL_TOP_K_BM25 = 5
     VISA_FREE_RERANK_TOP_N = 15
     
     # 意图分类器配置
@@ -157,9 +160,29 @@ class Settings:
     
     # 航司检索参数
     AIRLINE_RETRIEVAL_TOP_K = 30
-    AIRLINE_RETRIEVAL_TOP_K_BM25 = 30
+    AIRLINE_RETRIEVAL_TOP_K_BM25 = 5
     AIRLINE_RERANK_TOP_N = 20  # 适配三库检索30条策略
     AIRLINE_RETRIEVAL_COUNT = 10  # 航司库取10条（三库检索时）
+
+    # ==================== 隐藏知识库配置 ====================
+    # 隐藏知识库功能开关（默认关闭）
+    # 用途：题库等需要提升准确率但不暴露来源的内容
+    ENABLE_HIDDEN_KB_FEATURE = os.getenv("ENABLE_HIDDEN_KB_FEATURE", "false").lower() == "true"
+    
+    # 隐藏知识库路径（独立目录）
+    HIDDEN_KB_DIR = "/opt/rag_final_project/hidden_knowledge_base"
+    HIDDEN_KB_STORAGE_PATH = "/opt/rag_final_project/hidden_storage"
+    HIDDEN_KB_COLLECTION = "hidden_kb"  # 独立的 Qdrant collection
+    
+    # 隐藏知识库检索参数
+    HIDDEN_KB_RETRIEVAL_TOP_K = 30  # 初始检索数量
+    HIDDEN_KB_RETRIEVAL_TOP_K_BM25 = 5  # BM25检索数量
+    HIDDEN_KB_RERANK_TOP_N = 10  # 重排序后返回数量
+    HIDDEN_KB_RETRIEVAL_COUNT = 5  # 最终注入上下文的数量（默认5条）
+    
+    # 隐藏知识库行为配置
+    HIDDEN_KB_INJECT_MODE = "silent"  # silent: 完全隐藏 | visible: 显示来源（调试用）
+    HIDDEN_KB_MIN_SCORE = 0.3  # 最低分数阈值（低于此分数不注入）
 
     # ==================== 特殊规定配置 ====================
     # 特殊规定文件夹路径（直接从文件读取，不使用向量数据库）

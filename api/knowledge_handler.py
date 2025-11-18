@@ -32,6 +32,18 @@ from prompts import (
     get_conversation_summary_user,
     get_conversation_summary_context_prefix
 )
+# 导入新的工具函数
+from utils.knowledge_utils import (
+    build_knowledge_prompt,
+    format_sources,
+    format_filtered_sources,
+    build_reference_entries,
+    log_prompt_to_file,
+    log_reference_details,
+    save_qa_log,
+    parse_thinking_stream,
+    parse_normal_stream
+)
 
 
 class KnowledgeHandler:
@@ -51,7 +63,9 @@ class KnowledgeHandler:
         multi_kb_retriever=None,
         intent_classifier=None,
         # 子问题分解器（可选）
-        sub_question_decomposer=None
+        sub_question_decomposer=None,
+        # 隐藏知识库检索器（可选）
+        hidden_kb_retriever=None
     ):
         # 通用知识库组件
         self.retriever = retriever
@@ -69,6 +83,8 @@ class KnowledgeHandler:
         self.intent_classifier = intent_classifier
         # 子问题分解器
         self.sub_question_decomposer = sub_question_decomposer
+        # 隐藏知识库检索器
+        self.hidden_kb_retriever = hidden_kb_retriever
         
         # 子问题答案合成（用于传递到提示词）
         self._last_synthesized_answer = None
@@ -89,6 +105,8 @@ class KnowledgeHandler:
             enabled_features.append("航司库")
         if self.sub_question_decomposer:
             enabled_features.append("子问题分解")
+        if self.hidden_kb_retriever:
+            enabled_features.append("隐藏知识库")
         
         if enabled_features:
             logger.info(f"✓ 知识库功能已启用: {', '.join(enabled_features)}")
@@ -140,12 +158,27 @@ class KnowledgeHandler:
                 logger.info("[检索跳过] 前端设置参考数量为 0，跳过检索和子问题分解")
                 final_nodes = []
                 result = None
+                hidden_nodes = []
             else:
                 yield ('CONTENT', "正在进行混合检索...\n")
                 full_response += "正在进行混合检索...\n"
                 
                 # 调用检索，获取节点和元数据
                 result = self._smart_retrieve_and_rerank(question, rerank_top_n)
+                
+                # 1.5 隐藏知识库检索（并行进行，不影响主流程）
+                hidden_nodes = []
+                if self.hidden_kb_retriever and self.hidden_kb_retriever.enabled:
+                    try:
+                        logger.info("[隐藏知识库] 开始并行检索...")
+                        hidden_nodes = self.hidden_kb_retriever.retrieve(question)
+                        if hidden_nodes:
+                            logger.info(f"[隐藏知识库] 检索成功 | 返回 {len(hidden_nodes)} 条")
+                        else:
+                            logger.info("[隐藏知识库] 未检索到相关内容")
+                    except Exception as e:
+                        logger.warning(f"[隐藏知识库] 检索失败，继续主流程: {e}")
+                        hidden_nodes = []
             
             # 检查是否返回了元数据（子问题分解）
             if result and isinstance(result, tuple) and len(result) == 2:
@@ -181,21 +214,71 @@ class KnowledgeHandler:
             nodes_for_prompt = final_nodes  # 默认使用原始检索结果
 
             if use_insert_block and final_nodes and self.insert_block_filter:
-                yield ('CONTENT', f"正在使用 InsertBlock 智能过滤 {len(final_nodes)} 个节点...")
-                full_response += f"正在使用 InsertBlock 智能过滤 {len(final_nodes)} 个节点...\n"
-
-                # 定义进度回调函数
+                # 发送开始消息
+                start_msg = f"正在使用精准检索分析 {len(final_nodes)} 个文档...\n提示：系统正在逐个判断每个文档是否能回答您的问题，请稍候\n"
+                yield ('CONTENT', start_msg)
+                full_response += start_msg
+                
+                # 使用队列收集进度
+                import queue
+                import threading
+                progress_queue = queue.Queue()
+                filter_done = threading.Event()
+                
+                # 定义进度回调函数（将进度放入队列）
                 def progress_callback(processed, total):
-                    progress_msg = f"[精准检索进度] {processed}/{total} 个节点已处理"
-                    logger.info(progress_msg)
-                    # 不发送到前端，避免刷屏，只记录日志
-
-                filtered_results = self.insert_block_filter.filter_nodes(
-                    question=question,
-                    nodes=final_nodes,
-                    llm_id=insert_block_llm_id,
-                    progress_callback=progress_callback
-                )
+                    logger.info(f"[精准检索进度] {processed}/{total} 个文档已分析")
+                    progress_queue.put((processed, total))
+                
+                # 在后台线程执行过滤
+                def run_filter():
+                    try:
+                        result = self.insert_block_filter.filter_nodes(
+                            question=question,
+                            nodes=final_nodes,
+                            llm_id=insert_block_llm_id,
+                            progress_callback=progress_callback
+                        )
+                        progress_queue.put(('DONE', result))
+                    except Exception as e:
+                        progress_queue.put(('ERROR', e))
+                    finally:
+                        filter_done.set()
+                
+                filter_thread = threading.Thread(target=run_filter, daemon=True)
+                filter_thread.start()
+                
+                # 主线程定期检查进度并发送
+                last_progress = 0
+                filtered_results = None
+                
+                while not filter_done.is_set():
+                    try:
+                        # 等待0.5秒或直到有新进度
+                        item = progress_queue.get(timeout=0.5)
+                        
+                        if isinstance(item, tuple):
+                            if item[0] == 'DONE':
+                                filtered_results = item[1]
+                                break
+                            elif item[0] == 'ERROR':
+                                logger.error(f"精准检索过滤失败: {item[1]}")
+                                break
+                            else:
+                                # 进度更新
+                                processed, total = item
+                                # 每处理5个文档发送一次进度（避免刷屏）
+                                if processed - last_progress >= 5 or processed == total:
+                                    progress_msg = f"📊 进度: {processed}/{total} ({int(processed/total*100)}%)\n"
+                                    yield ('CONTENT', progress_msg)
+                                    full_response += progress_msg
+                                    last_progress = processed
+                    except queue.Empty:
+                        # 超时，继续等待
+                        continue
+                
+                # 等待线程结束
+                filter_thread.join(timeout=1)
 
                 if filtered_results:
                     yield ('CONTENT', f"找到 {len(filtered_results)} 个可回答的节点")
@@ -212,12 +295,15 @@ class KnowledgeHandler:
                     # InsertBlock 失败：继续使用原始节点，清空过滤结果
                     filtered_results = None
 
-            # 3. 构造提示词
-            prompt_parts = self._build_prompt(
-                question,
-                enable_thinking,
-                nodes_for_prompt,  # 根据 InsertBlock 结果决定传入哪些节点
-                filtered_results=filtered_results
+            # 3. 构造提示词（使用新工具函数，注入隐藏知识库内容）
+            prompt_parts = build_knowledge_prompt(
+                question=question,
+                enable_thinking=enable_thinking,
+                final_nodes=nodes_for_prompt,  # 根据 InsertBlock 结果决定传入哪些节点
+                filtered_results=filtered_results,
+                sub_answers=getattr(self, '_last_sub_answers', None),
+                synthesized_answer=getattr(self, '_last_synthesized_answer', None),
+                hidden_nodes=hidden_nodes  # 隐藏知识库节点（不显示来源）
             )
 
             # 4. 输出状态
@@ -240,8 +326,69 @@ class KnowledgeHandler:
                     yield ('CONTENT', chunk)
                     full_response += chunk
 
-            # 6. 输出参考来源
-            reference_entries = self._build_reference_log_entries(final_nodes, filtered_map)
+            # 6. 收集并输出全局关键字（去重后限制数量）
+            # 6.1 提取问题中的关键词
+            import jieba
+            question_keywords = list(jieba.lcut(question))
+            # 过滤掉单字和停用词
+            question_keywords = [kw for kw in question_keywords if len(kw) > 1]
+            logger.info(f"[问题关键词] 从问题中提取: {question_keywords}")
+            
+            # 6.2 收集文档匹配的关键字
+            global_keywords = []
+            if final_nodes:
+                logger.info(f"[关键词收集] 开始收集，共有 {len(final_nodes)} 个节点")
+                for i, node in enumerate(final_nodes):
+                    retrieval_sources = node.node.metadata.get('retrieval_sources', [])
+                    logger.info(f"[关键词收集] 节点 {i+1}: retrieval_sources={retrieval_sources}")
+                    if 'keyword' in retrieval_sources:
+                        matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
+                        logger.info(f"[关键词收集] 节点 {i+1} 有关键字: {matched_keywords}")
+                        global_keywords.extend(matched_keywords)
+                    else:
+                        logger.info(f"[关键词收集] 节点 {i+1} 没有 'keyword' 标记，跳过")
+                logger.info(f"[关键词收集] 收集完成，共收集到 {len(global_keywords)} 个关键字: {global_keywords}")
+            
+            # 6.3 去重问题关键词和文档关键词
+            # 问题关键词去重
+            seen_question = set()
+            unique_question_keywords = []
+            for kw in question_keywords:
+                if kw not in seen_question:
+                    seen_question.add(kw)
+                    unique_question_keywords.append(kw)
+            
+            # 文档关键词去重（排除已在问题中的）
+            seen_doc = set(unique_question_keywords)
+            unique_doc_keywords = []
+            for kw in global_keywords:
+                if kw not in seen_doc:
+                    seen_doc.add(kw)
+                    unique_doc_keywords.append(kw)
+            
+            # 限制数量（使用 MAX_DISPLAY_KEYWORDS）
+            from config import Settings
+            max_global_keywords = getattr(Settings, 'MAX_DISPLAY_KEYWORDS', 5)
+            
+            # 分别限制问题关键词和文档关键词
+            final_question_keywords = unique_question_keywords[:max_global_keywords]
+            remaining_slots = max_global_keywords - len(final_question_keywords)
+            final_doc_keywords = unique_doc_keywords[:remaining_slots] if remaining_slots > 0 else []
+            
+            logger.info(f"[关键词限制] 配置值: MAX_DISPLAY_KEYWORDS={max_global_keywords}")
+            logger.info(f"[关键词输出] 问题关键词: {final_question_keywords}")
+            logger.info(f"[关键词输出] 文档关键词: {final_doc_keywords}")
+            
+            # 输出结构化关键字（区分来源）
+            keywords_data = {
+                "question": final_question_keywords,
+                "document": final_doc_keywords
+            }
+            if final_question_keywords or final_doc_keywords:
+                yield ('KEYWORDS', json.dumps(keywords_data, ensure_ascii=False))
+
+            # 7. 输出参考来源（使用新工具函数）
+            reference_entries = build_reference_entries(final_nodes, filtered_map)
 
             if use_insert_block and filtered_results:
                 # InsertBlock 模式：返回所有原始节点，但标注哪些被选中
@@ -301,11 +448,11 @@ class KnowledgeHandler:
                     )
 
             elif final_nodes:
-                # 普通模式：显示所有检索结果
+                # 普通模式：显示所有检索结果（使用新工具函数）
                 yield ('CONTENT', "\n\n**参考来源:**")
                 full_response += "\n\n参考来源:"
 
-                for source_msg in self._format_sources(final_nodes):
+                for source_msg in format_sources(final_nodes):
                     yield source_msg
                     if isinstance(source_msg, tuple) and source_msg[0] == "SOURCE":
                         data = json.loads(source_msg[1])
@@ -315,7 +462,8 @@ class KnowledgeHandler:
                             f"重排分: {data['rerankedScore']}"
                         )
 
-            self._log_reference_details(
+            # 使用新工具函数记录参考文献
+            log_reference_details(
                 question=question,
                 references=reference_entries,
                 mode="single"
@@ -323,12 +471,12 @@ class KnowledgeHandler:
 
             yield ('DONE', '')
 
-            # 7. 保存日志
-            self._save_log(
-                question,
-                full_response,
-                client_ip,
-                bool(final_nodes),
+            # 7. 保存日志（使用新工具函数）
+            save_qa_log(
+                question=question,
+                response=full_response,
+                client_ip=client_ip,
+                has_rag=bool(final_nodes),
                 use_insert_block=use_insert_block
             )
 
@@ -433,7 +581,7 @@ class KnowledgeHandler:
         # 如果初始检索为空，打印警告
         if len(retrieved_nodes) == 0:
             logger.warning(
-                f"[单知识库检索] ⚠️ 初始检索结果为空！\n"
+                f"[单知识库检索] 初始检索结果为空！\n"
                 f"  问题: {question}\n"
                 f"  检索器状态: {self.retriever is not None}\n"
                 f"  可能原因: 知识库为空、索引损坏、或问题与知识库完全不相关"
@@ -444,11 +592,11 @@ class KnowledgeHandler:
         
         if reranker_input:
             logger.info(f"[单知识库检索] ✓ 进入重排序分支，开始调用 Reranker 模型")
-            logger.info(f"🔍 [DEBUG] Reranker 对象ID: {id(self.reranker)}")
-            logger.info(f"🔍 [DEBUG] Reranker 类型: {type(self.reranker).__name__}")
-            logger.info(f"🔍 [DEBUG] Reranker top_n: {self.reranker.top_n}")
-            logger.info(f"🔍 [DEBUG] 问题长度: {len(question)} 字符")
-            logger.info(f"🔍 [DEBUG] 问题内容: {question[:100]}...")
+            logger.info(f"[DEBUG] Reranker 对象ID: {id(self.reranker)}")
+            logger.info(f"[DEBUG] Reranker 类型: {type(self.reranker).__name__}")
+            logger.info(f"[DEBUG] Reranker top_n: {self.reranker.top_n}")
+            logger.info(f"[DEBUG] 问题长度: {len(question)} 字符")
+            logger.info(f"[DEBUG] 问题内容: {question[:100]}...")
             
             # 🧪 临时实验：重新创建 Reranker 来验证是否是状态污染问题
             logger.warning("🧪 [实验] 临时重新创建 Reranker 来测试...")
@@ -481,7 +629,7 @@ class KnowledgeHandler:
             if node.score >= threshold
         ]
         
-        # 🔍 DEBUG: 记录过滤后得分
+        #  DEBUG: 记录过滤后得分
         if final_nodes:
             final_scores = [f"{n.score:.4f}" for n in final_nodes[:5]]
             logger.info(f"[DEBUG] 单知识库阈值过滤后Top5得分: {', '.join(final_scores)}")
@@ -495,7 +643,7 @@ class KnowledgeHandler:
         if len(reranked_nodes) > 0 and len(final_nodes) == 0:
             max_score = max(node.score for node in reranked_nodes) if reranked_nodes else 0.0
             logger.warning(
-                f"[单知识库检索] ⚠️ 阈值过滤后结果为空！\n"
+                f"[单知识库检索] 阈值过滤后结果为空！\n"
                 f"  重排序节点数: {len(reranked_nodes)}\n"
                 f"  最高分数: {max_score:.4f}\n"
                 f"  阈值: {threshold}\n"
@@ -507,252 +655,9 @@ class KnowledgeHandler:
         logger.info(f"[单知识库检索] 最终返回 {len(result)} 个节点")
         return result
 
-
-    def _build_prompt(
-        self,
-        question: str,
-        enable_thinking: bool,
-        final_nodes,
-        filtered_results=None
-    ):
-        """构造提示词"""
-        # 如果有 InsertBlock 过滤结果，优先使用
-        if filtered_results:
-            # 同时使用关键段落和完整内容构建上下文
-            context_blocks = []
-            block_index = 1  # 用于编号实际添加的块
-            
-            for result in filtered_results:
-                file_name = result['file_name']
-                key_passage = result.get('key_passage', '')
-                full_content = result['node'].node.text.strip()
-                can_answer = result.get('can_answer', False)
-
-                # 严格过滤：只有 can_answer=True 且 key_passage 不为空才注入上下文
-                if not can_answer:
-                    logger.warning(f"[精准检索过滤] 跳过不可回答的节点: {file_name}")
-                    continue
-                
-                if not key_passage or key_passage.strip() == "":
-                    logger.warning(f"[精准检索过滤] 跳过无关键段落的节点: {file_name} | can_answer={can_answer}")
-                    continue
-
-                # 构建包含关键段落和完整内容的块
-                block = (
-                    f"### 业务规定 {block_index} - {file_name}:\n"
-                    # f"**【关键段落】**\n> {key_passage}\n\n"
-                    f"**【完整内容】**\n> {full_content}"
-                )
-                context_blocks.append(block)
-                block_index += 1
-                logger.info(f"[精准检索通过] 节点已注入上下文: {file_name} | 关键段落长度: {len(key_passage)}")
-
-            formatted_context = "\n\n".join(context_blocks) if context_blocks else None
-            has_rag = bool(context_blocks)
-
-            logger.info(
-                f"使用 InsertBlock 结果构建上下文: {len(context_blocks)} 个段落 "
-                f"(包含关键段落+完整内容)"
-            )
-        elif final_nodes:
-            # 格式化上下文 - 直接显示文件名，并为每个来源编号
-            context_blocks = []
-            for i, node in enumerate(final_nodes):
-                file_name = node.node.metadata.get('file_name', '未知文件')
-                content = node.node.get_content().strip()
-                block = f"### 业务规定 {i + 1} - {file_name}:\n> {content}"
-                context_blocks.append(block)
-
-            formatted_context = "\n\n".join(context_blocks)
-            has_rag = True
-        else:
-            formatted_context = None
-            has_rag = False
-
-        # 检查是否有子问题答案或合成答案需要注入
-        has_sub_answers = hasattr(self, '_last_sub_answers') and self._last_sub_answers
-        has_synthesis = hasattr(self, '_last_synthesized_answer') and self._last_synthesized_answer
-        
-        # 如果有检索文档或有子问题答案，都需要构建上下文
-        if has_rag or has_sub_answers or has_synthesis:
-            # 获取前缀
-            assistant_prefix = get_knowledge_assistant_context_prefix()
-            
-            # 构建基础上下文
-            if has_rag:
-                assistant_context = assistant_prefix + formatted_context
-            else:
-                # 即使没有检索文档，也创建上下文用于注入子问题答案
-                assistant_context = assistant_prefix + "**注意**: 未检索到相关业务规定文档，请基于以下子问题分析回答。\n"
-                logger.info("[提示词构建] 无检索文档，但有子问题答案，创建上下文用于注入")
-            
-            # 如果有子问题答案，添加到上下文中
-            if has_sub_answers:
-                sub_answers_block = "\n\n### 📋 子问题分解与回答:\n"
-                for i, sub_answer in enumerate(self._last_sub_answers, 1):
-                    sub_q = sub_answer.get('sub_question', '')
-                    answer = sub_answer.get('answer', '')
-                    sub_answers_block += f"\n**子问题{i}**: {sub_q}\n**回答{i}**: {answer}\n"
-                
-                sub_answers_block += "\n**注意**: 以上是各子问题的独立回答，请结合这些信息和业务规定给出完整答案。"
-                assistant_context += sub_answers_block
-                logger.info(f"[提示词构建] 已将 {len(self._last_sub_answers)} 个子问题答案注入上下文")
-            
-            # 如果有子问题答案合成，添加到上下文中
-            if self._last_synthesized_answer:
-                synthesis_block = (
-                    f"\n\n###  子问题综合分析:\n"
-                    f"> {self._last_synthesized_answer}\n\n"
-                    f"**注意**: 以上是对多个子问题答案的综合整理，请结合具体业务规定给出最终回答。"
-                )
-                assistant_context += synthesis_block
-                logger.info(f"[提示词构建] 已将合成答案注入上下文 | 长度: {len(self._last_synthesized_answer)}")
-
-            # 根据思考模式选择不同的 system 和 user prompt
-            if enable_thinking:
-                system_prompt = get_knowledge_system_rag_advanced()
-                user_template = get_knowledge_user_rag_advanced()
-            else:
-                system_prompt = get_knowledge_system_rag_simple()
-                user_template = get_knowledge_user_rag_simple()
-
-            # user_template 是列表，需要 join 后再 format
-            user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
-            # 如果关闭思考模式，自动在问题后追加 /no_think 指令（阿里云文档建议）
-            actual_question = f"{question}/no_think" if not enable_thinking else question
-            if not enable_thinking:
-                logger.info(f"✓ 已在问题后追加 /no_think 指令: '{actual_question}'")
-            
-            # 将参考资料直接注入到 user_prompt 中，而不是作为单独的 assistant_context
-            user_prompt = user_prompt_str.format(context=assistant_context, question=actual_question)
-            # 清空 assistant_context，因为已经合并到 user_prompt 中
-            assistant_context_for_llm = None
-            logger.info("[提示词构建] 已将参考资料合并到用户问题中（二段式）")
-
-        else:
-            # 没有检索到相关内容
-            assistant_context = None
-
-            if enable_thinking:
-                system_prompt = get_knowledge_system_no_rag_think()
-                user_template = get_knowledge_user_no_rag_think()
-            else:
-                system_prompt = get_knowledge_system_no_rag_simple()
-                user_template = get_knowledge_user_no_rag_simple()
-
-            # user_template 可能是列表或字符串
-            user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
-            # 如果关闭思考模式，自动在问题后追加 /no_think 指令（阿里云文档建议）
-            actual_question = f"{question}/no_think" if not enable_thinking else question
-            if not enable_thinking:
-                logger.info(f"✓ 已在问题后追加 /no_think 指令: '{actual_question}'")
-            user_prompt = user_prompt_str.format(question=actual_question)
-
-        # system_prompt 可能是列表，需要转换为字符串
-        if isinstance(system_prompt, list):
-            system_prompt = "\n".join(system_prompt)
-
-        # 确定实际传给 LLM 的 assistant_context
-        # 如果使用二段式（参考资料已合并到 user_prompt），则传 None
-        llm_assistant_context = assistant_context_for_llm if 'assistant_context_for_llm' in locals() else assistant_context
-
-        # 构建 fallback_prompt（用于不支持 chat 模式的情况）
-        fallback_parts = [system_prompt]
-        if llm_assistant_context:
-            fallback_parts.append(llm_assistant_context)
-        fallback_parts.append(user_prompt)
-
-        prompt_result = {
-            "system_prompt": system_prompt,
-            "user_prompt": user_prompt,
-            "assistant_context": llm_assistant_context,  # 实际传给 LLM 的
-            "assistant_context_log": assistant_context,  # 用于日志记录
-            "fallback_prompt": "\n\n".join(fallback_parts)
-        }
-        
-        # 输出上下文到日志文件
-        self._log_prompt_to_file(question, prompt_result)
-        
-        return prompt_result
-
-    def _log_prompt_to_file(self, question: str, prompt_parts: Dict[str, Any]):
-        """
-        将提示词上下文输出到日志文件（每次问答单独保存）
-        
-        Args:
-            question: 用户问题
-            prompt_parts: 提示词字典
-        """
-        try:
-            # 确保 logs 目录存在
-            logs_dir = Path("logs")
-            logs_dir.mkdir(exist_ok=True)
-            
-            # 生成唯一的日志文件名（基于时间戳）
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            log_file = logs_dir / f"prompt_{timestamp}.txt"
-            
-            # 构建日志内容（完整的单次问答上下文）
-            log_content = []
-            log_content.append("=" * 100)
-            log_content.append(f"问答时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-            log_content.append("=" * 100)
-            log_content.append("")
-            
-            # 用户问题
-            log_content.append("【用户问题】")
-            log_content.append(question)
-            log_content.append("")
-            log_content.append("-" * 100)
-            log_content.append("")
-            
-            # System Prompt
-            log_content.append("【System Prompt】")
-            log_content.append(prompt_parts.get('system_prompt', 'N/A'))
-            log_content.append("")
-            log_content.append("-" * 100)
-            log_content.append("")
-            
-            # Assistant Context (检索文档 + 子问题答案)
-            # 使用 assistant_context_log 显示完整的参考资料（即使已合并到用户问题中）
-            context_for_log = prompt_parts.get('assistant_context_log') or prompt_parts.get('assistant_context')
-            if context_for_log:
-                log_content.append("【参考资料】（以下内容已注入到用户问题中）")
-                log_content.append(context_for_log)
-                log_content.append("")
-                log_content.append("-" * 100)
-                log_content.append("")
-            else:
-                log_content.append("【参考资料】")
-                log_content.append("无检索文档或子问题答案")
-                log_content.append("")
-                log_content.append("-" * 100)
-                log_content.append("")
-            
-            # User Prompt
-            log_content.append("【User Prompt】")
-            log_content.append(prompt_parts.get('user_prompt', 'N/A'))
-            log_content.append("")
-            log_content.append("=" * 100)
-            
-            # 写入文件（每次问答独立文件）
-            with open(log_file, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(log_content))
-            
-            logger.info(f"[提示词日志] 已保存到 {log_file}")
-            
-            # 同时追加到总日志文件（可选，便于查看所有记录）
-            all_logs_file = logs_dir / "prompts_logs_all.txt"
-            with open(all_logs_file, 'a', encoding='utf-8') as f:
-                f.write('\n'.join(log_content))
-                f.write('\n\n')
-            
-        except Exception as e:
-            logger.error(f"[提示词日志] 保存失败: {e}")
-
     def _call_llm(self, llm, prompt_parts, enable_thinking: bool = False):
         """
-        调用 LLM，支持思考内容和正文内容的分离
+        调用 LLM，支持思考内容和正文内容的分离（使用新工具函数）
 
         Args:
             llm: LLM 实例
@@ -776,272 +681,19 @@ class KnowledgeHandler:
             enable_thinking=enable_thinking
         )
 
-        # 如果启用思考模式，需要解析并分离思考内容和正文内容
+        # 使用新工具函数解析流式输出
         if enable_thinking:
-            buffer = ""
-            in_thinking_section = False
-            thinking_complete = False
-            has_reasoning_content = False  # 标记是否检测到原生 reasoning_content
-            think_output_count = 0
-            content_output_count = 0
-            
-            # 用于累积原生格式的内容
-            reasoning_buffer = ""
-            content_buffer = ""
-
-            for delta in response_stream:
-                # 优先检查阿里云原生的 reasoning_content 字段
-                if hasattr(delta, 'reasoning_content') and delta.reasoning_content is not None:
-                    has_reasoning_content = True
-                    reasoning_text = delta.reasoning_content
-                    if reasoning_text:
-                        reasoning_buffer += reasoning_text
-                        # 累积到一定长度后再发送
-                        if len(reasoning_buffer) >= 10:
-                            think_output_count += 1
-                            output = ('THINK', clean_for_sse_text(reasoning_buffer))
-                            yield output
-                            reasoning_buffer = ""
-
-                # 检查正常回答内容（无论是否有 reasoning_content，都要处理）
-                if hasattr(delta, 'content') and delta.content is not None:
-                    content_text = delta.content
-                    if content_text:
-                        content_buffer += content_text
-                        # 累积到一定长度后再发送
-                        if len(content_buffer) >= 10:
-                            content_output_count += 1
-                            output = ('CONTENT', clean_for_sse_text(content_buffer))
-                            yield output
-                            content_buffer = ""
-                    # 如果有 reasoning_content 且已处理了 content，则跳过后续的文本标记解析
-                    if has_reasoning_content:
-                        continue
-
-                # 如果没有 reasoning_content 字段，使用文本标记方式（兼容模式）
-                if not has_reasoning_content:
-                    # 获取文本内容
-                    if hasattr(delta, 'delta'):
-                        token = delta.delta
-                    elif hasattr(delta, 'text'):
-                        token = delta.text
-                    elif hasattr(delta, 'content'):
-                        token = delta.content
-                    else:
-                        token = str(delta) if delta else ''
-
-                    if not token:
-                        continue
-
-                    buffer += token
-
-                    # 检测思考部分的开始和结束标记
-                    if not thinking_complete:
-                        # 检查是否进入思考区域
-                        if not in_thinking_section:
-                            # 检测思考开始的多种标记
-                            thinking_markers = [
-                                '【咨询解析】', '第一部分：咨询解析', '第一部分:咨询解析',
-                                '<think>', '## 思考过程', '## 分析过程',
-                                '关键实体', 'Key Entities', '1. 关键实体'
-                            ]
-
-                            for marker in thinking_markers:
-                                if marker in buffer:
-                                    in_thinking_section = True
-                                    logger.info(f"检测到思考开始标记: {marker}")
-                                    break
-
-                        # 检测思考结束的标记
-                        if in_thinking_section:
-                            end_markers = [
-                                '【综合解答】', '第二部分：综合解答', '第二部分:综合解答',
-                                '</think>', '## 最终答案', '## 回答'
-                            ]
-
-                            for marker in end_markers:
-                                if marker in buffer:
-                                    thinking_complete = True
-                                    # 输出思考内容（不包含结束标记）
-                                    idx = buffer.index(marker)
-                                    if idx > 0:
-                                        think_content = buffer[:idx]
-                                        think_output_count += 1
-                                        output = ('THINK', clean_for_sse_text(think_content))
-                                        yield output
-
-                                    # 跳过标记本身，只保留标记之后的内容
-                                    buffer = buffer[idx + len(marker):]
-                                    break
-
-                    # 在思考区域且buffer足够长时，流式输出思考内容
-                    if in_thinking_section and not thinking_complete and len(buffer) > 20:
-                        think_output_count += 1
-                        output = ('THINK', clean_for_sse_text(buffer))
-                        yield output
-                        buffer = ""
-                    # 思考完成后，流式输出正文内容
-                    elif thinking_complete and len(buffer) > 0:
-                        # 只清理开头的标记符号（冒号等），保留换行符
-                        cleaned_buffer = buffer.lstrip(':：')
-                        if cleaned_buffer:
-                            content_output_count += 1
-                            output = ('CONTENT', clean_for_sse_text(cleaned_buffer))
-                            yield output
-                        buffer = ""
-
-            # 输出剩余的buffer
-            # 1. 原生格式的剩余内容
-            if has_reasoning_content:
-                if reasoning_buffer:
-                    think_output_count += 1
-                    output = ('THINK', clean_for_sse_text(reasoning_buffer))
-                    yield output
-                if content_buffer:
-                    content_output_count += 1
-                    output = ('CONTENT', clean_for_sse_text(content_buffer))
-                    yield output
-            # 2. 文本标记模式的剩余内容
-            elif buffer:
-                if in_thinking_section and not thinking_complete:
-                    # 如果思考区域未完成，剩余内容作为思考输出
-                    think_output_count += 1
-                    output = ('THINK', clean_for_sse_text(buffer))
-                    yield output
-                else:
-                    # 否则作为正文输出，只清理开头的标记符号，保留换行符
-                    cleaned_buffer = buffer.lstrip(':：')
-                    if cleaned_buffer:
-                        content_output_count += 1
-                        output = ('CONTENT', clean_for_sse_text(cleaned_buffer))
-                        yield output
+            yield from parse_thinking_stream(response_stream)
         else:
-            # 不启用思考模式，所有内容都是正文
-            buffer = ""
-            for delta in response_stream:
-                # 获取文本内容
-                if hasattr(delta, 'delta'):
-                    text = delta.delta
-                elif hasattr(delta, 'text'):
-                    text = delta.text
-                elif hasattr(delta, 'content'):
-                    text = delta.content
-                else:
-                    text = str(delta) if delta else ''
+            yield from parse_normal_stream(response_stream)
 
-                if text:
-                    buffer += text
-                    # 智能发送策略：
-                    # 1. 遇到换行符立即发送（保持换行的及时性）
-                    # 2. 或者 buffer 达到 20 个字符发送（平衡性能）
-                    if '\n' in buffer or len(buffer) >= 20:
-                        yield ('CONTENT', clean_for_sse_text(buffer))
-                        buffer = ""
-            
-            # 发送剩余内容
-            if buffer:
-                yield ('CONTENT', clean_for_sse_text(buffer))
-
-    def _format_sources(self, final_nodes):
-        """格式化参考来源"""
-        for i, node in enumerate(final_nodes):
-            initial_score = node.node.metadata.get('initial_score', 0.0)
-            retrieval_sources = node.node.metadata.get('retrieval_sources', [])
-            vector_score = node.node.metadata.get('vector_score', 0.0)
-            bm25_score = node.node.metadata.get('bm25_score', 0.0)
-            vector_rank = node.node.metadata.get('vector_rank')
-            bm25_rank = node.node.metadata.get('bm25_rank')
-            
-            source_data = {
-                "id": i + 1,
-                "fileName": node.node.metadata.get('file_name', '未知'),
-                "initialScore": f"{initial_score:.4f}",
-                "rerankedScore": f"{node.score:.4f}",
-                "content": node.node.text.strip(),
-                "retrievalSources": retrieval_sources,
-                "vectorScore": f"{vector_score:.4f}",
-                "bm25Score": f"{bm25_score:.4f}"
-            }
-            
-            # 添加排名信息（如果存在）
-            if vector_rank is not None:
-                source_data['vectorRank'] = vector_rank
-            if bm25_rank is not None:
-                source_data['bm25Rank'] = bm25_rank
-            
-            # 添加匹配的关键词（如果是关键词检索）
-            if 'keyword' in retrieval_sources:
-                matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
-                if matched_keywords:
-                    source_data['matchedKeywords'] = matched_keywords
-            
-            yield ('SOURCE', json.dumps(source_data, ensure_ascii=False))
-
-    def _format_filtered_sources(self, filtered_results):
-        """格式化 InsertBlock 过滤后的参考来源"""
-        for i, result in enumerate(filtered_results):
-            source_data = {
-                "id": i + 1,
-                "fileName": result['file_name'],
-                "initialScore": f"{result['initial_score']:.4f}",
-                "rerankedScore": f"{result['reranked_score']:.4f}",
-                "canAnswer": result['can_answer'],
-                "reasoning": result['reasoning'],
-                "keyPassage": result.get('key_passage', ''),
-                "content": result['node'].node.text.strip()
-            }
-            yield f"SOURCE:{json.dumps(source_data, ensure_ascii=False)}"
-
-    def _build_reference_log_entries(self, final_nodes, filtered_map=None):
-        """构建用于日志记录的参考文献条目"""
-        entries = []
-        if not final_nodes:
-            return entries
-
-        for i, node in enumerate(final_nodes):
-            file_name = node.node.metadata.get('file_name', '未知')
-            initial_score = node.node.metadata.get('initial_score', 0.0)
-            key = f"{file_name}_{node.score}"
-            filtered_info = filtered_map.get(key) if filtered_map else None
-
-            entries.append({
-                "id": i + 1,
-                "fileName": file_name,
-                "initialScore": round(float(initial_score), 6),
-                "rerankedScore": round(float(node.score or 0.0), 6),
-                "canAnswer": (filtered_info is not None) if filtered_map else None,
-                "reasoning": filtered_info.get('reasoning', '') if filtered_info else '',
-                "keyPassage": filtered_info.get('key_passage', '') if filtered_info else '',
-                "content": node.node.text.strip()
-            })
-
-        return entries
-
-    def _log_reference_details(
-        self,
-        question: str,
-        references: list,
-        mode: str,
-        session_id: Optional[str] = None
-    ):
-        """记录参考文献详情到日志文件"""
-        try:
-            os.makedirs(Settings.LOG_DIR, exist_ok=True)
-            log_path = os.path.join(Settings.LOG_DIR, "reference_logs.jsonl")
-            payload = {
-                "timestamp": datetime.utcnow().isoformat() + "Z",
-                "mode": mode,
-                "session_id": session_id,
-                "question": question,
-                "references": references
-            }
-            with open(log_path, "a", encoding="utf-8") as log_file:
-                log_file.write(json.dumps(payload, ensure_ascii=False) + "\n")
-        except Exception as e:
-            logger.warning(f"记录参考文献日志失败: {e}")
+   
 
     def _save_log(self, question: str, response: str, client_ip: str, has_rag: bool, use_insert_block: bool = False):
-        """保存问答日志"""
+        """
+        【已废弃】保存问答日志 - 已被 save_qa_log 工具函数替代
+        保留此方法作为备份，待测试通过后可删除
+        """
         from utils import QALogger
         qa_logger = QALogger(Settings.LOG_DIR)
         qa_logger.save_log(
@@ -1132,6 +784,7 @@ class KnowledgeHandler:
             if rerank_top_n == 0:
                 logger.info("[对话-检索跳过] 前端设置参考数量为 0，跳过检索和子问题分解")
                 final_nodes = []
+                hidden_nodes = []
             else:
                 yield "CONTENT:正在进行混合检索..."
                 full_response += "正在进行混合检索...\n"
@@ -1141,6 +794,18 @@ class KnowledgeHandler:
                     rerank_top_n,
                     conversation_history=conversation_history_for_decomp
                 )
+                
+                # 2.5 隐藏知识库检索（并行进行）
+                hidden_nodes = []
+                if self.hidden_kb_retriever and self.hidden_kb_retriever.enabled:
+                    try:
+                        logger.info("[对话-隐藏知识库] 开始并行检索...")
+                        hidden_nodes = self.hidden_kb_retriever.retrieve(question)
+                        if hidden_nodes:
+                            logger.info(f"[对话-隐藏知识库] 检索成功 | 返回 {len(hidden_nodes)} 条")
+                    except Exception as e:
+                        logger.warning(f"[对话-隐藏知识库] 检索失败: {e}")
+                        hidden_nodes = []
 
             # 2. 如果启用 InsertBlock 模式，进行智能过滤
             filtered_results = None
@@ -1148,14 +813,70 @@ class KnowledgeHandler:
             nodes_for_prompt = final_nodes
 
             if use_insert_block and final_nodes and self.insert_block_filter:
-                yield "CONTENT:正在使用 InsertBlock 智能过滤..."
-                full_response += "正在使用 InsertBlock 智能过滤...\n"
-
-                filtered_results = self.insert_block_filter.filter_nodes(
-                    question=question,
-                    nodes=final_nodes,
-                    llm_id=insert_block_llm_id
-                )
+                start_msg = f"正在使用精准检索分析 {len(final_nodes)} 个文档...\n提示：系统正在逐个判断每个文档是否能回答您的问题，请稍候"
+                yield f"CONTENT:{start_msg}"
+                full_response += start_msg + "\n"
+                
+                # 使用队列收集进度
+                import queue
+                import threading
+                progress_queue = queue.Queue()
+                filter_done = threading.Event()
+                
+                # 定义进度回调函数（将进度放入队列）
+                def progress_callback(processed, total):
+                    logger.info(f"[对话-精准检索进度] {processed}/{total} 个文档已分析")
+                    progress_queue.put((processed, total))
+                
+                # 在后台线程执行过滤
+                def run_filter():
+                    try:
+                        result = self.insert_block_filter.filter_nodes(
+                            question=question,
+                            nodes=final_nodes,
+                            llm_id=insert_block_llm_id,
+                            progress_callback=progress_callback
+                        )
+                        progress_queue.put(('DONE', result))
+                    except Exception as e:
+                        progress_queue.put(('ERROR', e))
+                    finally:
+                        filter_done.set()
+                
+                filter_thread = threading.Thread(target=run_filter, daemon=True)
+                filter_thread.start()
+                
+                # 主线程定期检查进度并发送
+                last_progress = 0
+                filtered_results = None
+                
+                while not filter_done.is_set():
+                    try:
+                        # 等待0.5秒或直到有新进度
+                        item = progress_queue.get(timeout=0.5)
+                        
+                        if isinstance(item, tuple):
+                            if item[0] == 'DONE':
+                                filtered_results = item[1]
+                                break
+                            elif item[0] == 'ERROR':
+                                logger.error(f"对话-精准检索过滤失败: {item[1]}")
+                                break
+                            else:
+                                # 进度更新
+                                processed, total = item
+                                # 每处理5个文档发送一次进度（避免刷屏）
+                                if processed - last_progress >= 5 or processed == total:
+                                    progress_msg = f"📊 进度: {processed}/{total} ({int(processed/total*100)}%)"
+                                    yield f"CONTENT:{progress_msg}"
+                                    full_response += progress_msg + "\n"
+                                    last_progress = processed
+                    except queue.Empty:
+                        # 超时，继续等待
+                        continue
+                
+                # 等待线程结束
+                filter_thread.join(timeout=1)
 
                 if filtered_results:
                     yield f"CONTENT:找到 {len(filtered_results)} 个可回答的节点"
@@ -1263,7 +984,7 @@ class KnowledgeHandler:
             else:
                 logger.debug(f"总轮数({total_turns})未达摘要阈值({max_summary_turns})，跳过摘要")
 
-            # 5. 使用优化的提示词构建方式（注入历史对话）
+            # 5. 使用优化的提示词构建方式（注入历史对话和隐藏知识库）
             prompt_parts = self._build_prompt_with_history(
                 question,
                 enable_thinking,
@@ -1271,7 +992,8 @@ class KnowledgeHandler:
                 filtered_results=filtered_results,
                 recent_history=recent_history,
                 relevant_history=relevant_history,
-                history_summary=history_summary
+                history_summary=history_summary,
+                hidden_nodes=hidden_nodes
             )
 
             # 6. 输出状态
@@ -1321,11 +1043,72 @@ class KnowledgeHandler:
                 session_id=session_id,
                 user_query=question,
                 assistant_response=assistant_response,
-                context_docs=context_doc_names,
                 turn_id=current_turn_id,
                 parent_turn_id=parent_turn_id
             )
+            
+            # 7. 收集并输出全局关键字（去重后限制数量）
+            # 7.1 提取问题中的关键词
+            import jieba
+            question_keywords = list(jieba.lcut(question))
+            # 过滤掉单字和停用词
+            question_keywords = [kw for kw in question_keywords if len(kw) > 1]
+            logger.info(f"[对话-问题关键词] 从问题中提取: {question_keywords}")
+            
+            # 7.2 收集文档匹配的关键字
+            global_keywords = []
+            if final_nodes:
+                logger.info(f"[对话-关键词收集] 开始收集，共有 {len(final_nodes)} 个节点")
+                for i, node in enumerate(final_nodes):
+                    retrieval_sources = node.node.metadata.get('retrieval_sources', [])
+                    logger.info(f"[对话-关键词收集] 节点 {i+1}: retrieval_sources={retrieval_sources}")
+                    if 'keyword' in retrieval_sources:
+                        matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
+                        logger.info(f"[对话-关键词收集] 节点 {i+1} 有关键字: {matched_keywords}")
+                        global_keywords.extend(matched_keywords)
+                    else:
+                        logger.info(f"[对话-关键词收集] 节点 {i+1} 没有 'keyword' 标记，跳过")
+                logger.info(f"[对话-关键词收集] 收集完成，共收集到 {len(global_keywords)} 个关键字: {global_keywords}")
+            
+            # 7.3 去重问题关键词和文档关键词
+            # 问题关键词去重
+            seen_question = set()
+            unique_question_keywords = []
+            for kw in question_keywords:
+                if kw not in seen_question:
+                    seen_question.add(kw)
+                    unique_question_keywords.append(kw)
+            
+            # 文档关键词去重（排除已在问题中的）
+            seen_doc = set(unique_question_keywords)
+            unique_doc_keywords = []
+            for kw in global_keywords:
+                if kw not in seen_doc:
+                    seen_doc.add(kw)
+                    unique_doc_keywords.append(kw)
+            
+            # 限制数量（使用 MAX_DISPLAY_KEYWORDS）
+            from config import Settings as AppSettings
+            max_global_keywords = getattr(AppSettings, 'MAX_DISPLAY_KEYWORDS', 5)
+            
+            # 分别限制问题关键词和文档关键词
+            final_question_keywords = unique_question_keywords[:max_global_keywords]
+            remaining_slots = max_global_keywords - len(final_question_keywords)
+            final_doc_keywords = unique_doc_keywords[:remaining_slots] if remaining_slots > 0 else []
+            
+            logger.info(f"[对话-关键词限制] 配置值: MAX_DISPLAY_KEYWORDS={max_global_keywords}")
+            logger.info(f"[对话-关键词输出] 问题关键词: {final_question_keywords}")
+            logger.info(f"[对话-关键词输出] 文档关键词: {final_doc_keywords}")
+            
+            # 输出结构化关键字（区分来源）
+            keywords_data = {
+                "question": final_question_keywords,
+                "document": final_doc_keywords
+            }
+            if final_question_keywords or final_doc_keywords:
+                yield f"KEYWORDS:{json.dumps(keywords_data, ensure_ascii=False)}"
 
+            # 8. 输出参考来源
             if use_insert_block and filtered_results:
                 yield "CONTENT:\n\n**参考来源（全部检索结果）:**"
                 full_response += "\n\n参考来源（全部检索结果）:"
@@ -1384,37 +1167,14 @@ class KnowledgeHandler:
                 yield "CONTENT:\n\n**参考来源:**"
                 full_response += "\n\n参考来源:"
 
-                for source_msg in self._format_sources(final_nodes):
-                    # _format_sources 返回元组 ('SOURCE', json_data)
-                    prefix_type, json_data = source_msg
-                    if prefix_type == 'SOURCE':
-                        formatted_msg = f"SOURCE:{json_data}"
-                        yield formatted_msg
-                        data = json.loads(json_data)
-                        full_response += (
-                            f"\n[{data['id']}] 文件: {data['fileName']}, "
-                            f"重排分: {data['rerankedScore']}"
-                        )
-
-            reference_entries = self._build_reference_log_entries(final_nodes, filtered_map)
-
-            self._log_reference_details(
-                question=question,
-                references=reference_entries,
-                mode="conversation",
-                session_id=session_id
-            )
+                for i, node in enumerate(final_nodes):
+                    yield f"SOURCE:{json.dumps(node.node.metadata, ensure_ascii=False)}"
+                    full_response += (
+                        f"\n[{i + 1}] 文件: {node.node.metadata.get('file_name', '未知')}, "
+                        f"重排分: {node.score}"
+                    )
 
             yield "DONE:"
-
-            # 10. 保存日志
-            self._save_log(
-                question,
-                full_response,
-                client_ip,
-                bool(final_nodes),
-                use_insert_block=use_insert_block
-            )
 
         except Exception as e:
             error_msg = f"处理错误: {str(e)}"
@@ -1429,7 +1189,8 @@ class KnowledgeHandler:
         filtered_results=None,
         recent_history=None,
         relevant_history=None,
-        history_summary=None
+        history_summary=None,
+        hidden_nodes=None
     ):
         """
         构造带历史对话的提示词（使用知识问答的提示词格式）
@@ -1442,8 +1203,15 @@ class KnowledgeHandler:
             recent_history: 最近的对话历史
             relevant_history: 相关的历史对话
             history_summary: 历史对话摘要
+            hidden_nodes: 隐藏知识库节点（不显示来源）
         """
-        # 构建知识库上下文（与知识问答相同的逻辑）
+        # 1. 构建隐藏知识库上下文（优先级最高）
+        hidden_context = None
+        if hidden_nodes:
+            from utils.knowledge_utils.context_builder import build_hidden_kb_context
+            hidden_context = build_hidden_kb_context(hidden_nodes)
+        
+        # 2. 构建知识库上下文（与知识问答相同的逻辑）
         knowledge_context = None
         if filtered_results:
             # 使用 InsertBlock 过滤结果
@@ -1465,7 +1233,7 @@ class KnowledgeHandler:
                     logger.warning(f"[对话-精准检索过滤] 跳过无关键段落的节点: {file_name} | can_answer={can_answer}")
                     continue
                 
-                block = f"### 业务规定 {block_index} - {file_name}:\n> {full_content}"
+                block = f"【业务规定 {block_index}】来源: {file_name}\n{full_content}"
                 context_blocks.append(block)
                 block_index += 1
                 logger.info(f"[对话-精准检索通过] 节点已注入上下文: {file_name} | 关键段落长度: {len(key_passage)}")
@@ -1478,18 +1246,18 @@ class KnowledgeHandler:
             for i, node in enumerate(final_nodes):
                 file_name = node.node.metadata.get('file_name', '未知文件')
                 content = node.node.get_content().strip()
-                block = f"### 业务规定 {i + 1} - {file_name}:\n> {content}"
+                block = f"【业务规定 {i + 1}】来源: {file_name}\n{content}"
                 context_blocks.append(block)
             knowledge_context = "\n\n".join(context_blocks)
 
         has_rag = bool(knowledge_context)
         
-        # 如果有子问题答案合成，添加到知识库上下文中
+        # 如果有子问题答案合成，添加到知识库上下文中（使用简洁格式）
         if has_rag and self._last_synthesized_answer:
             synthesis_block = (
-                f"\n\n### 🎯 子问题综合分析:\n"
-                f"> {self._last_synthesized_answer}\n\n"
-                f"**注意**: 以上是对多个子问题答案的综合整理，请结合具体业务规定给出最终回答。"
+                f"\n\n【子问题综合分析】\n"
+                f"{self._last_synthesized_answer}\n\n"
+                f"注意: 以上是对多个子问题答案的综合整理，请结合具体业务规定给出最终回答。"
             )
             knowledge_context += synthesis_block
             logger.info(f"[多轮提示词构建] 已将合成答案注入上下文 | 长度: {len(self._last_synthesized_answer)}")
@@ -1525,15 +1293,27 @@ class KnowledgeHandler:
             history_context = "\n\n".join(history_parts)
 
         # 使用知识问答的提示词逻辑
-        if has_rag:
+        if has_rag or hidden_context:
             # 获取前缀
             assistant_prefix = get_knowledge_assistant_context_prefix()
 
-            # 组合上下文：历史对话 + 业务规定
+            # 组合上下文：隐藏知识库 + 历史对话 + 业务规定
             context_parts = []
+            
+            # 1. 隐藏知识库（最优先）
+            if hidden_context:
+                context_parts.append(hidden_context)
+            
+            # 2. 历史对话
             if history_context:
                 context_parts.append(history_context)
-            context_parts.append(assistant_prefix + knowledge_context)
+            
+            # 3. 业务规定
+            if knowledge_context:
+                context_parts.append(assistant_prefix + knowledge_context)
+            elif hidden_context and not knowledge_context:
+                # 只有隐藏知识库，没有普通知识库
+                context_parts.append(assistant_prefix + "（已注入内部参考资料）")
 
             assistant_context = "\n\n---\n\n".join(context_parts)
 
@@ -1549,7 +1329,7 @@ class KnowledgeHandler:
             user_prompt_str = "\n".join(user_template) if isinstance(user_template, list) else user_template
             # 如果关闭思考模式，自动在问题后追加 /no_think 指令（阿里云文档建议）
             actual_question = f"{question}/no_think" if not enable_thinking else question
-            user_prompt = user_prompt_str.format(question=actual_question)
+            user_prompt = user_prompt_str.format(context=assistant_context, question=actual_question)
 
         else:
             # 没有检索到相关内容，只有历史对话

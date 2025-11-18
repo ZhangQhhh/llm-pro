@@ -216,6 +216,44 @@ def create_app():
     else:
         logger.info("子问题分解功能未启用")
 
+    # 4.8 初始化隐藏知识库（可选功能）
+    hidden_kb_retriever = None
+    if Settings.ENABLE_HIDDEN_KB_FEATURE:
+        logger.info("=" * 60)
+        logger.info("初始化隐藏知识库功能...")
+        logger.info("=" * 60)
+        
+        try:
+            # 构建隐藏知识库索引
+            hidden_index, hidden_nodes = knowledge_service.build_or_load_hidden_kb_index()
+            
+            if hidden_index and hidden_nodes:
+                # 创建隐藏知识库检索器
+                hidden_retriever = knowledge_service.create_hidden_kb_retriever()
+                
+                if hidden_retriever is None:
+                    logger.error("隐藏知识库检索器创建失败")
+                else:
+                    # 包装为 HiddenKBRetriever
+                    from core.hidden_kb_retriever import HiddenKBRetriever
+                    hidden_kb_retriever = HiddenKBRetriever(
+                        retriever=hidden_retriever,
+                        name="题库知识库"
+                    )
+                    logger.info("✓ 隐藏知识库检索器创建成功")
+                
+                logger.info("=" * 60)
+                logger.info("隐藏知识库功能初始化完成")
+                logger.info("=" * 60)
+            else:
+                logger.warning("隐藏知识库为空或构建失败，隐藏知识库功能不可用")
+                
+        except Exception as e:
+            logger.error(f"隐藏知识库初始化失败: {e}", exc_info=True)
+            logger.warning("将继续使用现有知识库")
+    else:
+        logger.info("隐藏知识库功能未启用")
+
     # 5. 初始化业务处理器
     llm_wrapper = LLMStreamWrapper()
     knowledge_handler = KnowledgeHandler(
@@ -229,7 +267,9 @@ def create_app():
         multi_kb_retriever=multi_kb_retriever,
         intent_classifier=intent_classifier,
         # 子问题分解器（可选）
-        sub_question_decomposer=sub_question_decomposer
+        sub_question_decomposer=sub_question_decomposer,
+        # 隐藏知识库检索器（可选）
+        hidden_kb_retriever=hidden_kb_retriever
     )
     judge_handler = JudgeHandler(retriever, reranker, llm_wrapper)
 

@@ -531,3 +531,73 @@ class KnowledgeService:
         )
         logger.info("✓ 航司检索器创建成功")
         return self.airline_retriever
+    
+    # ==================== 隐藏知识库方法 ====================
+    
+    def build_or_load_hidden_kb_index(self) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
+        """
+        构建或加载隐藏知识库索引（完全独立的流程）
+        
+        Returns:
+            (索引, 所有节点) 元组
+        """
+        if not AppSettings.ENABLE_HIDDEN_KB_FEATURE:
+            logger.info("隐藏知识库功能未启用，跳过隐藏知识库构建")
+            return None, None
+        
+        storage_path = AppSettings.HIDDEN_KB_STORAGE_PATH
+        kb_dir = AppSettings.HIDDEN_KB_DIR
+        hashes_file = os.path.join(storage_path, "hidden_kb_hashes.json")
+        collection_name = AppSettings.HIDDEN_KB_COLLECTION
+        
+        logger.info("=" * 60)
+        logger.info("开始构建/加载隐藏知识库")
+        logger.info(f"知识库目录: {kb_dir}")
+        logger.info(f"Collection: {collection_name}")
+        logger.info("=" * 60)
+        
+        # 确保知识库目录存在
+        os.makedirs(kb_dir, exist_ok=True)
+        
+        if not any(os.scandir(kb_dir)):
+            logger.warning("隐藏知识库文件夹为空，无法构建索引")
+            return None, None
+        
+        # 检查是否需要重建索引
+        if self._should_rebuild_index(storage_path, hashes_file, kb_dir, collection_name):
+            logger.info("[隐藏知识库] 检测到文件变化，重建索引...")
+            index, nodes = self._build_index(storage_path, kb_dir, hashes_file, collection_name)
+        else:
+            logger.info("[隐藏知识库] 文件未变化，从缓存加载索引...")
+            index, nodes = self._load_index(storage_path, collection_name)
+            if index is None or nodes is None:
+                logger.warning("[隐藏知识库] 缓存加载失败，回退到重建索引")
+                index, nodes = self._build_index(storage_path, kb_dir, hashes_file, collection_name)
+        
+        # 重要：将隐藏库的索引和节点保存到专用的实例变量
+        if index and nodes:
+            self.hidden_kb_index = index
+            self.hidden_kb_nodes = nodes
+            logger.info(f"✓ 隐藏知识库实例变量已设置 | 节点数: {len(nodes)}")
+        
+        return index, nodes
+    
+    def create_hidden_kb_retriever(self):
+        """创建隐藏知识库混合检索器（完全独立）"""
+        if not AppSettings.ENABLE_HIDDEN_KB_FEATURE:
+            logger.info("隐藏知识库功能未启用，跳过隐藏检索器创建")
+            return None
+        
+        if self.hidden_kb_index is None or self.hidden_kb_nodes is None:
+            logger.error("隐藏知识库索引或节点未初始化，无法创建检索器")
+            return None
+        
+        logger.info("创建隐藏知识库混合检索器...")
+        self.hidden_kb_retriever = RetrieverFactory.create_hybrid_retriever(
+            self.hidden_kb_index,
+            self.hidden_kb_nodes,
+            AppSettings.HIDDEN_KB_RETRIEVAL_TOP_K,
+            AppSettings.HIDDEN_KB_RETRIEVAL_TOP_K_BM25
+        )
+        logger.info("✓ 隐藏知识库检索器创建成功")
+        return self.hidden_kb_retriever
