@@ -36,6 +36,11 @@ def create_app():
         template_folder=template_dir,
         static_folder=static_dir
     )
+    
+    # 配置 JSON 编码（禁用 ASCII，使用 UTF-8）
+    app.config['JSON_AS_ASCII'] = False
+    app.config['JSON_SORT_KEYS'] = False
+    
     CORS(app)
 
     # 初始化服务层
