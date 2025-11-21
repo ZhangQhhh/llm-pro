@@ -17,6 +17,8 @@ from services import LLMService, EmbeddingService, KnowledgeService
 from core import LLMStreamWrapper
 from api import JudgeHandler, KnowledgeHandler
 from routes import knowledge_bp
+from routes.mcq_public_routes import mcq_public_bp
+from routes.writer_routes import writer_bp
 from middleware.auth_decorator import create_auth_manager
 
 
@@ -337,7 +339,8 @@ def create_app():
 
     # 7. 注册路由蓝图
     app.register_blueprint(knowledge_bp,url_prefix='/api')
-
+    app.register_blueprint(writer_bp, url_prefix='/api')
+    app.register_blueprint(mcq_public_bp, url_prefix="/mcq_public")
     # 8. 注册页面路由
     register_page_routes(app)
 
@@ -387,6 +390,18 @@ def register_page_routes(app):
     @app.route('/debug')
     def route_debug():
         return render_template('debug.html')
+
+    @app.route('/knowledge/mcq')
+    def route_mcq_public():
+        return render_template('qa_public.html')
+
+    @app.route("/exam")
+    def route_exam():
+        return render_template('exam.html')
+
+    @app.route('/writer/')
+    def route_writer():
+        return render_template('writer.html')
 
 
 def main():

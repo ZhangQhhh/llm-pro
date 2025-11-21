@@ -124,6 +124,15 @@ class Settings:
     # 可选:内嵌模式路径(不使用 Docker 时启用) 现在用的是docker，用不到hhhhhhhhhhh
     # QDRANT_PATH = os.getenv("QDRANT_PATH", "./qdrant_data")
 
+    # —— Writer 用 Qdrant 集合命名 —— #
+    WRITER_KB_COLLECTION = os.getenv("WRITER_KB_COLLECTION", "writer_kb_persist")
+    # WRITER_SESSION_COLLECTION_PREFIX = os.getenv("WRITER_SESSION_COLLECTION_PREFIX", "writer_kb_session_")
+    WRITER_SESSION_COLLECTION = os.getenv("WRITER_SESSION_COLLECTION", "writer_session_kb")
+    # —— 会话集合持久化与过期策略 —— #
+    WRITER_SESSION_PERSIST = bool(int(os.getenv("WRITER_SESSION_PERSIST", "1")))  # 1=持久化，0=仅内存
+    WRITER_SESSION_TTL_HOURS = int(os.getenv("WRITER_SESSION_TTL_HOURS", "24"))  # 过期小时，0=不设置 TTL
+    WRITER_KB_UPLOAD_PASSWORD = "147369"
+
     # ==================== 免签知识库配置 ====================
     # 免签功能开关（默认关闭，不影响现有系统）
     ENABLE_VISA_FREE_FEATURE = os.getenv("ENABLE_VISA_FREE_FEATURE", "false").lower() == "true"
@@ -272,6 +281,20 @@ class Settings:
     CHUNK_CHAR_A = "--- 切分点 ---"
     CHUNK_CHAR_B = "|||"
 
+    # ——  各源独立检索 top_k —— #
+    WRITER_SESSION_SIM_TOP_K = 20  # 会话：向量检索 top_k
+    WRITER_SESSION_BM25_TOP_K = 20  # 会话：BM25 top_k
+    WRITER_KB_SIM_TOP_K = 20  # KB：向量检索 top_k
+    WRITER_KB_BM25_TOP_K = 20  # KB：BM25 top_k
+
+    # —— 来源配额 & 合并后的最终返回 —— #
+    WRITER_SESSION_RETURN_K = 20
+    WRITER_KB_RETURN_K = 20
+    WRITER_MERGED_RETURN_K = 30
+    WRITER_RERANK_TOP_N = 15
+
+    # —— RRF 平滑参数 —— #
+    WRITER_COMBINE_RRF_K = 60.0
 
     @classmethod
     def resolve_prompt_config_path(cls):
