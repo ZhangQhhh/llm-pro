@@ -1,0 +1,3469 @@
+{
+  "generated_at": "2025-11-18T13:17:57Z",
+  "blacklist_doc_ratio": 0.7,
+  "knowledge_bases": [
+    "general",
+    "visa_free",
+    "airline"
+  ],
+  "tokens": [
+    {
+      "token": "免签",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "中国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 55,
+      "doc_freq": 1
+    },
+    {
+      "token": "护照",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 97,
+      "doc_freq": 1
+    },
+    {
+      "token": "停留",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 293,
+      "doc_freq": 4
+    },
+    {
+      "token": "适用",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "签证",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 270,
+      "doc_freq": 4
+    },
+    {
+      "token": "不",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 63,
+      "doc_freq": 4
+    },
+    {
+      "token": "超过",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 52,
+      "doc_freq": 4
+    },
+    {
+      "token": "入境",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 50,
+      "doc_freq": 4
+    },
+    {
+      "token": "口岸",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1
+    },
+    {
+      "token": "国家",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 24,
+      "doc_freq": 4
+    },
+    {
+      "token": "有效",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 19,
+      "doc_freq": 4
+    },
+    {
+      "token": "临时",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "人员",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 14,
+      "doc_freq": 4
+    },
+    {
+      "token": "证件",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 32,
+      "doc_freq": 1
+    },
+    {
+      "token": "申请",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 10,
+      "doc_freq": 1
+    },
+    {
+      "token": "工作",
+      "doc_ratio": 1.0,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 13,
+      "doc_freq": 4
+    },
+    {
+      "token": "俄罗斯",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "所有",
+      "doc_ratio": 1.0,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 12,
+      "doc_freq": 4
+    },
+    {
+      "token": "爱尔兰",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "并",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 10,
+      "doc_freq": 4
+    },
+    {
+      "token": "旅游",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 10,
+      "doc_freq": 4
+    },
+    {
+      "token": "需要",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 21,
+      "doc_freq": 1
+    },
+    {
+      "token": "旅行",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 10,
+      "doc_freq": 1
+    },
+    {
+      "token": "英国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "阿联酋",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "访问",
+      "doc_ratio": 1.0,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 4
+    },
+    {
+      "token": "新加坡",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "出境",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 4
+    },
+    {
+      "token": "持有",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "奥地利",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "德国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "瑞士",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "乌克兰",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "挪威",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "韩国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "文莱",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "卡塔尔",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "印度尼西亚",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "证明",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "且",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "机组人员",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 209,
+      "doc_freq": 1
+    },
+    {
+      "token": "协议",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 101,
+      "doc_freq": 1
+    },
+    {
+      "token": "凭",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 92,
+      "doc_freq": 1
+    },
+    {
+      "token": "免办",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 87,
+      "doc_freq": 1
+    },
+    {
+      "token": "自",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 55,
+      "doc_freq": 1
+    },
+    {
+      "token": "规定",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 54,
+      "doc_freq": 1
+    },
+    {
+      "token": "日起",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 54,
+      "doc_freq": 1
+    },
+    {
+      "token": "航班",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 54,
+      "doc_freq": 1
+    },
+    {
+      "token": "生效",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 52,
+      "doc_freq": 1
+    },
+    {
+      "token": "任务",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 52,
+      "doc_freq": 1
+    },
+    {
+      "token": "对方",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 52,
+      "doc_freq": 1
+    },
+    {
+      "token": "执行",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 51,
+      "doc_freq": 1
+    },
+    {
+      "token": "原因",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 51,
+      "doc_freq": 1
+    },
+    {
+      "token": "国籍",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 43,
+      "doc_freq": 1
+    },
+    {
+      "token": "因",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 41,
+      "doc_freq": 1
+    },
+    {
+      "token": "名单",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 38,
+      "doc_freq": 1
+    },
+    {
+      "token": "多次",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 36,
+      "doc_freq": 1
+    },
+    {
+      "token": "航空公司",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 35,
+      "doc_freq": 1
+    },
+    {
+      "token": "须",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 35,
+      "doc_freq": 1
+    },
+    {
+      "token": "一年",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 34,
+      "doc_freq": 1
+    },
+    {
+      "token": "签发",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 34,
+      "doc_freq": 1
+    },
+    {
+      "token": "机组",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 33,
+      "doc_freq": 1
+    },
+    {
+      "token": "第三",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 33,
+      "doc_freq": 1
+    },
+    {
+      "token": "需",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 33,
+      "doc_freq": 1
+    },
+    {
+      "token": "获发",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 32,
+      "doc_freq": 1
+    },
+    {
+      "token": "个人",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 31,
+      "doc_freq": 1
+    },
+    {
+      "token": "执照",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 30,
+      "doc_freq": 1
+    },
+    {
+      "token": "加盖",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 30,
+      "doc_freq": 1
+    },
+    {
+      "token": "印章",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 30,
+      "doc_freq": 1
+    },
+    {
+      "token": "使馆",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 29,
+      "doc_freq": 1
+    },
+    {
+      "token": "当班",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 29,
+      "doc_freq": 1
+    },
+    {
+      "token": "补办",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 28,
+      "doc_freq": 1
+    },
+    {
+      "token": "雇用",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 27,
+      "doc_freq": 1
+    },
+    {
+      "token": "其他",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 27,
+      "doc_freq": 1
+    },
+    {
+      "token": "进入",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 27,
+      "doc_freq": 1
+    },
+    {
+      "token": "民航",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 25,
+      "doc_freq": 1
+    },
+    {
+      "token": "办事处",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1
+    },
+    {
+      "token": "常驻",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1
+    },
+    {
+      "token": "及其",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1
+    },
+    {
+      "token": "随行",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1
+    },
+    {
+      "token": "家属",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1
+    },
+    {
+      "token": "国境",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1
+    },
+    {
+      "token": "居民",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 23,
+      "doc_freq": 1
+    },
+    {
+      "token": "事故",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 20,
+      "doc_freq": 1
+    },
+    {
+      "token": "申办",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 19,
+      "doc_freq": 1
+    },
+    {
+      "token": "患病",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 19,
+      "doc_freq": 1
+    },
+    {
+      "token": "通行证",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 19,
+      "doc_freq": 1
+    },
+    {
+      "token": "飞机故障",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 19,
+      "doc_freq": 1
+    },
+    {
+      "token": "不可抗力",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 19,
+      "doc_freq": 1
+    },
+    {
+      "token": "包机",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 18,
+      "doc_freq": 1
+    },
+    {
+      "token": "正常",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 18,
+      "doc_freq": 1
+    },
+    {
+      "token": "继续",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 18,
+      "doc_freq": 1
+    },
+    {
+      "token": "主管机关",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 18,
+      "doc_freq": 1
+    },
+    {
+      "token": "境内",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 16,
+      "doc_freq": 1
+    },
+    {
+      "token": "换班",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 16,
+      "doc_freq": 1
+    },
+    {
+      "token": "离境",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 15,
+      "doc_freq": 1
+    },
+    {
+      "token": "提供",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 15,
+      "doc_freq": 1
+    },
+    {
+      "token": "内地",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 15,
+      "doc_freq": 1
+    },
+    {
+      "token": "持",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 15,
+      "doc_freq": 1
+    },
+    {
+      "token": "专机",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 14,
+      "doc_freq": 1
+    },
+    {
+      "token": "港澳",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 13,
+      "doc_freq": 1
+    },
+    {
+      "token": "成员",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 12,
+      "doc_freq": 1
+    },
+    {
+      "token": "往来",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 12,
+      "doc_freq": 1
+    },
+    {
+      "token": "香港",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 12,
+      "doc_freq": 1
+    },
+    {
+      "token": "签注",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 12,
+      "doc_freq": 1
+    },
+    {
+      "token": "若因",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 11,
+      "doc_freq": 1
+    },
+    {
+      "token": "机长",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 11,
+      "doc_freq": 1
+    },
+    {
+      "token": "气候",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 11,
+      "doc_freq": 1
+    },
+    {
+      "token": "需在",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 10,
+      "doc_freq": 1
+    },
+    {
+      "token": "澳门",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 10,
+      "doc_freq": 1
+    },
+    {
+      "token": "正式",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 10,
+      "doc_freq": 1
+    },
+    {
+      "token": "三十日",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 10,
+      "doc_freq": 1
+    },
+    {
+      "token": "天气",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1
+    },
+    {
+      "token": "内不需",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1
+    },
+    {
+      "token": "含",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1
+    },
+    {
+      "token": "机关",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1
+    },
+    {
+      "token": "许可",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 8,
+      "doc_freq": 1
+    },
+    {
+      "token": "边防",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 8,
+      "doc_freq": 1
+    },
+    {
+      "token": "包括",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 8,
+      "doc_freq": 1
+    },
+    {
+      "token": "办妥",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "作为",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "旅客",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "办理",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "台湾",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "入",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "出",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "检查",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "姓名",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "性别",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "出生日期",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "职务",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "号码",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1
+    },
+    {
+      "token": "改乘",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1
+    },
+    {
+      "token": "交通工具",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1
+    },
+    {
+      "token": "抵达",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1
+    },
+    {
+      "token": "来往",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1
+    },
+    {
+      "token": "七天",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1
+    },
+    {
+      "token": "所",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1
+    },
+    {
+      "token": "外籍",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1
+    },
+    {
+      "token": "因公",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1
+    },
+    {
+      "token": "日内",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1
+    },
+    {
+      "token": "外交",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1
+    },
+    {
+      "token": "领事",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1
+    },
+    {
+      "token": "机构",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1
+    },
+    {
+      "token": "办",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "身份证",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "应",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "安排",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "澳门特别行政区",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "港澳同胞",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "回乡证",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "证",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "需向",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "当地",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "须于",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1
+    },
+    {
+      "token": "澳大利亚",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "国内",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "指定",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "加拿大",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "瑞典",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "飞机",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "外交途径",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "马来西亚",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "空运",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "企业",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "延期",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "互免",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "之间",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "持用",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "大陆",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "永久性",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "居民身份证",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "埃及",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1
+    },
+    {
+      "token": "可免",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "替班",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "出具",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "无法",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "随机",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "丹麦",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "事宜",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "解决",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "双方",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "巴基斯坦",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "肯尼亚",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "荷兰",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "新西兰",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "美国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "乘",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "者",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "疾病",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "无需",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "年度",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "仅",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "如需",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "机场",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "缅甸",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "登机",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "证免",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "飞行",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "身份",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "泰国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "两年",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "入出境",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "土耳其",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "哈萨克斯坦",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "柬埔寨",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "实行",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "特殊",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "通行",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "国与",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "按",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "现行",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "三年",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "特别",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "享受",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "待遇",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "轮换",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "除外",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "使领馆",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "赴",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "每次",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "香港特别行政区",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "无论",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "受聘",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "任何",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "居留",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "边检",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "七日",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "手续",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "公务",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 2,
+      "doc_freq": 1
+    },
+    {
+      "token": "阿富汗",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "凭照",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "会",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "公函",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "朝鲜",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "工作证",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "埃塞俄比亚",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "机械故障",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "空勤人员",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "导致",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "当日",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "返航",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "芬兰",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "法国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "协调",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "实际",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "伊朗",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "以色列",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "日本",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "孟加拉",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "约旦",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "哥伦比亚",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "秘鲁",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "南非",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "籍",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "未",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "表格",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "明确",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "列出",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "日本籍",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "下班",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "气象",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "受限制",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "离开",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "市区",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "日本政府",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "代表",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "当",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "班机",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "长向",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "当局",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "领取",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "入城证",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "暂存",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "换回",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "缅",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "国航",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "菲律宾",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "协商",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "各自",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "事先",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "征得",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "同意",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "C",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "字",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "高级",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "代表团",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "乘专机",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "不定期",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "增班",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "单次",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "客货",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "当次",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "申报",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "乌兹别克斯坦",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "如其",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "有互",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "否则",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "想",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "搞们",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "行政区",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "上述",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "回港",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "身份证件",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "免",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "出入境",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "以下",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "外国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "意大利",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "西班牙",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "斯里兰卡",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "驻",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "驻华",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "本国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "定期",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "三十天",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "乘务",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "时持",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "中华人民共和国",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "公境",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "传",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "号",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "有效证件",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "持有人",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "港",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "申报表",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "出入",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "或持",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "香港特区政府",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "事务处",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "许可证",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "以内",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "均",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "必要",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "信息",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "同样",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "之日起",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "越南",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "阿尔及利亚",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "卢森堡",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "国际",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "生物",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "特征",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "印度",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "成员名单",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "前于",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "毛里求斯",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "法律法规",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "履行",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "阿曼",
+      "doc_ratio": 1.0,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 1,
+      "doc_freq": 1
+    },
+    {
+      "token": "天",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 41,
+      "doc_freq": 3
+    },
+    {
+      "token": "公民",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 29,
+      "doc_freq": 3
+    },
+    {
+      "token": "外国人",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 12,
+      "doc_freq": 3
+    },
+    {
+      "token": "活动",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 11,
+      "doc_freq": 3
+    },
+    {
+      "token": "黑山",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 3
+    },
+    {
+      "token": "阿尔巴尼亚",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 3
+    },
+    {
+      "token": "白俄罗斯",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 3
+    },
+    {
+      "token": "波兰",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 3
+    },
+    {
+      "token": "斯洛伐克",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 3
+    },
+    {
+      "token": "匈牙利",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "立陶宛",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "马耳他",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "斯洛文尼亚",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "塞浦路斯",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "保加利亚",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "罗马尼亚",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "塞尔维亚",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "克罗地亚",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "波黑",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "阿根廷",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3
+    },
+    {
+      "token": "从事",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3
+    },
+    {
+      "token": "相应",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3
+    },
+    {
+      "token": "北",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3
+    },
+    {
+      "token": "马其顿",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3
+    },
+    {
+      "token": "巴西",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3
+    },
+    {
+      "token": "商务",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 3
+    },
+    {
+      "token": "批准",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 3
+    },
+    {
+      "token": "冰岛",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 3
+    },
+    {
+      "token": "摩纳哥",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 3
+    },
+    {
+      "token": "智利",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 3
+    },
+    {
+      "token": "有效期",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 3
+    },
+    {
+      "token": "墨西哥",
+      "doc_ratio": 0.75,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 3
+    }
+  ]
+}

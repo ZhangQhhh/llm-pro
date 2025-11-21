@@ -69,8 +69,8 @@ def create_app():
     if index and all_nodes:
         retriever = knowledge_service.create_retriever()
         logger.info("通用知识库混合检索器创建成功")
-        logger.info(f"🔍 [DEBUG] 通用检索器对象ID: {id(retriever)}")
-        logger.info(f"🔍 [DEBUG] 通用检索器类型: {type(retriever).__name__}")
+        logger.info(f" [DEBUG] 通用检索器对象ID: {id(retriever)}")
+        logger.info(f" [DEBUG] 通用检索器类型: {type(retriever).__name__}")
     else:
         logger.error("通用知识库索引或节点加载失败")
         return None
@@ -220,7 +220,10 @@ def create_app():
     hidden_kb_retriever = None
     if Settings.ENABLE_HIDDEN_KB_FEATURE:
         logger.info("=" * 60)
-        logger.info("初始化隐藏知识库功能...")
+        logger.info("初始化hidden knowledge库功能...")
+        logger.info(f"配置 - HIDDEN_KB_INJECT_MODE: {Settings.HIDDEN_KB_INJECT_MODE}")
+        logger.info(f"配置 - HIDDEN_KB_MIN_SCORE: {Settings.HIDDEN_KB_MIN_SCORE}")
+        logger.info(f"配置 - HIDDEN_KB_RETRIEVAL_COUNT: {Settings.HIDDEN_KB_RETRIEVAL_COUNT}")
         logger.info("=" * 60)
         
         try:
@@ -234,13 +237,14 @@ def create_app():
                 if hidden_retriever is None:
                     logger.error("隐藏知识库检索器创建失败")
                 else:
-                    # 包装为 HiddenKBRetriever
+                    # 包装为 HiddenKBRetriever（传递 reranker）
                     from core.hidden_kb_retriever import HiddenKBRetriever
                     hidden_kb_retriever = HiddenKBRetriever(
                         retriever=hidden_retriever,
-                        name="题库知识库"
+                        name="题库知识库",
+                        reranker=reranker  # 使用主知识库的 reranker
                     )
-                    logger.info("✓ 隐藏知识库检索器创建成功")
+                    logger.info("✓ 隐藏知识库检索器创建成功（已启用重排序）")
                 
                 logger.info("=" * 60)
                 logger.info("隐藏知识库功能初始化完成")
@@ -250,9 +254,32 @@ def create_app():
                 
         except Exception as e:
             logger.error(f"隐藏知识库初始化失败: {e}", exc_info=True)
-            logger.warning("将继续使用现有知识库")
+            logger.warning("将继续使用现有检索方式")
     else:
         logger.info("隐藏知识库功能未启用")
+
+    # 4.5 初始化通用知识库B（12367专用）
+    retriever_b = None
+    knowledge_handler_b = None
+    if Settings.ENABLE_GENERAL_KB_B:
+        try:
+            logger.info("=" * 60)
+            logger.info("开始初始化通用知识库B（12367专用）...")
+            logger.info("=" * 60)
+            
+            index_b, all_nodes_b = knowledge_service.build_or_load_index_b()
+            if index_b and all_nodes_b:
+                retriever_b = knowledge_service.create_retriever_b()
+                logger.info(f"[通用知识库B] 索引加载成功，节点数: {len(all_nodes_b)}")
+                logger.info("=" * 60)
+                logger.info("通用知识库B初始化完成")
+                logger.info("=" * 60)
+            else:
+                logger.warning("通用知识库B为空或构建失败")
+        except Exception as e:
+            logger.error(f"通用知识库B初始化失败: {e}", exc_info=True)
+    else:
+        logger.info("通用知识库B功能未启用")
 
     # 5. 初始化业务处理器
     llm_wrapper = LLMStreamWrapper()
@@ -271,6 +298,24 @@ def create_app():
         # 隐藏知识库检索器（可选）
         hidden_kb_retriever=hidden_kb_retriever
     )
+    
+    # 5.1 初始化12367专用的知识问答处理器（使用通用知识库B）
+    if retriever_b:
+        knowledge_handler_b = KnowledgeHandler(
+            retriever=retriever_b,  # 使用通用知识库B的检索器
+            reranker=reranker,
+            llm_wrapper=llm_wrapper,
+            llm_service=llm_service,
+            # 其他组件与原有handler完全相同
+            visa_free_retriever=visa_free_retriever,
+            airline_retriever=airline_retriever,
+            multi_kb_retriever=multi_kb_retriever,
+            intent_classifier=intent_classifier,
+            sub_question_decomposer=sub_question_decomposer,
+            hidden_kb_retriever=hidden_kb_retriever
+        )
+        logger.info("12367专用知识问答处理器初始化完成")
+    
     judge_handler = JudgeHandler(retriever, reranker, llm_wrapper)
 
 
@@ -278,9 +323,11 @@ def create_app():
     # 6. 将服务注入应用上下文
     app.llm_service = llm_service
     app.knowledge_handler = knowledge_handler
+    app.knowledge_handler_b = knowledge_handler_b  # 12367专用handler
     app.judge_handler = judge_handler
     app.knowledge_service = knowledge_service  # 添加这行，让路由可以访问 conversation_manager
     app.retriever = retriever
+    app.retriever_b = retriever_b  # 通用知识库B的检索器
     app.reranker = reranker
 
     # 🔥 6.5 初始化并注册认证管理器

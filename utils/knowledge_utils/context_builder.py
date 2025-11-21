@@ -4,7 +4,9 @@
 处理 RAG 上下文、子问题答案的组装和管理
 """
 from typing import List, Dict, Any, Optional
-from utils import logger
+from config import Settings
+from utils.logger import logger
+from utils.hidden_kb_logger import hidden_kb_logger
 
 
 def build_hidden_kb_context(
@@ -25,28 +27,68 @@ def build_hidden_kb_context(
     from config import Settings
     
     # 过滤低分节点
-    min_score = getattr(Settings, 'HIDDEN_KB_MIN_SCORE', 0.3)
+    min_score = getattr(Settings, 'HIDDEN_KB_MIN_SCORE', 0.01)
+    
+    # 记录过滤前的分数
+    if hidden_nodes:
+        scores_preview = [f"{n.score:.4f}" for n in hidden_nodes[:3]]
+        logger.info(f"[隐藏知识库] 过滤前Top3分数: {', '.join(scores_preview)}")
+    
     valid_nodes = [n for n in hidden_nodes if n.score >= min_score]
+    filtered_count = len(hidden_nodes) - len(valid_nodes)
+    
+    if filtered_count > 0:
+        logger.info(f"[隐藏知识库] 阈值过滤 | 阈值: {min_score} | 过滤掉: {filtered_count} 条")
     
     if not valid_nodes:
-        logger.info(f"[隐藏知识库] 所有节点得分低于阈值 {min_score}，跳过注入")
+        logger.warning(
+            f"[隐藏知识库] 所有节点得分低于阈值 {min_score}，跳过注入 | "
+            f"最高分: {hidden_nodes[0].score:.4f} | "
+            f"建议: 降低 HIDDEN_KB_MIN_SCORE 或添加重排序"
+        )
         return None
     
-    # 构建隐藏上下文（不显示文件名，使用简洁格式）
+    # 构建隐藏上下文
     context_blocks = []
+    inject_mode = getattr(Settings, 'HIDDEN_KB_INJECT_MODE', 'silent')
+    
     for i, node in enumerate(valid_nodes, 1):
         content = node.node.get_content().strip()
-        # 使用简洁格式，不使用 Markdown 符号（避免 LLM 学习并在回答中使用）
-        block = f"【参考资料 {i}】\n{content}"
+        
+        # 根据模式决定是否显示文件名
+        if inject_mode == "visible":
+            # visible 模式：显示文件名（调试用）
+            file_name = node.node.metadata.get('file_name', '未知')
+            kb_name = node.node.metadata.get('hidden_kb_name', '隐藏知识库')
+            block = f"【{kb_name} - {file_name}】\n{content}"
+        else:
+            # silent 模式：不使用任何标记，让内容自然融入
+            # 这样 LLM 会将其视为补充背景知识，而不是明确的参考资料
+            block = content
+        
         context_blocks.append(block)
     
     logger.info(
         f"[隐藏知识库] 已构建隐藏上下文 | "
         f"节点数: {len(valid_nodes)} | "
-        f"最高分: {valid_nodes[0].score:.4f}"
+        f"最高分: {valid_nodes[0].score:.4f} | "
+        f"模式: {inject_mode}"
     )
     
-    return "\n\n".join(context_blocks)
+    # 记录上下文注入到专用日志
+    context_text = "\n\n".join(context_blocks)
+    
+    # 在 silent 模式下，添加引导语让 LLM 将其视为补充背景
+    if inject_mode != "visible":
+        context_text = "【补充背景知识】\n" + context_text
+    
+    hidden_kb_logger.log_context_injection(
+        query="隐藏知识库上下文构建",
+        injected_nodes=valid_nodes,
+        context_length=len(context_text)
+    )
+    
+    return context_text
 
 
 def build_rag_context(

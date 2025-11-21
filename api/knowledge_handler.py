@@ -8,6 +8,7 @@ import os
 from datetime import datetime
 from typing import Generator, Dict, Any, Optional, List
 from llama_index.core import QueryBundle
+from llama_index.core.schema import NodeWithScore
 from config import Settings
 from utils import logger, clean_for_sse_text
 from pathlib import Path
@@ -93,25 +94,13 @@ class KnowledgeHandler:
         if llm_service:
             from core.node_filter import InsertBlockFilter
             self.insert_block_filter = InsertBlockFilter(llm_service)
-            logger.info("InsertBlock 过滤器已初始化")
         
-        # 日志：知识库功能状态
-        enabled_features = []
-        if self.multi_kb_retriever and self.intent_classifier:
-            enabled_features.append("多库检索+意图分类")
-        if self.visa_free_retriever:
-            enabled_features.append("免签库")
-        if self.airline_retriever:
-            enabled_features.append("航司库")
-        if self.sub_question_decomposer:
-            enabled_features.append("子问题分解")
-        if self.hidden_kb_retriever:
-            enabled_features.append("隐藏知识库")
-        
-        if enabled_features:
-            logger.info(f"✓ 知识库功能已启用: {', '.join(enabled_features)}")
-        else:
-            logger.info("⊘ 仅使用通用知识库")
+        # 知识库功能状态（仅在调试时启用）
+        # enabled_features = []
+        # if self.multi_kb_retriever and self.intent_classifier:
+        #     enabled_features.append("多库检索+意图分类")
+        # if enabled_features:
+        #     logger.info(f"✓ 知识库功能已启用: {', '.join(enabled_features)}")
 
     def process(
         self,
@@ -145,17 +134,14 @@ class KnowledgeHandler:
         self._last_synthesized_answer = None
 
         try:
-            logger.info(
-                f"处理知识问答: '{question}' | "
-                f"思考模式: {enable_thinking} | "
-                f"参考文件数: {rerank_top_n} | "
-                f"InsertBlock: {use_insert_block}"
-            )
+            # 处理知识问答
+            pass
 
             # 1. 智能路由检索（根据意图选择知识库）
             # 如果前端设置参考数量为 0，跳过检索
             if rerank_top_n == 0:
-                logger.info("[检索跳过] 前端设置参考数量为 0，跳过检索和子问题分解")
+                # 跳过检索
+                pass
                 final_nodes = []
                 result = None
                 hidden_nodes = []
@@ -170,14 +156,21 @@ class KnowledgeHandler:
                 hidden_nodes = []
                 if self.hidden_kb_retriever and self.hidden_kb_retriever.enabled:
                     try:
-                        logger.info("[隐藏知识库] 开始并行检索...")
+                        logger.info("[hidden knowledge库] 开始并行检索...")
                         hidden_nodes = self.hidden_kb_retriever.retrieve(question)
                         if hidden_nodes:
-                            logger.info(f"[隐藏知识库] 检索成功 | 返回 {len(hidden_nodes)} 条")
+                            logger.info(f"[hidden knowledge库] 检索成功 | 返回 {len(hidden_nodes)} 条")
+                            
+                            # 根据配置决定是否将隐藏节点合并到显示列表
+                            if Settings.HIDDEN_KB_INJECT_MODE == "visible":
+                                logger.info("[hidden knowledge库] visible 模式：将隐藏节点合并到参考来源")
+                                # 注意：不修改 final_nodes，在显示时处理
+                            else:
+                                logger.info("[hidden knowledge库] silent 模式：隐藏节点不显示来源")
                         else:
-                            logger.info("[隐藏知识库] 未检索到相关内容")
+                            logger.info("[hidden knowledge库] 未检索到相关内容")
                     except Exception as e:
-                        logger.warning(f"[隐藏知识库] 检索失败，继续主流程: {e}")
+                        logger.warning(f"[hidden knowledge库] 检索失败，继续主流程: {e}")
                         hidden_nodes = []
             
             # 检查是否返回了元数据（子问题分解）
@@ -227,7 +220,6 @@ class KnowledgeHandler:
                 
                 # 定义进度回调函数（将进度放入队列）
                 def progress_callback(processed, total):
-                    logger.info(f"[精准检索进度] {processed}/{total} 个文档已分析")
                     progress_queue.put((processed, total))
                 
                 # 在后台线程执行过滤
@@ -252,6 +244,7 @@ class KnowledgeHandler:
                 last_progress = 0
                 filtered_results = None
                 
+                filter_error = None
                 while not filter_done.is_set():
                     try:
                         # 等待0.5秒或直到有新进度
@@ -262,7 +255,12 @@ class KnowledgeHandler:
                                 filtered_results = item[1]
                                 break
                             elif item[0] == 'ERROR':
-                                logger.error(f"精准检索过滤失败: {item[1]}")
+                                filter_error = item[1]
+                                logger.error(f"精准检索过滤失败: {filter_error}")
+                                # 通知前端错误信息
+                                error_msg = f" 精准检索失败: {str(filter_error)}\n"
+                                yield ('CONTENT', error_msg)
+                                full_response += error_msg
                                 break
                             else:
                                 # 进度更新
@@ -277,8 +275,18 @@ class KnowledgeHandler:
                         # 超时，继续等待
                         continue
                 
-                # 等待线程结束
-                filter_thread.join(timeout=1)
+                # 等待线程结束（超时时间应足够长，覆盖所有节点处理）
+                # 假设并发处理，最多需要 (节点数/并发数) * 单节点超时时间
+                # 给予充足的时间：300秒（5分钟）
+                filter_thread.join(timeout=300)
+                
+                # 检查线程是否还在运行
+                if filter_thread.is_alive():
+                    logger.warning("精准检索线程超时未完成（300秒），将继续使用原始检索结果")
+                    timeout_msg = " 精准检索处理超时（5分钟），将使用原始检索结果\n"
+                    yield ('CONTENT', timeout_msg)
+                    full_response += timeout_msg
+                    filtered_results = None
 
                 if filtered_results:
                     yield ('CONTENT', f"找到 {len(filtered_results)} 个可回答的节点")
@@ -320,64 +328,69 @@ class KnowledgeHandler:
                 # result 是元组 (prefix_type, content)
                 prefix_type, chunk = result
                 if prefix_type == 'THINK':
+                    logger.debug(f"[Handler] 收到 THINK 消息: {len(chunk)} 字符 | 内容预览: {chunk[:50]}")
                     yield ('THINK', chunk)
+                    logger.debug(f"[Handler] 已 yield THINK 消息")
                     # 思考内容不计入 full_response
                 elif prefix_type == 'CONTENT':
                     yield ('CONTENT', chunk)
                     full_response += chunk
 
             # 6. 收集并输出全局关键字（去重后限制数量）
-            # 6.1 提取问题中的关键词
-            import jieba
-            question_keywords = list(jieba.lcut(question))
-            # 过滤掉单字和停用词
-            question_keywords = [kw for kw in question_keywords if len(kw) > 1]
-            logger.info(f"[问题关键词] 从问题中提取: {question_keywords}")
+            # 6.1 使用权重排序提取问题关键词
+            from utils.keyword_ranker import keyword_ranker
             
-            # 6.2 收集文档匹配的关键字
-            global_keywords = []
+            # 计算问题关键词的 TF 权重并排序
+            question_keywords_ranked = keyword_ranker.rank_question_keywords(question, top_k=100)
+            
+            # 6.2 收集文档匹配的关键字并计算权重
+            document_keywords_ranked = []
             if final_nodes:
-                logger.info(f"[关键词收集] 开始收集，共有 {len(final_nodes)} 个节点")
                 for i, node in enumerate(final_nodes):
                     retrieval_sources = node.node.metadata.get('retrieval_sources', [])
-                    logger.info(f"[关键词收集] 节点 {i+1}: retrieval_sources={retrieval_sources}")
                     if 'keyword' in retrieval_sources:
                         matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
-                        logger.info(f"[关键词收集] 节点 {i+1} 有关键字: {matched_keywords}")
-                        global_keywords.extend(matched_keywords)
-                    else:
-                        logger.info(f"[关键词收集] 节点 {i+1} 没有 'keyword' 标记，跳过")
-                logger.info(f"[关键词收集] 收集完成，共收集到 {len(global_keywords)} 个关键字: {global_keywords}")
+                        node_score = node.score
+                        
+                        # 计算文档关键词权重
+                        doc_kw_ranked = keyword_ranker.rank_document_keywords(
+                            matched_keywords, 
+                            node_score,
+                            top_k=50
+                        )
+                        document_keywords_ranked.extend(doc_kw_ranked)
             
-            # 6.3 去重问题关键词和文档关键词
-            # 问题关键词去重
-            seen_question = set()
-            unique_question_keywords = []
-            for kw in question_keywords:
-                if kw not in seen_question:
-                    seen_question.add(kw)
-                    unique_question_keywords.append(kw)
+            # 6.3 合并并按权重排序关键词
+            final_keywords = keyword_ranker.merge_and_rank_keywords(
+                question_keywords_ranked,
+                document_keywords_ranked,
+                max_display=Settings.MAX_DISPLAY_KEYWORDS
+            )
             
-            # 文档关键词去重（排除已在问题中的）
+            # 为了兼容旧代码，分离问题关键词和文档关键词
+            # 问题关键词：在问题中出现的
+            question_kw_set = set([kw for kw, _ in question_keywords_ranked])
+            unique_question_keywords = [kw for kw in final_keywords if kw in question_kw_set]
+            
+            # 文档关键词：不在问题中的
+            unique_doc_keywords = [kw for kw in final_keywords if kw not in question_kw_set]
+            
+            # 保持原有的固定分配逻辑（但已经按权重排序）
             seen_doc = set(unique_question_keywords)
-            unique_doc_keywords = []
-            for kw in global_keywords:
+            for kw in unique_doc_keywords:
                 if kw not in seen_doc:
                     seen_doc.add(kw)
                     unique_doc_keywords.append(kw)
             
             # 限制数量（使用 MAX_DISPLAY_KEYWORDS）
-            from config import Settings
-            max_global_keywords = getattr(Settings, 'MAX_DISPLAY_KEYWORDS', 5)
+            max_global_keywords = getattr(Settings, 'MAX_DISPLAY_KEYWORDS', 10)
             
-            # 分别限制问题关键词和文档关键词
-            final_question_keywords = unique_question_keywords[:max_global_keywords]
-            remaining_slots = max_global_keywords - len(final_question_keywords)
-            final_doc_keywords = unique_doc_keywords[:remaining_slots] if remaining_slots > 0 else []
+            # 固定分配策略：问题关键词和文档关键词各占一半
+            max_question_keywords = max_global_keywords // 2  # 一半给问题关键词
+            max_doc_keywords = max_global_keywords - max_question_keywords  # 另一半给文档关键词
             
-            logger.info(f"[关键词限制] 配置值: MAX_DISPLAY_KEYWORDS={max_global_keywords}")
-            logger.info(f"[关键词输出] 问题关键词: {final_question_keywords}")
-            logger.info(f"[关键词输出] 文档关键词: {final_doc_keywords}")
+            final_question_keywords = unique_question_keywords[:max_question_keywords]
+            final_doc_keywords = unique_doc_keywords[:max_doc_keywords]
             
             # 输出结构化关键字（区分来源）
             keywords_data = {
@@ -433,7 +446,7 @@ class KnowledgeHandler:
                     if bm25_rank is not None:
                         source_data['bm25Rank'] = bm25_rank
                     
-                    # 添加匹配的关键词（如果是关键词检索）
+                    # 添加匹配的关键词（BM25 检索）
                     if 'keyword' in retrieval_sources:
                         matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
                         if matched_keywords:
@@ -452,7 +465,21 @@ class KnowledgeHandler:
                 yield ('CONTENT', "\n\n**参考来源:**")
                 full_response += "\n\n参考来源:"
 
-                for source_msg in format_sources(final_nodes):
+                # 合并隐藏节点（如果是 visible 模式）
+                nodes_to_display = final_nodes
+                if hidden_nodes and Settings.HIDDEN_KB_INJECT_MODE == "visible":
+                    logger.info(
+                        f"[隐藏知识库] 合并 {len(hidden_nodes)} 个隐藏节点到参考来源 | "
+                        f"主知识库: {len(final_nodes)} 条 | "
+                        f"隐藏节点: {len(hidden_nodes)} 条 (额外显示，不占用 rerank_top_n) | "
+                        f"总计: {len(final_nodes) + len(hidden_nodes)} 条"
+                    )
+                    nodes_to_display = final_nodes + hidden_nodes
+                
+                # 根据配置决定是否包含隐藏节点
+                include_hidden = (Settings.HIDDEN_KB_INJECT_MODE == "visible")
+                
+                for source_msg in format_sources(nodes_to_display, include_hidden=include_hidden):
                     yield source_msg
                     if isinstance(source_msg, tuple) and source_msg[0] == "SOURCE":
                         data = json.loads(source_msg[1])
@@ -469,9 +496,42 @@ class KnowledgeHandler:
                 mode="single"
             )
 
+            # 8. 格式化校验和修复（在最后一次 yield 前）
+            from utils.response_formatter import response_formatter
+            
+            # 提取纯文本响应（去除状态消息）
+            # full_response 包含了所有 CONTENT 内容，需要提取 LLM 实际回答部分
+            # 简单处理：去除检索状态消息
+            response_to_validate = full_response
+            for status_prefix in [
+                "正在进行混合检索...",
+                "已找到相关资料，正在生成回答...",
+                "未找到高相关性资料，基于通用知识回答...",
+                "正在使用精准检索分析",
+                "进度:",
+                "找到",
+                "未找到可直接回答的节点",
+                "参考来源"
+            ]:
+                if status_prefix in response_to_validate:
+                    # 移除状态消息行
+                    lines = response_to_validate.split('\n')
+                    filtered_lines = [line for line in lines if not line.strip().startswith(status_prefix)]
+                    response_to_validate = '\n'.join(filtered_lines)
+            
+            # 格式化校验
+            validated_response = response_formatter.process_response(
+                response_to_validate.strip(),
+                question=question
+            )
+            
+            # 如果格式被修复，更新响应
+            if validated_response != response_to_validate.strip():
+                full_response = validated_response
+
             yield ('DONE', '')
 
-            # 7. 保存日志（使用新工具函数）
+            # 9. 保存日志（使用新工具函数）
             save_qa_log(
                 question=question,
                 response=full_response,
@@ -484,6 +544,8 @@ class KnowledgeHandler:
             error_msg = f"处理错误: {str(e)}"
             logger.error(f"知识问答处理出错: {e}", exc_info=True)
             yield ('ERROR', error_msg)
+            # 确保发送 DONE 信号，避免前端等待超时
+            yield ('DONE', '')
 
     def _retrieve_and_rerank(self, question: str, rerank_top_n: int, conversation_history: Optional[List[Dict]] = None):
         """
@@ -592,27 +654,12 @@ class KnowledgeHandler:
         
         if reranker_input:
             logger.info(f"[单知识库检索] ✓ 进入重排序分支，开始调用 Reranker 模型")
-            logger.info(f"[DEBUG] Reranker 对象ID: {id(self.reranker)}")
-            logger.info(f"[DEBUG] Reranker 类型: {type(self.reranker).__name__}")
-            logger.info(f"[DEBUG] Reranker top_n: {self.reranker.top_n}")
-            logger.info(f"[DEBUG] 问题长度: {len(question)} 字符")
-            logger.info(f"[DEBUG] 问题内容: {question[:100]}...")
             
-            # 🧪 临时实验：重新创建 Reranker 来验证是否是状态污染问题
-            logger.warning("🧪 [实验] 临时重新创建 Reranker 来测试...")
-            from llama_index.core.postprocessor import SentenceTransformerRerank
-            temp_reranker = SentenceTransformerRerank(
-                model=Settings.RERANKER_MODEL_PATH,
-                top_n=Settings.RERANK_TOP_N,
-                device=Settings.DEVICE
-            )
-            logger.info(f"🧪 [实验] 临时 Reranker 对象ID: {id(temp_reranker)}")
-            
-            reranked_nodes = temp_reranker.postprocess_nodes(
+            # 使用实例的 Reranker（已修复状态污染问题）
+            reranked_nodes = self.reranker.postprocess_nodes(
                 reranker_input,
                 query_bundle=QueryBundle(question)
             )
-            logger.info("🧪 [实验] 使用临时 Reranker 完成重排序")
             logger.info(f"[单知识库检索] ✓ Reranker 处理完成，得到 {len(reranked_nodes)} 个节点")
             # 🔍 DEBUG: 记录重排序后得分
             if reranked_nodes:
@@ -803,6 +850,12 @@ class KnowledgeHandler:
                         hidden_nodes = self.hidden_kb_retriever.retrieve(question)
                         if hidden_nodes:
                             logger.info(f"[对话-隐藏知识库] 检索成功 | 返回 {len(hidden_nodes)} 条")
+                            
+                            # 根据配置决定是否将隐藏节点合并到显示列表
+                            if Settings.HIDDEN_KB_INJECT_MODE == "visible":
+                                logger.info("[对话-隐藏知识库] visible 模式：将隐藏节点合并到参考来源")
+                            else:
+                                logger.info("[对话-隐藏知识库] silent 模式：隐藏节点不显示来源")
                     except Exception as e:
                         logger.warning(f"[对话-隐藏知识库] 检索失败: {e}")
                         hidden_nodes = []
@@ -875,8 +928,8 @@ class KnowledgeHandler:
                         # 超时，继续等待
                         continue
                 
-                # 等待线程结束
-                filter_thread.join(timeout=1)
+                # 等待线程结束（多轮对话模式，同样给予充足时间）
+                filter_thread.join(timeout=600)
 
                 if filtered_results:
                     yield f"CONTENT:找到 {len(filtered_results)} 个可回答的节点"
@@ -1048,32 +1101,40 @@ class KnowledgeHandler:
             )
             
             # 7. 收集并输出全局关键字（去重后限制数量）
-            # 7.1 提取问题中的关键词
+            # 6.1 提取问题中的关键词
             import jieba
-            question_keywords = list(jieba.lcut(question))
-            # 过滤掉单字和停用词
-            question_keywords = [kw for kw in question_keywords if len(kw) > 1]
-            logger.info(f"[对话-问题关键词] 从问题中提取: {question_keywords}")
+            all_keywords = list(jieba.lcut(question))
+            # 过滤单字即可，保留所有多字词
+            question_keywords = [kw for kw in all_keywords if len(kw) > 1]
+            
             
             # 7.2 收集文档匹配的关键字
             global_keywords = []
             if final_nodes:
-                logger.info(f"[对话-关键词收集] 开始收集，共有 {len(final_nodes)} 个节点")
                 for i, node in enumerate(final_nodes):
                     retrieval_sources = node.node.metadata.get('retrieval_sources', [])
-                    logger.info(f"[对话-关键词收集] 节点 {i+1}: retrieval_sources={retrieval_sources}")
                     if 'keyword' in retrieval_sources:
                         matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
-                        logger.info(f"[对话-关键词收集] 节点 {i+1} 有关键字: {matched_keywords}")
                         global_keywords.extend(matched_keywords)
-                    else:
-                        logger.info(f"[对话-关键词收集] 节点 {i+1} 没有 'keyword' 标记，跳过")
-                logger.info(f"[对话-关键词收集] 收集完成，共收集到 {len(global_keywords)} 个关键字: {global_keywords}")
+                    
             
             # 7.3 去重问题关键词和文档关键词
-            # 问题关键词去重
+            # 问题关键词去重并优先排序（专业术语优先）
             seen_question = set()
             unique_question_keywords = []
+            
+            # 专业术语优先列表（这些词优先显示）
+            priority_terms = {'J2', 'J1', 'X1', 'X2', 'SLTD', 'APEC卡', 
+                            'J2签证', 'J1签证', 'X1签证', 'X2签证',
+                            'J2字签证', 'J1字签证', 'X1字签证', 'X2字签证'}
+            
+            # 先添加优先术语
+            for kw in question_keywords:
+                if kw in priority_terms and kw not in seen_question:
+                    seen_question.add(kw)
+                    unique_question_keywords.append(kw)
+            
+            # 再添加其他关键词
             for kw in question_keywords:
                 if kw not in seen_question:
                     seen_question.add(kw)
@@ -1095,10 +1156,6 @@ class KnowledgeHandler:
             final_question_keywords = unique_question_keywords[:max_global_keywords]
             remaining_slots = max_global_keywords - len(final_question_keywords)
             final_doc_keywords = unique_doc_keywords[:remaining_slots] if remaining_slots > 0 else []
-            
-            logger.info(f"[对话-关键词限制] 配置值: MAX_DISPLAY_KEYWORDS={max_global_keywords}")
-            logger.info(f"[对话-关键词输出] 问题关键词: {final_question_keywords}")
-            logger.info(f"[对话-关键词输出] 文档关键词: {final_doc_keywords}")
             
             # 输出结构化关键字（区分来源）
             keywords_data = {
@@ -1149,7 +1206,7 @@ class KnowledgeHandler:
                     if bm25_rank is not None:
                         source_data['bm25Rank'] = bm25_rank
                     
-                    # 添加匹配的关键词（如果是关键词检索）
+                    # 添加匹配的关键词（BM25 检索）
                     if 'keyword' in retrieval_sources:
                         matched_keywords = node.node.metadata.get('bm25_matched_keywords', [])
                         if matched_keywords:
@@ -1167,12 +1224,53 @@ class KnowledgeHandler:
                 yield "CONTENT:\n\n**参考来源:**"
                 full_response += "\n\n参考来源:"
 
-                for i, node in enumerate(final_nodes):
-                    yield f"SOURCE:{json.dumps(node.node.metadata, ensure_ascii=False)}"
+                # 合并隐藏节点（如果是 visible 模式）
+                nodes_to_display = final_nodes
+                if hidden_nodes and Settings.HIDDEN_KB_INJECT_MODE == "visible":
+                    logger.info(
+                        f"[对话-隐藏知识库] 合并 {len(hidden_nodes)} 个隐藏节点到参考来源 | "
+                        f"主知识库: {len(final_nodes)} 条 | "
+                        f"隐藏节点: {len(hidden_nodes)} 条 (额外显示，不占用 rerank_top_n) | "
+                        f"总计: {len(final_nodes) + len(hidden_nodes)} 条"
+                    )
+                    nodes_to_display = final_nodes + hidden_nodes
+
+                for i, node in enumerate(nodes_to_display):
+                    # 检查是否为隐藏节点
+                    is_hidden = node.node.metadata.get('is_hidden', False)
+                    
+                    # 构建 source_data
+                    source_data = {
+                        "id": i + 1,
+                        "fileName": node.node.metadata.get('file_name', '未知'),
+                        "rerankedScore": f"{node.score:.4f}",
+                        "content": node.node.text.strip()
+                    }
+                    
+                    # 如果是隐藏节点，添加特殊标记
+                    if is_hidden:
+                        source_data['isHidden'] = True
+                        source_data['hiddenKbName'] = node.node.metadata.get('hidden_kb_name', '隐藏知识库')
+                    
+                    yield f"SOURCE:{json.dumps(source_data, ensure_ascii=False)}"
                     full_response += (
-                        f"\n[{i + 1}] 文件: {node.node.metadata.get('file_name', '未知')}, "
+                        f"\n[{i + 1}] 文件: {source_data['fileName']}, "
                         f"重排分: {node.score}"
                     )
+
+            # 格式化校验和修复（在最后一次 yield 前）
+            from utils.response_formatter import response_formatter
+            
+            # 提取 assistant_response 进行格式化（这是实际的 LLM 回答）
+            if assistant_response:
+                validated_response = response_formatter.process_response(
+                    assistant_response.strip(),
+                    question=question
+                )
+                
+                # 如果格式被修复，记录日志
+                if validated_response != assistant_response.strip():
+                    logger.info("[对话-格式修复] 响应格式已自动修复")
 
             yield "DONE:"
 
@@ -1180,6 +1278,8 @@ class KnowledgeHandler:
             error_msg = f"处理错误: {str(e)}"
             logger.error(f"多轮对话处理出错: {e}", exc_info=True)
             yield f"ERROR:{error_msg}"
+            # 确保发送 DONE 信号，避免前端等待超时
+            yield "DONE:"
 
     def _build_prompt_with_history(
         self,
@@ -1390,19 +1490,25 @@ class KnowledgeHandler:
         else:
             logger.info("[智能路由] 意图分类器未启用，使用默认策略: general")
         
-        # 2. 根据策略选择检索器
-        if strategy == "both" and self.multi_kb_retriever:
-            # 双库检索
-            logger.info("[智能路由] 使用双库检索（免签库 + 通用库）")
+        # 2. 根据策略选择检索器（确保通用库始终被检索）
+        selected_retriever = None
+        if strategy == "airline_visa_free" and self.multi_kb_retriever:
+            # 三库检索（航司库 + 免签库 + 通用库）
+            logger.info("[智能路由] 策略: airline_visa_free → 三库检索（航司库 + 免签库 + 通用库）")
             selected_retriever = self.multi_kb_retriever
-        elif strategy == "visa_free" and self.visa_free_retriever:
-            # 只用免签库
-            logger.info("[智能路由] 使用免签知识库")
-            selected_retriever = self.visa_free_retriever
+        elif strategy == "visa_free" and self.multi_kb_retriever:
+            # 双库检索（免签库 + 通用库）
+            logger.info("[智能路由] 策略: visa_free → 双库检索（免签库 + 通用库）")
+            selected_retriever = self.multi_kb_retriever
+        elif strategy == "airline" and self.multi_kb_retriever:
+            # 双库检索（航司库 + 通用库）
+            logger.info("[智能路由] 策略: airline → 双库检索（航司库 + 通用库）")
+            selected_retriever = self.multi_kb_retriever
         else:
             # 只用通用库（默认）
-            logger.info("[智能路由] 使用通用知识库")
+            logger.info("[智能路由] 策略: general → 仅通用库")
             selected_retriever = self.retriever
+            strategy = "general"  # 确保 strategy 为 general
         
         # 3. 尝试子问题分解（如果启用），使用路由后的检索器
         if self.sub_question_decomposer and self.sub_question_decomposer.enabled:
@@ -1460,43 +1566,68 @@ class KnowledgeHandler:
                 self._last_sub_answers = None
                 # 继续执行标准检索
         
-        # 4. 标准检索和重排序
+        # 4. 标准检索和重排序（传入 strategy）
         return self._retrieve_and_rerank_with_retriever(
             question, 
             rerank_top_n, 
-            selected_retriever
+            selected_retriever,
+            strategy=strategy  # 传入策略
         )
     
     def _retrieve_and_rerank_with_retriever(
         self, 
         question: str, 
         rerank_top_n: int,
-        retriever
+        retriever,
+        strategy: str = "general"
     ):
         """
-        使用指定检索器进行检索和重排序
+        使用指定检索器进行检索和重排序（支持 Keyword Table Fallback）
         
         Args:
             question: 用户问题
-            rerank_top_n: 重排序后返回的文档数量
+            rerank_top_n: 重排序后返回的文档数量（仅对general策略生效）
             retriever: 检索器实例
+            strategy: 检索策略（airline_visa_free/visa_free/airline/general）
             
         Returns:
             重排序后的节点列表
+            
+        Note:
+            - general策略：使用前端传入的rerank_top_n参数
+            - 其他策略：使用固定配置的返回数量，忽略rerank_top_n参数
         """
         # 创建 QueryBundle（重排序需要）
         query_bundle = QueryBundle(query_str=question)
         
-        # 判断是否为 MultiKBRetriever
+        # BM25 + 向量检索融合策略
+        retrieved_nodes = []
+        retrieval_mode = "bm25_vector_fusion"
+        
         from core.multi_kb_retriever import MultiKBRetriever
+        
+        # 执行 BM25 + 向量混合检索（根据策略选择方法）
+        logger.info(f"[融合策略] BM25 + 向量检索 | 策略: {strategy}")
         if isinstance(retriever, MultiKBRetriever):
-            # MultiKBRetriever 使用 retrieve_from_both 方法，直接传入 query 字符串
-            retrieved_nodes = retriever.retrieve_from_both(question)
+            # 根据策略调用不同的检索方法
+            if strategy == "airline_visa_free":
+                # 三库检索
+                retrieved_nodes = retriever.retrieve_from_all_three(question)
+            elif strategy == "visa_free":
+                # 免签库 + 通用库
+                retrieved_nodes = retriever.retrieve_from_both(question)
+            elif strategy == "airline":
+                # 航司库 + 通用库
+                retrieved_nodes = retriever.retrieve_airline_only(question)
+            else:
+                # 默认：根据可用检索器自动选择
+                retrieved_nodes = retriever.retrieve(question)
         else:
-            # 其他检索器使用标准的 retrieve 方法，需要 QueryBundle
             retrieved_nodes = retriever.retrieve(query_bundle)
         
-        logger.info(f"检索到 {len(retrieved_nodes)} 个初步结果")
+        logger.info(f"[BM25+向量检索] 返回 {len(retrieved_nodes)} 个节点")
+        
+        logger.info(f"检索完成 | 模式: {retrieval_mode} | 结果数: {len(retrieved_nodes)}")
         
         if not retrieved_nodes:
             logger.warning("未检索到任何相关文档")
@@ -1544,21 +1675,40 @@ class KnowledgeHandler:
             rerank_scores = [n.score for n in reranked_nodes[:5]]
             logger.info(f"重排序阶段Top5得分: {[f'{s:.4f}' for s in rerank_scores]}")
         
-        # 方案1+3组合：按得分排序后严格截断到前端要求的数量
+        # 方案1+3组合：按得分排序后严格截断
         # 确保按分数从高到低排序
         reranked_nodes.sort(key=lambda x: x.score, reverse=True)
         
-        # 严格按照前端传入的 rerank_top_n 参数截断
-        final_nodes = reranked_nodes[:rerank_top_n]
+        # 根据策略决定返回数量
+        if strategy == "airline_visa_free":
+            # 三库检索：固定返回20条
+            final_count = Settings.AIRLINE_VISA_FREE_RETURN_COUNT
+            logger.info(f"[三库检索] 使用固定返回数量: {final_count}条（不受前端参数控制）")
+        elif strategy == "visa_free":
+            # 免签库+通用库：固定返回15条
+            final_count = Settings.VISA_FREE_STRATEGY_RETURN_COUNT
+            logger.info(f"[免签检索] 使用固定返回数量: {final_count}条（不受前端参数控制）")
+        elif strategy == "airline":
+            # 航司库+通用库：固定返回15条
+            final_count = Settings.AIRLINE_STRATEGY_RETURN_COUNT
+            logger.info(f"[航司检索] 使用固定返回数量: {final_count}条（不受前端参数控制）")
+        else:
+            # 通用问题：使用前端参数
+            final_count = rerank_top_n
+            logger.info(f"[通用检索] 使用前端参数: {final_count}条")
+        
+        # 截断到目标数量
+        final_nodes = reranked_nodes[:final_count]
         
         if final_nodes:
             logger.info(
-                f"最终返回 {len(final_nodes)} 个文档（严格按前端参数 top_k={rerank_top_n} 截断） | "
+                f"最终返回 {len(final_nodes)} 个文档（策略: {strategy}, 目标数量: {final_count}） | "
                 f"最高分: {final_nodes[0].score:.4f} | "
                 f"最低分: {final_nodes[-1].score:.4f}"
             )
         
         return final_nodes
+    
 
     def debug_inspect_scores(
         self,

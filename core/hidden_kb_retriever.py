@@ -14,6 +14,7 @@ from llama_index.core import QueryBundle
 from llama_index.core.schema import NodeWithScore
 from config import Settings
 from utils.logger import logger
+from utils.hidden_kb_logger import hidden_kb_logger
 
 
 class HiddenKBRetriever:
@@ -25,9 +26,10 @@ class HiddenKBRetriever:
     - 提升回答准确率但不暴露来源
     - 对用户完全透明
     """
-    def __init__(self, retriever, name):
+    def __init__(self, retriever, name, reranker=None):
         self.retriever = retriever
         self.name = name
+        self.reranker = reranker
         self.enabled = True
 
     def retrieve(
@@ -53,21 +55,58 @@ class HiddenKBRetriever:
         if top_k is None:
             top_k = getattr(Settings, 'HIDDEN_KB_RETRIEVAL_COUNT', 5)
         
+        # 记录检索开始到专用日志
+        hidden_kb_logger.log_retrieval_start(query, self.name)
+        
         logger.info(f"[{self.name}] 开始检索 | 查询: {query[:50]}... | 返回数量: {top_k}")
         
         try:
             # 创建 QueryBundle
             query_bundle = QueryBundle(query_str=query)
             
-            # 调用底层检索器
+            # 调用底层检索器（混合检索）
             nodes = self.retriever.retrieve(query_bundle)
             
             if not nodes:
                 logger.info(f"[{self.name}] 未检索到相关内容")
+                # 记录空结果到专用日志
+                hidden_kb_logger.log_retrieval_result(query, [], self.name)
                 return []
             
-            # 取前 top_k 个结果
-            selected_nodes = nodes[:top_k]
+            logger.info(f"[{self.name}] 初始检索完成 | 返回 {len(nodes)} 条")
+            
+            # 重排序（如果有 reranker）
+            if self.reranker:
+                # 取前 N 条送入重排序
+                rerank_top_n = getattr(Settings, 'HIDDEN_KB_RERANK_TOP_N', 10)
+                reranker_input = nodes[:rerank_top_n]
+                
+                logger.info(f"[{self.name}] 开始重排序 | 输入: {len(reranker_input)} 条")
+                
+                # 记录重排序前的分数
+                if reranker_input:
+                    initial_scores = [f"{n.score:.4f}" for n in reranker_input[:3]]
+                    logger.debug(f"[{self.name}] 重排序前Top3分数(RRF): {', '.join(initial_scores)}")
+                
+                # 执行重排序
+                reranked_nodes = self.reranker.postprocess_nodes(
+                    reranker_input,
+                    query_bundle=query_bundle
+                )
+                
+                logger.info(f"[{self.name}] 重排序完成 | 返回 {len(reranked_nodes)} 条")
+                
+                # 记录重排序后的分数
+                if reranked_nodes:
+                    rerank_scores = [f"{n.score:.4f}" for n in reranked_nodes[:3]]
+                    logger.info(f"[{self.name}] 重排序后Top3分数(Reranker): {', '.join(rerank_scores)}")
+                
+                # 从重排序结果中取前 top_k 个
+                selected_nodes = reranked_nodes[:top_k]
+            else:
+                # 没有 reranker，直接取前 top_k 个
+                logger.debug(f"[{self.name}] 未配置 Reranker，使用 RRF 分数")
+                selected_nodes = nodes[:top_k]
             
             # 标记为隐藏节点（添加元数据）
             for node in selected_nodes:
@@ -84,6 +123,9 @@ class HiddenKBRetriever:
             if len(selected_nodes) > 0:
                 scores = [f"{n.score:.4f}" for n in selected_nodes[:3]]
                 logger.debug(f"[{self.name}] Top3得分: {', '.join(scores)}")
+            
+            # 记录检索结果到专用日志
+            hidden_kb_logger.log_retrieval_result(query, selected_nodes, self.name)
             
             return selected_nodes
             

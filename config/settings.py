@@ -73,19 +73,24 @@ class Settings:
     # ==================== RAG 核心参数 ====================
     RETRIEVAL_TOP_K = 30
     RETRIEVAL_TOP_K_BM25 = 5  # BM25检索数量
-    RERANK_TOP_N = 20  # 重排序后返回数量（适配三库检索30条策略）
+    RERANK_TOP_N = 15  # 通用问题默认返回数量（可被前端参数覆盖）
     RERANKER_INPUT_TOP_N = 30  # 送入重排序的数量（三库检索最大30条）
     RETRIEVAL_SCORE_THRESHOLD = 0.2
     RERANK_SCORE_THRESHOLD = 0.2
     DEVICE = "npu" if NPU_AVAILABLE else "cpu"
     
     # RRF 融合权重配置
-    RRF_K = 10.0  # RRF 平滑参数（降低以增加排名差异影响）
+    #  修复：降低 RRF_K 使分数更合理（从 10.0 降到 5.0）
+    # RRF 分数公式：1/(k+rank)，k 越小，排名差异影响越大，分数范围越大
+    RRF_K = 5.0  # RRF 平滑参数（降低以增加排名差异影响，提高分数范围）
     RRF_VECTOR_WEIGHT = 0.7  # 向量检索权重（0-1）
     RRF_BM25_WEIGHT = 0.3    # BM25 检索权重（0-1）
     
     # 关键词显示配置
-    MAX_DISPLAY_KEYWORDS = int(os.getenv("MAX_DISPLAY_KEYWORDS", "5"))  # 前端显示的最大关键词数量
+    MAX_DISPLAY_KEYWORDS = int(os.getenv("MAX_DISPLAY_KEYWORDS", "10"))  # 前端显示的最大关键词数量
+
+    # 数据目录（用于构建索引）
+    DATA_DIR = os.getenv("DATA_DIR", KNOWLEDGE_BASE_DIR)  # 默认使用知识库目录
 
     # ==================== LLM 行为参数 ====================
     LLM_REQUEST_TIMEOUT = 1800.0
@@ -141,13 +146,50 @@ class Settings:
     # InsertBlock 精准检索配置
     INSERTBLOCK_MAX_WORKERS = 10  # 并发处理的最大线程数（默认5，提高到10可加快处理速度）
     
+    # 数据趋势分析配置
+    DATA_ANALYSIS_MAX_LENGTH = 250  # 分析摘要最大字数（默认250字）
+    
     # 问题改写和独立重排序功能开关（需要先启用意图分类器）
     ENABLE_QUESTION_REWRITE = os.getenv("ENABLE_QUESTION_REWRITE", "false").lower() == "true"  # 默认关闭
     
     # 双库检索策略（当判断为混合问题时）
     DUAL_KB_STRATEGY = "adaptive"  # adaptive(自适应) 或 fixed(固定比例)
-    VISA_FREE_RETRIEVAL_COUNT = 10  # 免签库取10条（三库检索时）
-    GENERAL_RETRIEVAL_COUNT = 5     # 通用库取5条（保底）
+    
+    # ==================== 多库检索数量配置 ====================
+    # 各知识库单独检索数量（可通过环境变量配置）
+    # 说明：这些参数控制从每个知识库中取多少条文档进行合并
+    VISA_FREE_RETRIEVAL_COUNT = int(os.getenv("VISA_FREE_RETRIEVAL_COUNT", "10"))  # 免签库取10条
+    GENERAL_RETRIEVAL_COUNT = int(os.getenv("GENERAL_RETRIEVAL_COUNT", "5"))       # 通用库取5条（保底）
+    AIRLINE_RETRIEVAL_COUNT = int(os.getenv("AIRLINE_RETRIEVAL_COUNT", "10"))      # 航司库取10条
+    
+    # 多库检索最终返回数量（自动计算，不受前端参数控制）
+    # 说明：这些数量是各库检索数量之和，表示合并去重后最终返回的文档总数
+    # 
+    # 1. visa_free 策略（免签库 + 通用库）
+    #    最终返回 = 免签库10条 + 通用库5条 = 15条（包含两个库的文档总和）
+    VISA_FREE_STRATEGY_RETURN_COUNT = VISA_FREE_RETRIEVAL_COUNT + GENERAL_RETRIEVAL_COUNT
+    
+    # 2. airline 策略（航司库 + 通用库）
+    #    最终返回 = 航司库10条 + 通用库5条 = 15条（包含两个库的文档总和）
+    AIRLINE_STRATEGY_RETURN_COUNT = AIRLINE_RETRIEVAL_COUNT + GENERAL_RETRIEVAL_COUNT
+    
+    # 3. airline_visa_free 策略（航司库 + 免签库 + 通用库）
+    #    最终返回 = 航司库10条 + 免签库10条 + 通用库5条 = 25条（包含三个库的文档总和）
+    AIRLINE_VISA_FREE_RETURN_COUNT = AIRLINE_RETRIEVAL_COUNT + VISA_FREE_RETRIEVAL_COUNT + GENERAL_RETRIEVAL_COUNT
+    
+    # ==================== 通用知识库B配置（12367专用）====================
+    # 通用知识库B开关（默认关闭）
+    ENABLE_GENERAL_KB_B = os.getenv("ENABLE_GENERAL_KB_B", "false").lower() == "true"
+    
+    # 通用知识库B路径（独立目录）
+    GENERAL_KB_B_DIR = "/opt/rag_final_project/general_knowledge_base_b"
+    GENERAL_KB_B_STORAGE_PATH = "/opt/rag_final_project/general_kb_b_storage"
+    GENERAL_KB_B_COLLECTION = "general_kb_b"  # 独立的 Qdrant collection
+    
+    # 通用知识库B检索参数（与通用库A相同）
+    GENERAL_KB_B_RETRIEVAL_TOP_K = RETRIEVAL_TOP_K
+    GENERAL_KB_B_RETRIEVAL_TOP_K_BM25 = RETRIEVAL_TOP_K_BM25
+    GENERAL_KB_B_RERANK_TOP_N = RERANK_TOP_N
     
     # ==================== 航司知识库配置 ====================
     # 航司功能开关（默认关闭）
@@ -162,7 +204,6 @@ class Settings:
     AIRLINE_RETRIEVAL_TOP_K = 30
     AIRLINE_RETRIEVAL_TOP_K_BM25 = 5
     AIRLINE_RERANK_TOP_N = 20  # 适配三库检索30条策略
-    AIRLINE_RETRIEVAL_COUNT = 10  # 航司库取10条（三库检索时）
 
     # ==================== 隐藏知识库配置 ====================
     # 隐藏知识库功能开关（默认关闭）
@@ -175,14 +216,14 @@ class Settings:
     HIDDEN_KB_COLLECTION = "hidden_kb"  # 独立的 Qdrant collection
     
     # 隐藏知识库检索参数
-    HIDDEN_KB_RETRIEVAL_TOP_K = 30  # 初始检索数量
+    HIDDEN_KB_RETRIEVAL_TOP_K = 30  # 初始检索数量（向量检索）
     HIDDEN_KB_RETRIEVAL_TOP_K_BM25 = 5  # BM25检索数量
-    HIDDEN_KB_RERANK_TOP_N = 10  # 重排序后返回数量
-    HIDDEN_KB_RETRIEVAL_COUNT = 5  # 最终注入上下文的数量（默认5条）
+    HIDDEN_KB_RERANK_TOP_N = 10  # 送入重排序的数量（从混合检索结果中取前N条）
+    HIDDEN_KB_RETRIEVAL_COUNT = 5  # 最终注入上下文的数量（从重排序结果中取前N条）
     
     # 隐藏知识库行为配置
-    HIDDEN_KB_INJECT_MODE = "silent"  # silent: 完全隐藏 | visible: 显示来源（调试用）
-    HIDDEN_KB_MIN_SCORE = 0.3  # 最低分数阈值（低于此分数不注入）
+    HIDDEN_KB_INJECT_MODE = os.getenv("HIDDEN_KB_INJECT_MODE", "silent")  # silent: 完全隐藏 | visible: 显示来源（调试用）
+    HIDDEN_KB_MIN_SCORE = float(os.getenv("HIDDEN_KB_MIN_SCORE", "0.3"))  # 最低分数阈值（Reranker分数，通常0.3-0.9）
 
     # ==================== 特殊规定配置 ====================
     # 特殊规定文件夹路径（直接从文件读取，不使用向量数据库）
@@ -271,6 +312,7 @@ class Settings:
             "temperature_analysis_on": cls.TEMPERATURE_ANALYSIS_ON,
             "temperature_analysis_off": cls.TEMPERATURE_ANALYSIS_OFF,
             "temperature_reduction": cls.TEMPERATURE_REDUCTION,
+            "data_dir": cls.DATA_DIR,
             "top_p": cls.TOP_P,
             "server_host": cls.SERVER_HOST,
             "server_port": cls.SERVER_PORT,

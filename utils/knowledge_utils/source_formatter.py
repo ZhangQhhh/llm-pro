@@ -82,19 +82,35 @@ def build_source_data(
     return source_data
 
 
-def format_sources(final_nodes: List[Any]) -> Generator[Tuple[str, str], None, None]:
+def format_sources(final_nodes: List[Any], include_hidden: bool = False) -> Generator[Tuple[str, str], None, None]:
     """
     格式化普通检索结果的参考来源
     
     Args:
         final_nodes: 检索到的节点列表
+        include_hidden: 是否包含隐藏节点（默认False，过滤掉隐藏节点）
         
     Yields:
         (消息类型, 内容) 元组
     """
-    for i, node in enumerate(final_nodes):
-        source_data = build_source_data(i, node)
+    node_index = 0
+    for node in final_nodes:
+        # 检查是否为隐藏节点
+        is_hidden = node.node.metadata.get('is_hidden', False)
+        
+        # 如果不包含隐藏节点且当前节点是隐藏的，跳过
+        if not include_hidden and is_hidden:
+            continue
+        
+        source_data = build_source_data(node_index, node)
+        
+        # 如果是隐藏节点且 include_hidden=True，添加特殊标记
+        if is_hidden and include_hidden:
+            source_data['isHidden'] = True
+            source_data['hiddenKbName'] = node.node.metadata.get('hidden_kb_name', '隐藏知识库')
+        
         yield ('SOURCE', json.dumps(source_data, ensure_ascii=False))
+        node_index += 1
 
 
 def format_filtered_sources(final_nodes: List[Any], filtered_map: Dict[str, Any]) -> Generator[Tuple[str, str], None, None]:

@@ -1,0 +1,5155 @@
+{
+  "generated_at": "2025-11-18T13:17:57Z",
+  "top_k_per_kb": 300,
+  "global_top_k": 500,
+  "knowledge_bases": [
+    "general",
+    "visa_free",
+    "airline"
+  ],
+  "tokens": [
+    {
+      "token": "自",
+      "tfidf": 0.06629721041237838,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 220,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "协定",
+      "tfidf": 0.06448910467385897,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 214,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "生效",
+      "tfidf": 0.06388640276101917,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 212,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "起",
+      "tfidf": 0.06358505180459927,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 211,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "机组人员",
+      "tfidf": 0.05903954802259887,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 209,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "期限",
+      "tfidf": 0.05559572196276802,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 234,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "公务",
+      "tfidf": 0.05512054485197513,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 232,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "签证",
+      "tfidf": 0.053389830508474574,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 189,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "互免",
+      "tfidf": 0.05250707074261424,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 221,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "免签",
+      "tfidf": 0.05193407121478796,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 270,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "来华",
+      "tfidf": 0.050843950854839136,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 214,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "中国",
+      "tfidf": 0.0478947545647489,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 249,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "护照",
+      "tfidf": 0.04731770932902903,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 246,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "停留",
+      "tfidf": 0.046076427111181005,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 293,
+      "doc_freq": 4,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "适用",
+      "tfidf": 0.044240134738523076,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 230,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "外交",
+      "tfidf": 0.03706381464184535,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 156,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "普通",
+      "tfidf": 0.033975163421691566,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 143,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "协议",
+      "tfidf": 0.028531073446327684,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 101,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "有效",
+      "tfidf": 0.02711864406779661,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 96,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "入境",
+      "tfidf": 0.026685878905303415,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 4240,
+      "doc_freq": 292,
+      "doc_ratio": 0.25259515570934254
+    },
+    {
+      "token": "凭",
+      "tfidf": 0.02598870056497175,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 92,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "证件",
+      "tfidf": 0.0255884517015415,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 4234,
+      "doc_freq": 321,
+      "doc_ratio": 0.27768166089965396
+    },
+    {
+      "token": "检查",
+      "tfidf": 0.025315206529906632,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 3552,
+      "doc_freq": 213,
+      "doc_ratio": 0.1842560553633218
+    },
+    {
+      "token": "免办",
+      "tfidf": 0.02457627118644068,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 87,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "出入境",
+      "tfidf": 0.02347716530969227,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 4595,
+      "doc_freq": 457,
+      "doc_ratio": 0.3953287197231834
+    },
+    {
+      "token": "人员",
+      "tfidf": 0.021312688902966826,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 4969,
+      "doc_freq": 623,
+      "doc_ratio": 0.5389273356401384
+    },
+    {
+      "token": "出境",
+      "tfidf": 0.020349739308713886,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 3210,
+      "doc_freq": 287,
+      "doc_ratio": 0.24826989619377163
+    },
+    {
+      "token": "录入",
+      "tfidf": 0.019336907615349473,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1717,
+      "doc_freq": 44,
+      "doc_ratio": 0.03806228373702422
+    },
+    {
+      "token": "旅客",
+      "tfidf": 0.018515627378424028,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1694,
+      "doc_freq": 50,
+      "doc_ratio": 0.04325259515570934
+    },
+    {
+      "token": "边防",
+      "tfidf": 0.01693628849842823,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1915,
+      "doc_freq": 111,
+      "doc_ratio": 0.09602076124567474
+    },
+    {
+      "token": "信息",
+      "tfidf": 0.016770824048141012,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 2418,
+      "doc_freq": 229,
+      "doc_ratio": 0.1980968858131488
+    },
+    {
+      "token": "应当",
+      "tfidf": 0.01636662764414547,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 2422,
+      "doc_freq": 245,
+      "doc_ratio": 0.21193771626297578
+    },
+    {
+      "token": "官员",
+      "tfidf": 0.015971600690254793,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 53,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "规定",
+      "tfidf": 0.015254237288135594,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 54,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "航班",
+      "tfidf": 0.015254237288135594,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 54,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "日起",
+      "tfidf": 0.015254237288135594,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 54,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "口岸",
+      "tfidf": 0.014964402845952747,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1965,
+      "doc_freq": 177,
+      "doc_ratio": 0.15311418685121106
+    },
+    {
+      "token": "进行",
+      "tfidf": 0.014924123672635625,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 2050,
+      "doc_freq": 201,
+      "doc_ratio": 0.17387543252595156
+    },
+    {
+      "token": "对方",
+      "tfidf": 0.014689265536723164,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 52,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "任务",
+      "tfidf": 0.014689265536723164,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 52,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "执行",
+      "tfidf": 0.01440677966101695,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 51,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "原因",
+      "tfidf": 0.01440677966101695,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 51,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "船舶",
+      "tfidf": 0.014011423262555412,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1257,
+      "doc_freq": 46,
+      "doc_ratio": 0.039792387543252594
+    },
+    {
+      "token": "不",
+      "tfidf": 0.013745616275253593,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1962,
+      "doc_freq": 223,
+      "doc_ratio": 0.19290657439446368
+    },
+    {
+      "token": "机关",
+      "tfidf": 0.013637581146038155,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 2031,
+      "doc_freq": 249,
+      "doc_ratio": 0.21539792387543252
+    },
+    {
+      "token": "姓名",
+      "tfidf": 0.01311749437239886,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 1217,
+      "doc_freq": 53,
+      "doc_ratio": 0.045847750865051905
+    },
+    {
+      "token": "机场",
+      "tfidf": 0.012958091126055773,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 43,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "办理",
+      "tfidf": 0.012516753716437519,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1710,
+      "doc_freq": 198,
+      "doc_ratio": 0.17128027681660898
+    },
+    {
+      "token": "指纹",
+      "tfidf": 0.01242360816850192,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1007,
+      "doc_freq": 29,
+      "doc_ratio": 0.025086505190311418
+    },
+    {
+      "token": "国籍",
+      "tfidf": 0.012146892655367232,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 43,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "外国人",
+      "tfidf": 0.012013222356015287,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1602,
+      "doc_freq": 185,
+      "doc_ratio": 0.16003460207612458
+    },
+    {
+      "token": "国家",
+      "tfidf": 0.011946444817900628,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1857,
+      "doc_freq": 277,
+      "doc_ratio": 0.23961937716262977
+    },
+    {
+      "token": "系统",
+      "tfidf": 0.011592631628606652,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1382,
+      "doc_freq": 132,
+      "doc_ratio": 0.11418685121107267
+    },
+    {
+      "token": "因",
+      "tfidf": 0.011581920903954802,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 41,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "代码",
+      "tfidf": 0.010926664502499796,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 761,
+      "doc_freq": 13,
+      "doc_ratio": 0.01124567474048443
+    },
+    {
+      "token": "可以",
+      "tfidf": 0.010756881595478461,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1429,
+      "doc_freq": 183,
+      "doc_ratio": 0.1583044982698962
+    },
+    {
+      "token": "名单",
+      "tfidf": 0.010734463276836158,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 38,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "其他",
+      "tfidf": 0.010442464926190954,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 1488,
+      "doc_freq": 222,
+      "doc_ratio": 0.19204152249134948
+    },
+    {
+      "token": "采集",
+      "tfidf": 0.010335390612175793,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 908,
+      "doc_freq": 42,
+      "doc_ratio": 0.03633217993079585
+    },
+    {
+      "token": "国际",
+      "tfidf": 0.010216307882047113,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 43,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "多次",
+      "tfidf": 0.010169491525423728,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 36,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "并",
+      "tfidf": 0.00994738299777734,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1465,
+      "doc_freq": 242,
+      "doc_ratio": 0.2093425605536332
+    },
+    {
+      "token": "航空公司",
+      "tfidf": 0.009887005649717515,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 35,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "须",
+      "tfidf": 0.009887005649717515,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 35,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "政策",
+      "tfidf": 0.009741130771254226,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 41,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "查验",
+      "tfidf": 0.009701371105656545,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1094,
+      "doc_freq": 110,
+      "doc_ratio": 0.09515570934256055
+    },
+    {
+      "token": "签发",
+      "tfidf": 0.0096045197740113,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 34,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "一年",
+      "tfidf": 0.0096045197740113,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 34,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "通行证",
+      "tfidf": 0.009424104560410481,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1142,
+      "doc_freq": 139,
+      "doc_ratio": 0.12024221453287197
+    },
+    {
+      "token": "需",
+      "tfidf": 0.009322033898305085,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 33,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "机组",
+      "tfidf": 0.009322033898305085,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 33,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "第三",
+      "tfidf": 0.009322033898305085,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 33,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "管理",
+      "tfidf": 0.009316137223102688,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1323,
+      "doc_freq": 220,
+      "doc_ratio": 0.1903114186851211
+    },
+    {
+      "token": "备注",
+      "tfidf": 0.009265953660461337,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 39,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "手续",
+      "tfidf": 0.00908052917498799,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 993,
+      "doc_freq": 99,
+      "doc_ratio": 0.08564013840830449
+    },
+    {
+      "token": "最长",
+      "tfidf": 0.009040528692597052,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 30,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "获发",
+      "tfidf": 0.00903954802259887,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 32,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "处理",
+      "tfidf": 0.009007050035454111,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1138,
+      "doc_freq": 158,
+      "doc_ratio": 0.13667820069204153
+    },
+    {
+      "token": "查控",
+      "tfidf": 0.008985904294936255,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1061,
+      "doc_freq": 128,
+      "doc_ratio": 0.11072664359861592
+    },
+    {
+      "token": "通道",
+      "tfidf": 0.008930080279364108,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 758,
+      "doc_freq": 36,
+      "doc_ratio": 0.031141868512110725
+    },
+    {
+      "token": "界面",
+      "tfidf": 0.008815994749717313,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 614,
+      "doc_freq": 13,
+      "doc_ratio": 0.01124567474048443
+    },
+    {
+      "token": "情况",
+      "tfidf": 0.008795801834915839,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1232,
+      "doc_freq": 212,
+      "doc_ratio": 0.18339100346020762
+    },
+    {
+      "token": "个人",
+      "tfidf": 0.008757062146892656,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 31,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "居民",
+      "tfidf": 0.008612183845157143,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1122,
+      "doc_freq": 173,
+      "doc_ratio": 0.14965397923875431
+    },
+    {
+      "token": "资料",
+      "tfidf": 0.008500993880693268,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 916,
+      "doc_freq": 94,
+      "doc_ratio": 0.08131487889273356
+    },
+    {
+      "token": "加盖",
+      "tfidf": 0.00847457627118644,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 30,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "执照",
+      "tfidf": 0.00847457627118644,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 30,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "印章",
+      "tfidf": 0.00847457627118644,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 30,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "使用",
+      "tfidf": 0.008459308058161133,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 906,
+      "doc_freq": 92,
+      "doc_ratio": 0.07958477508650519
+    },
+    {
+      "token": "许可",
+      "tfidf": 0.008455827833654613,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 822,
+      "doc_freq": 64,
+      "doc_ratio": 0.05536332179930796
+    },
+    {
+      "token": "违法",
+      "tfidf": 0.008295983749132905,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 748,
+      "doc_freq": 47,
+      "doc_ratio": 0.04065743944636678
+    },
+    {
+      "token": "使馆",
+      "tfidf": 0.008192090395480226,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 29,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "当班",
+      "tfidf": 0.008192090395480226,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 29,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "超过",
+      "tfidf": 0.008177386381506526,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 52,
+      "doc_freq": 4,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "工作",
+      "tfidf": 0.00799380952424849,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1164,
+      "doc_freq": 235,
+      "doc_ratio": 0.20328719723183392
+    },
+    {
+      "token": "边检站",
+      "tfidf": 0.007971838682927977,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 793,
+      "doc_freq": 70,
+      "doc_ratio": 0.06055363321799308
+    },
+    {
+      "token": "工具",
+      "tfidf": 0.007923400550833746,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 794,
+      "doc_freq": 72,
+      "doc_ratio": 0.06228373702422145
+    },
+    {
+      "token": "补办",
+      "tfidf": 0.007909604519774011,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 28,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "单位",
+      "tfidf": 0.007903871527854208,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 1052,
+      "doc_freq": 184,
+      "doc_ratio": 0.15916955017301038
+    },
+    {
+      "token": "天",
+      "tfidf": 0.007886284888171505,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 41,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "签注",
+      "tfidf": 0.007861741043015092,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 842,
+      "doc_freq": 92,
+      "doc_ratio": 0.07958477508650519
+    },
+    {
+      "token": "因公",
+      "tfidf": 0.007835124866917445,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 26,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "人",
+      "tfidf": 0.007832494784401862,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 859,
+      "doc_freq": 100,
+      "doc_ratio": 0.08650519031141868
+    },
+    {
+      "token": "交通运输",
+      "tfidf": 0.007818610926334088,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 769,
+      "doc_freq": 67,
+      "doc_ratio": 0.05795847750865052
+    },
+    {
+      "token": "申请",
+      "tfidf": 0.007784290687288031,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1042,
+      "doc_freq": 187,
+      "doc_ratio": 0.16176470588235295
+    },
+    {
+      "token": "部门",
+      "tfidf": 0.007685271405110319,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 1207,
+      "doc_freq": 284,
+      "doc_ratio": 0.24567474048442905
+    },
+    {
+      "token": "边检",
+      "tfidf": 0.007683275270318527,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 1042,
+      "doc_freq": 194,
+      "doc_ratio": 0.16782006920415224
+    },
+    {
+      "token": "临时",
+      "tfidf": 0.007643163114848392,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 743,
+      "doc_freq": 64,
+      "doc_ratio": 0.05536332179930796
+    },
+    {
+      "token": "进入",
+      "tfidf": 0.007627118644067797,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 27,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "雇用",
+      "tfidf": 0.007627118644067797,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 27,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "报警",
+      "tfidf": 0.007296906405806325,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 752,
+      "doc_freq": 80,
+      "doc_ratio": 0.06920415224913495
+    },
+    {
+      "token": "区域",
+      "tfidf": 0.00725026254497196,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 702,
+      "doc_freq": 63,
+      "doc_ratio": 0.054498269896193774
+    },
+    {
+      "token": "实施",
+      "tfidf": 0.007161774181303841,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 829,
+      "doc_freq": 120,
+      "doc_ratio": 0.10380622837370242
+    },
+    {
+      "token": "应",
+      "tfidf": 0.007138615130262104,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 820,
+      "doc_freq": 117,
+      "doc_ratio": 0.10121107266435986
+    },
+    {
+      "token": "提交",
+      "tfidf": 0.007128275994638723,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 806,
+      "doc_freq": 111,
+      "doc_ratio": 0.09602076124567474
+    },
+    {
+      "token": "情形",
+      "tfidf": 0.007066125625807262,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 820,
+      "doc_freq": 121,
+      "doc_ratio": 0.1046712802768166
+    },
+    {
+      "token": "民航",
+      "tfidf": 0.007062146892655367,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 25,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "需要",
+      "tfidf": 0.0070366829742217665,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 802,
+      "doc_freq": 114,
+      "doc_ratio": 0.0986159169550173
+    },
+    {
+      "token": "事件",
+      "tfidf": 0.006931013093723931,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 707,
+      "doc_freq": 77,
+      "doc_ratio": 0.06660899653979238
+    },
+    {
+      "token": "区",
+      "tfidf": 0.006910346830837796,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 568,
+      "doc_freq": 31,
+      "doc_ratio": 0.026816608996539794
+    },
+    {
+      "token": "有关",
+      "tfidf": 0.006807698432203671,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 792,
+      "doc_freq": 122,
+      "doc_ratio": 0.10553633217993079
+    },
+    {
+      "token": "及其",
+      "tfidf": 0.006779661016949152,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "办事处",
+      "tfidf": 0.006779661016949152,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "常驻",
+      "tfidf": 0.006779661016949152,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "随行",
+      "tfidf": 0.006779661016949152,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "家属",
+      "tfidf": 0.006779661016949152,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "国境",
+      "tfidf": 0.006779661016949152,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 24,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "查询",
+      "tfidf": 0.006761454650721411,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 644,
+      "doc_freq": 59,
+      "doc_ratio": 0.05103806228373702
+    },
+    {
+      "token": "页",
+      "tfidf": 0.006679758725202253,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 590,
+      "doc_freq": 43,
+      "doc_ratio": 0.037197231833910036
+    },
+    {
+      "token": "字符",
+      "tfidf": 0.006494753147919215,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 401,
+      "doc_freq": 6,
+      "doc_ratio": 0.005190311418685121
+    },
+    {
+      "token": "执勤",
+      "tfidf": 0.006353119543648925,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 584,
+      "doc_freq": 51,
+      "doc_ratio": 0.04411764705882353
+    },
+    {
+      "token": "过境",
+      "tfidf": 0.006350017507357856,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 539,
+      "doc_freq": 36,
+      "doc_ratio": 0.031141868512110725
+    },
+    {
+      "token": "内地",
+      "tfidf": 0.006343983714347266,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 781,
+      "doc_freq": 146,
+      "doc_ratio": 0.12629757785467127
+    },
+    {
+      "token": "无",
+      "tfidf": 0.006328370084817936,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 21,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "遣返",
+      "tfidf": 0.006284058586001157,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 596,
+      "doc_freq": 58,
+      "doc_ratio": 0.050173010380622836
+    },
+    {
+      "token": "章",
+      "tfidf": 0.006283088437506914,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 498,
+      "doc_freq": 26,
+      "doc_ratio": 0.02249134948096886
+    },
+    {
+      "token": "港澳",
+      "tfidf": 0.00626555732256413,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 738,
+      "doc_freq": 127,
+      "doc_ratio": 0.10986159169550173
+    },
+    {
+      "token": "相关",
+      "tfidf": 0.006249803253423489,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 883,
+      "doc_freq": 217,
+      "doc_ratio": 0.18771626297577854
+    },
+    {
+      "token": "台湾",
+      "tfidf": 0.00622265844228552,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 619,
+      "doc_freq": 70,
+      "doc_ratio": 0.06055363321799308
+    },
+    {
+      "token": "持",
+      "tfidf": 0.006221331702587231,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 731,
+      "doc_freq": 126,
+      "doc_ratio": 0.10899653979238755
+    },
+    {
+      "token": "非法",
+      "tfidf": 0.00621826809105195,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 779,
+      "doc_freq": 154,
+      "doc_ratio": 0.13321799307958476
+    },
+    {
+      "token": "点击",
+      "tfidf": 0.006067597866491473,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 383,
+      "doc_freq": 7,
+      "doc_ratio": 0.006055363321799308
+    },
+    {
+      "token": "特别",
+      "tfidf": 0.006027019128398034,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 20,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "记录",
+      "tfidf": 0.005967469604322485,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 689,
+      "doc_freq": 119,
+      "doc_ratio": 0.10294117647058823
+    },
+    {
+      "token": "船员",
+      "tfidf": 0.005959616811678551,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 476,
+      "doc_freq": 27,
+      "doc_ratio": 0.023356401384083045
+    },
+    {
+      "token": "地区",
+      "tfidf": 0.0059556224665197,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 677,
+      "doc_freq": 113,
+      "doc_ratio": 0.09775086505190311
+    },
+    {
+      "token": "登记",
+      "tfidf": 0.005843462916462662,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 622,
+      "doc_freq": 90,
+      "doc_ratio": 0.07785467128027682
+    },
+    {
+      "token": "验放",
+      "tfidf": 0.0057837337027638715,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 413,
+      "doc_freq": 15,
+      "doc_ratio": 0.012975778546712802
+    },
+    {
+      "token": "机读",
+      "tfidf": 0.005764272916471322,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 421,
+      "doc_freq": 17,
+      "doc_ratio": 0.014705882352941176
+    },
+    {
+      "token": "批准",
+      "tfidf": 0.005685925635548337,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 582,
+      "doc_freq": 78,
+      "doc_ratio": 0.06747404844290658
+    },
+    {
+      "token": "不准",
+      "tfidf": 0.005685478840157738,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 681,
+      "doc_freq": 134,
+      "doc_ratio": 0.11591695501730104
+    },
+    {
+      "token": "事故",
+      "tfidf": 0.005649717514124294,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 20,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "主要",
+      "tfidf": 0.005641427070052393,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 631,
+      "doc_freq": 107,
+      "doc_ratio": 0.092560553633218
+    },
+    {
+      "token": "中华人民共和国",
+      "tfidf": 0.005586364116866122,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 658,
+      "doc_freq": 127,
+      "doc_ratio": 0.10986159169550173
+    },
+    {
+      "token": "公民",
+      "tfidf": 0.00557810394529204,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 29,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "要求",
+      "tfidf": 0.005531384654049651,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 712,
+      "doc_freq": 167,
+      "doc_ratio": 0.1444636678200692
+    },
+    {
+      "token": "重点",
+      "tfidf": 0.005499982930486867,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 739,
+      "doc_freq": 189,
+      "doc_ratio": 0.16349480968858132
+    },
+    {
+      "token": "经",
+      "tfidf": 0.005499202617995678,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 680,
+      "doc_freq": 148,
+      "doc_ratio": 0.12802768166089964
+    },
+    {
+      "token": "照片",
+      "tfidf": 0.005482974187133357,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 511,
+      "doc_freq": 54,
+      "doc_ratio": 0.04671280276816609
+    },
+    {
+      "token": "违规",
+      "tfidf": 0.00547588189808755,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 447,
+      "doc_freq": 30,
+      "doc_ratio": 0.025951557093425604
+    },
+    {
+      "token": "比",
+      "tfidf": 0.0054750252031459876,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 481,
+      "doc_freq": 42,
+      "doc_ratio": 0.03633217993079585
+    },
+    {
+      "token": "往来",
+      "tfidf": 0.005369522453336085,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 634,
+      "doc_freq": 128,
+      "doc_ratio": 0.11072664359861592
+    },
+    {
+      "token": "申办",
+      "tfidf": 0.005367231638418079,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 19,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "患病",
+      "tfidf": 0.005367231638418079,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 19,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "飞机故障",
+      "tfidf": 0.005367231638418079,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 19,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "不可抗力",
+      "tfidf": 0.005367231638418079,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 19,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "活动",
+      "tfidf": 0.005339400924498485,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 697,
+      "doc_freq": 174,
+      "doc_ratio": 0.15051903114186851
+    },
+    {
+      "token": "外国",
+      "tfidf": 0.00533421889520514,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 546,
+      "doc_freq": 78,
+      "doc_ratio": 0.06747404844290658
+    },
+    {
+      "token": "按",
+      "tfidf": 0.005286967076324741,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 520,
+      "doc_freq": 67,
+      "doc_ratio": 0.05795847750865052
+    },
+    {
+      "token": "油墨",
+      "tfidf": 0.005274773610831878,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 286,
+      "doc_freq": 2,
+      "doc_ratio": 0.0017301038062283738
+    },
+    {
+      "token": "未",
+      "tfidf": 0.005244765736715088,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 560,
+      "doc_freq": 91,
+      "doc_ratio": 0.078719723183391
+    },
+    {
+      "token": "公安机关",
+      "tfidf": 0.005176100917462649,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 725,
+      "doc_freq": 212,
+      "doc_ratio": 0.18339100346020762
+    },
+    {
+      "token": "包括",
+      "tfidf": 0.005098861798355081,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 564,
+      "doc_freq": 103,
+      "doc_ratio": 0.08910034602076125
+    },
+    {
+      "token": "是否",
+      "tfidf": 0.005088656613352999,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 545,
+      "doc_freq": 92,
+      "doc_ratio": 0.07958477508650519
+    },
+    {
+      "token": "正常",
+      "tfidf": 0.005084745762711864,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 18,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "包机",
+      "tfidf": 0.005084745762711864,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 18,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "继续",
+      "tfidf": 0.005084745762711864,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 18,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "主管机关",
+      "tfidf": 0.005084745762711864,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 18,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "功能",
+      "tfidf": 0.0050706823712811195,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 405,
+      "doc_freq": 27,
+      "doc_ratio": 0.023356401384083045
+    },
+    {
+      "token": "居留",
+      "tfidf": 0.005050540426241023,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 568,
+      "doc_freq": 109,
+      "doc_ratio": 0.09429065743944637
+    },
+    {
+      "token": "指",
+      "tfidf": 0.005043547487519137,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 457,
+      "doc_freq": 48,
+      "doc_ratio": 0.04152249134948097
+    },
+    {
+      "token": "快捷",
+      "tfidf": 0.005038604354540254,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 368,
+      "doc_freq": 17,
+      "doc_ratio": 0.014705882352941176
+    },
+    {
+      "token": "名称",
+      "tfidf": 0.00500284894022451,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 373,
+      "doc_freq": 19,
+      "doc_ratio": 0.01643598615916955
+    },
+    {
+      "token": "香港",
+      "tfidf": 0.004982512154861944,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 510,
+      "doc_freq": 78,
+      "doc_ratio": 0.06747404844290658
+    },
+    {
+      "token": "以上",
+      "tfidf": 0.004904620676546094,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 559,
+      "doc_freq": 114,
+      "doc_ratio": 0.0986159169550173
+    },
+    {
+      "token": "以及",
+      "tfidf": 0.004900862569634962,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 610,
+      "doc_freq": 151,
+      "doc_ratio": 0.13062283737024222
+    },
+    {
+      "token": "决定",
+      "tfidf": 0.004854804735865708,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 576,
+      "doc_freq": 130,
+      "doc_ratio": 0.11245674740484429
+    },
+    {
+      "token": "方式",
+      "tfidf": 0.004839058725611085,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 507,
+      "doc_freq": 85,
+      "doc_ratio": 0.07352941176470588
+    },
+    {
+      "token": "提供",
+      "tfidf": 0.004737742078737548,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 527,
+      "doc_freq": 105,
+      "doc_ratio": 0.09083044982698962
+    },
+    {
+      "token": "检查员",
+      "tfidf": 0.004726452003341271,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 406,
+      "doc_freq": 38,
+      "doc_ratio": 0.0328719723183391
+    },
+    {
+      "token": "数据",
+      "tfidf": 0.004710230969777531,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 435,
+      "doc_freq": 52,
+      "doc_ratio": 0.04498269896193772
+    },
+    {
+      "token": "电子",
+      "tfidf": 0.004707529052542854,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 418,
+      "doc_freq": 44,
+      "doc_ratio": 0.03806228373702422
+    },
+    {
+      "token": "我国",
+      "tfidf": 0.004704894281264607,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 450,
+      "doc_freq": 60,
+      "doc_ratio": 0.05190311418685121
+    },
+    {
+      "token": "枪支弹药",
+      "tfidf": 0.0047012061687014385,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 323,
+      "doc_freq": 12,
+      "doc_ratio": 0.010380622837370242
+    },
+    {
+      "token": "已",
+      "tfidf": 0.0046867098324527325,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 483,
+      "doc_freq": 80,
+      "doc_ratio": 0.06920415224913495
+    },
+    {
+      "token": "领导",
+      "tfidf": 0.004666931993536625,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 429,
+      "doc_freq": 51,
+      "doc_ratio": 0.04411764705882353
+    },
+    {
+      "token": "印刷",
+      "tfidf": 0.0045792200599126245,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 259,
+      "doc_freq": 3,
+      "doc_ratio": 0.0025951557093425604
+    },
+    {
+      "token": "监护",
+      "tfidf": 0.00454010312747301,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 345,
+      "doc_freq": 21,
+      "doc_ratio": 0.018166089965397925
+    },
+    {
+      "token": "国",
+      "tfidf": 0.004535147668029882,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 461,
+      "doc_freq": 76,
+      "doc_ratio": 0.0657439446366782
+    },
+    {
+      "token": "现场",
+      "tfidf": 0.004527453420968383,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 447,
+      "doc_freq": 68,
+      "doc_ratio": 0.058823529411764705
+    },
+    {
+      "token": "小时",
+      "tfidf": 0.004520264346298526,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 15,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "知识",
+      "tfidf": 0.004520264346298526,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 15,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "块",
+      "tfidf": 0.004520264346298526,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 15,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "境内",
+      "tfidf": 0.004519774011299435,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 16,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "换班",
+      "tfidf": 0.004519774011299435,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 16,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "范围",
+      "tfidf": 0.004483138409717458,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 427,
+      "doc_freq": 59,
+      "doc_ratio": 0.05103806228373702
+    },
+    {
+      "token": "提示",
+      "tfidf": 0.0044363933639594705,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 398,
+      "doc_freq": 46,
+      "doc_ratio": 0.039792387543252594
+    },
+    {
+      "token": "业务",
+      "tfidf": 0.0044179646157091225,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 368,
+      "doc_freq": 33,
+      "doc_ratio": 0.028546712802768166
+    },
+    {
+      "token": "验讫",
+      "tfidf": 0.004395853749864224,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 340,
+      "doc_freq": 23,
+      "doc_ratio": 0.019896193771626297
+    },
+    {
+      "token": "负责人",
+      "tfidf": 0.004390591920185555,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 348,
+      "doc_freq": 26,
+      "doc_ratio": 0.02249134948096886
+    },
+    {
+      "token": "旅行",
+      "tfidf": 0.00438486930448175,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 441,
+      "doc_freq": 73,
+      "doc_ratio": 0.06314878892733564
+    },
+    {
+      "token": "持证人",
+      "tfidf": 0.004375216535268844,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 427,
+      "doc_freq": 65,
+      "doc_ratio": 0.056228373702422146
+    },
+    {
+      "token": "组织",
+      "tfidf": 0.004368505234976105,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 465,
+      "doc_freq": 90,
+      "doc_ratio": 0.07785467128027682
+    },
+    {
+      "token": "旅游",
+      "tfidf": 0.004351857767463467,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 450,
+      "doc_freq": 81,
+      "doc_ratio": 0.07006920415224914
+    },
+    {
+      "token": "列车",
+      "tfidf": 0.00434152030558728,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 294,
+      "doc_freq": 11,
+      "doc_ratio": 0.009515570934256055
+    },
+    {
+      "token": "图文",
+      "tfidf": 0.004334368090565243,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 289,
+      "doc_freq": 10,
+      "doc_ratio": 0.00865051903114187
+    },
+    {
+      "token": "发现",
+      "tfidf": 0.004327595057076068,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 576,
+      "doc_freq": 184,
+      "doc_ratio": 0.15916955017301038
+    },
+    {
+      "token": "移民",
+      "tfidf": 0.00432136677125358,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 509,
+      "doc_freq": 127,
+      "doc_ratio": 0.10986159169550173
+    },
+    {
+      "token": "备案",
+      "tfidf": 0.0043181058522383745,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 362,
+      "doc_freq": 34,
+      "doc_ratio": 0.029411764705882353
+    },
+    {
+      "token": "澳门",
+      "tfidf": 0.004315268204410611,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 434,
+      "doc_freq": 73,
+      "doc_ratio": 0.06314878892733564
+    },
+    {
+      "token": "证件号码",
+      "tfidf": 0.004299853570981498,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 351,
+      "doc_freq": 30,
+      "doc_ratio": 0.025951557093425604
+    },
+    {
+      "token": "且",
+      "tfidf": 0.0042988385691130416,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 446,
+      "doc_freq": 82,
+      "doc_ratio": 0.07093425605536333
+    },
+    {
+      "token": "大陆",
+      "tfidf": 0.004297058595447475,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 395,
+      "doc_freq": 51,
+      "doc_ratio": 0.04411764705882353
+    },
+    {
+      "token": "前往",
+      "tfidf": 0.0042792509098274634,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 476,
+      "doc_freq": 105,
+      "doc_ratio": 0.09083044982698962
+    },
+    {
+      "token": "具有",
+      "tfidf": 0.004268062332034667,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 480,
+      "doc_freq": 109,
+      "doc_ratio": 0.09429065743944637
+    },
+    {
+      "token": "内容",
+      "tfidf": 0.00425561011863535,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 428,
+      "doc_freq": 73,
+      "doc_ratio": 0.06314878892733564
+    },
+    {
+      "token": "身份",
+      "tfidf": 0.004247650766439098,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 575,
+      "doc_freq": 193,
+      "doc_ratio": 0.16695501730103807
+    },
+    {
+      "token": "当事人",
+      "tfidf": 0.0042431718567553815,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 513,
+      "doc_freq": 138,
+      "doc_ratio": 0.11937716262975778
+    },
+    {
+      "token": "离境",
+      "tfidf": 0.00423728813559322,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 15,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "无法",
+      "tfidf": 0.004226613227360723,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 422,
+      "doc_freq": 71,
+      "doc_ratio": 0.061418685121107264
+    },
+    {
+      "token": "操作",
+      "tfidf": 0.004224019894011262,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 318,
+      "doc_freq": 20,
+      "doc_ratio": 0.01730103806228374
+    },
+    {
+      "token": "选择",
+      "tfidf": 0.0042219522377431205,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 332,
+      "doc_freq": 25,
+      "doc_ratio": 0.02162629757785467
+    },
+    {
+      "token": "询问",
+      "tfidf": 0.004191424985116019,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 461,
+      "doc_freq": 101,
+      "doc_ratio": 0.08737024221453288
+    },
+    {
+      "token": "重要",
+      "tfidf": 0.0041612176087629195,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 398,
+      "doc_freq": 60,
+      "doc_ratio": 0.05190311418685121
+    },
+    {
+      "token": "芯片",
+      "tfidf": 0.004145242556944566,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 296,
+      "doc_freq": 15,
+      "doc_ratio": 0.012975778546712802
+    },
+    {
+      "token": "携带",
+      "tfidf": 0.004138578354091195,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 375,
+      "doc_freq": 48,
+      "doc_ratio": 0.04152249134948097
+    },
+    {
+      "token": "依法",
+      "tfidf": 0.004136787807716624,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 469,
+      "doc_freq": 112,
+      "doc_ratio": 0.09688581314878893
+    },
+    {
+      "token": "所",
+      "tfidf": 0.004092536385417314,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 426,
+      "doc_freq": 83,
+      "doc_ratio": 0.07179930795847751
+    },
+    {
+      "token": "以下",
+      "tfidf": 0.004090950094727434,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 430,
+      "doc_freq": 86,
+      "doc_ratio": 0.07439446366782007
+    },
+    {
+      "token": "项",
+      "tfidf": 0.004063478594189831,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 334,
+      "doc_freq": 31,
+      "doc_ratio": 0.026816608996539794
+    },
+    {
+      "token": "自动",
+      "tfidf": 0.004051250212779993,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 326,
+      "doc_freq": 28,
+      "doc_ratio": 0.02422145328719723
+    },
+    {
+      "token": "出生日期",
+      "tfidf": 0.004045799118190147,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 337,
+      "doc_freq": 33,
+      "doc_ratio": 0.028546712802768166
+    },
+    {
+      "token": "字",
+      "tfidf": 0.004039005441739557,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 17,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "枪支",
+      "tfidf": 0.004037788016905123,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 260,
+      "doc_freq": 8,
+      "doc_ratio": 0.006920415224913495
+    },
+    {
+      "token": "赴",
+      "tfidf": 0.004000998481469527,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 398,
+      "doc_freq": 70,
+      "doc_ratio": 0.06055363321799308
+    },
+    {
+      "token": "检查站",
+      "tfidf": 0.003998207509740219,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 301,
+      "doc_freq": 20,
+      "doc_ratio": 0.01730103806228374
+    },
+    {
+      "token": "员工",
+      "tfidf": 0.003998207509740219,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 301,
+      "doc_freq": 20,
+      "doc_ratio": 0.01730103806228374
+    },
+    {
+      "token": "梅沙",
+      "tfidf": 0.003998175082758047,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 441,
+      "doc_freq": 102,
+      "doc_ratio": 0.08823529411764706
+    },
+    {
+      "token": "对象",
+      "tfidf": 0.003996814585273107,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 534,
+      "doc_freq": 186,
+      "doc_ratio": 0.16089965397923875
+    },
+    {
+      "token": "核验",
+      "tfidf": 0.003986908669941444,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 288,
+      "doc_freq": 16,
+      "doc_ratio": 0.01384083044982699
+    },
+    {
+      "token": "证明",
+      "tfidf": 0.003981770168404576,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 469,
+      "doc_freq": 127,
+      "doc_ratio": 0.10986159169550173
+    },
+    {
+      "token": "限定",
+      "tfidf": 0.003981395529908164,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 342,
+      "doc_freq": 38,
+      "doc_ratio": 0.0328719723183391
+    },
+    {
+      "token": "港口",
+      "tfidf": 0.003961605404967295,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 309,
+      "doc_freq": 24,
+      "doc_ratio": 0.020761245674740483
+    },
+    {
+      "token": "专机",
+      "tfidf": 0.0039548022598870055,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 14,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "来往",
+      "tfidf": 0.0039347235741109135,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 387,
+      "doc_freq": 67,
+      "doc_ratio": 0.05795847750865052
+    },
+    {
+      "token": "安全",
+      "tfidf": 0.0039339176167198595,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 446,
+      "doc_freq": 112,
+      "doc_ratio": 0.09688581314878893
+    },
+    {
+      "token": "统计",
+      "tfidf": 0.003929427127086828,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 262,
+      "doc_freq": 10,
+      "doc_ratio": 0.00865051903114187
+    },
+    {
+      "token": "单方面",
+      "tfidf": 0.003917562433458722,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 13,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "处罚",
+      "tfidf": 0.003912537899265709,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 328,
+      "doc_freq": 34,
+      "doc_ratio": 0.029411764705882353
+    },
+    {
+      "token": "飞机",
+      "tfidf": 0.0038982189643494798,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 275,
+      "doc_freq": 14,
+      "doc_ratio": 0.012110726643598616
+    },
+    {
+      "token": "一般",
+      "tfidf": 0.003894054596600723,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 383,
+      "doc_freq": 67,
+      "doc_ratio": 0.05795847750865052
+    },
+    {
+      "token": "确认",
+      "tfidf": 0.003893522583060918,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 417,
+      "doc_freq": 92,
+      "doc_ratio": 0.07958477508650519
+    },
+    {
+      "token": "均",
+      "tfidf": 0.0038643275226754813,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 326,
+      "doc_freq": 35,
+      "doc_ratio": 0.03027681660899654
+    },
+    {
+      "token": "物品",
+      "tfidf": 0.0038628767105794238,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 343,
+      "doc_freq": 44,
+      "doc_ratio": 0.03806228373702422
+    },
+    {
+      "token": "条件",
+      "tfidf": 0.0038498517448841323,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 421,
+      "doc_freq": 99,
+      "doc_ratio": 0.08564013840830449
+    },
+    {
+      "token": "核查",
+      "tfidf": 0.0038494418325969748,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 476,
+      "doc_freq": 148,
+      "doc_ratio": 0.12802768166089964
+    },
+    {
+      "token": "证",
+      "tfidf": 0.003843922324835881,
+      "sources": [
+        "airline",
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 350,
+      "doc_freq": 49,
+      "doc_ratio": 0.04238754325259515
+    },
+    {
+      "token": "也",
+      "tfidf": 0.003833051130335438,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 377,
+      "doc_freq": 67,
+      "doc_ratio": 0.05795847750865052
+    },
+    {
+      "token": "通知",
+      "tfidf": 0.003826384964832864,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 355,
+      "doc_freq": 53,
+      "doc_ratio": 0.045847750865051905
+    },
+    {
+      "token": "部分",
+      "tfidf": 0.0038245498300562403,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 336,
+      "doc_freq": 42,
+      "doc_ratio": 0.03633217993079585
+    },
+    {
+      "token": "不得",
+      "tfidf": 0.0038160757152465494,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 368,
+      "doc_freq": 62,
+      "doc_ratio": 0.05363321799307959
+    },
+    {
+      "token": "放行",
+      "tfidf": 0.0038051816764200037,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 319,
+      "doc_freq": 34,
+      "doc_ratio": 0.029411764705882353
+    },
+    {
+      "token": "境",
+      "tfidf": 0.003781324738009847,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 317,
+      "doc_freq": 34,
+      "doc_ratio": 0.029411764705882353
+    },
+    {
+      "token": "直接",
+      "tfidf": 0.0037271717450074347,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 341,
+      "doc_freq": 50,
+      "doc_ratio": 0.04325259515570934
+    },
+    {
+      "token": "留存",
+      "tfidf": 0.003690862923913061,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 297,
+      "doc_freq": 28,
+      "doc_ratio": 0.02422145328719723
+    },
+    {
+      "token": "转写",
+      "tfidf": 0.0036886528747076073,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 200,
+      "doc_freq": 2,
+      "doc_ratio": 0.0017301038062283738
+    },
+    {
+      "token": "作为",
+      "tfidf": 0.003678435776021098,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 296,
+      "doc_freq": 28,
+      "doc_ratio": 0.02422145328719723
+    },
+    {
+      "token": "显示",
+      "tfidf": 0.0036750150391997734,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 274,
+      "doc_freq": 19,
+      "doc_ratio": 0.01643598615916955
+    },
+    {
+      "token": "境外",
+      "tfidf": 0.0036627272866989816,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 404,
+      "doc_freq": 102,
+      "doc_ratio": 0.08823529411764706
+    },
+    {
+      "token": "办案",
+      "tfidf": 0.0036586716935275193,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 347,
+      "doc_freq": 58,
+      "doc_ratio": 0.050173010380622836
+    },
+    {
+      "token": "客运",
+      "tfidf": 0.003616211477038821,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 12,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "欧盟",
+      "tfidf": 0.003616211477038821,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 12,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "2016.03",
+      "tfidf": 0.003616211477038821,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 12,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "港",
+      "tfidf": 0.0036038728886693193,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 290,
+      "doc_freq": 28,
+      "doc_ratio": 0.02422145328719723
+    },
+    {
+      "token": "前台",
+      "tfidf": 0.003602263858214434,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 357,
+      "doc_freq": 69,
+      "doc_ratio": 0.05968858131487889
+    },
+    {
+      "token": "嫌疑人",
+      "tfidf": 0.003564695488990549,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 323,
+      "doc_freq": 48,
+      "doc_ratio": 0.04152249134948097
+    },
+    {
+      "token": "边",
+      "tfidf": 0.0035531272616966757,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 288,
+      "doc_freq": 29,
+      "doc_ratio": 0.025086505190311418
+    },
+    {
+      "token": "非",
+      "tfidf": 0.0035514198730387165,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 366,
+      "doc_freq": 80,
+      "doc_ratio": 0.06920415224913495
+    },
+    {
+      "token": "打印",
+      "tfidf": 0.0035074268787689206,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 278,
+      "doc_freq": 26,
+      "doc_ratio": 0.02249134948096886
+    },
+    {
+      "token": "团体",
+      "tfidf": 0.0035045058699417053,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 290,
+      "doc_freq": 32,
+      "doc_ratio": 0.02768166089965398
+    },
+    {
+      "token": "服务",
+      "tfidf": 0.003481161393780233,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 320,
+      "doc_freq": 51,
+      "doc_ratio": 0.04411764705882353
+    },
+    {
+      "token": "辅助",
+      "tfidf": 0.003474165871457608,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 264,
+      "doc_freq": 21,
+      "doc_ratio": 0.018166089965397925
+    },
+    {
+      "token": "弹药",
+      "tfidf": 0.003469461965435072,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 219,
+      "doc_freq": 7,
+      "doc_ratio": 0.006055363321799308
+    },
+    {
+      "token": "申报",
+      "tfidf": 0.003450348634087348,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 252,
+      "doc_freq": 17,
+      "doc_ratio": 0.014705882352941176
+    },
+    {
+      "token": "接待",
+      "tfidf": 0.00344408335494271,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 285,
+      "doc_freq": 32,
+      "doc_ratio": 0.02768166089965398
+    },
+    {
+      "token": "处置",
+      "tfidf": 0.003432948771568091,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 416,
+      "doc_freq": 139,
+      "doc_ratio": 0.12024221453287197
+    },
+    {
+      "token": "符合",
+      "tfidf": 0.0034089814081800507,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 334,
+      "doc_freq": 66,
+      "doc_ratio": 0.05709342560553633
+    },
+    {
+      "token": "关注",
+      "tfidf": 0.0033957750724908802,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 367,
+      "doc_freq": 95,
+      "doc_ratio": 0.08217993079584775
+    },
+    {
+      "token": "成员",
+      "tfidf": 0.003389830508474576,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 12,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "勤务",
+      "tfidf": 0.0033429027829380924,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 269,
+      "doc_freq": 28,
+      "doc_ratio": 0.02422145328719723
+    },
+    {
+      "token": "不同",
+      "tfidf": 0.003339971377421947,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 280,
+      "doc_freq": 34,
+      "doc_ratio": 0.029411764705882353
+    },
+    {
+      "token": "之一",
+      "tfidf": 0.0033383570969104334,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 301,
+      "doc_freq": 47,
+      "doc_ratio": 0.04065743944636678
+    },
+    {
+      "token": "卡",
+      "tfidf": 0.0033178538972580165,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 265,
+      "doc_freq": 27,
+      "doc_ratio": 0.023356401384083045
+    },
+    {
+      "token": "车辆",
+      "tfidf": 0.003303943654164788,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 227,
+      "doc_freq": 12,
+      "doc_ratio": 0.010380622837370242
+    },
+    {
+      "token": "机构",
+      "tfidf": 0.003303750229964589,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 337,
+      "doc_freq": 77,
+      "doc_ratio": 0.06660899653979238
+    },
+    {
+      "token": "行为",
+      "tfidf": 0.0032939935474498297,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 297,
+      "doc_freq": 47,
+      "doc_ratio": 0.04065743944636678
+    },
+    {
+      "token": "异常",
+      "tfidf": 0.003292943940139166,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 261,
+      "doc_freq": 26,
+      "doc_ratio": 0.02249134948096886
+    },
+    {
+      "token": "管理局",
+      "tfidf": 0.0032905329410905723,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 365,
+      "doc_freq": 104,
+      "doc_ratio": 0.08996539792387544
+    },
+    {
+      "token": "特殊字符",
+      "tfidf": 0.0032829010584897703,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 178,
+      "doc_freq": 2,
+      "doc_ratio": 0.0017301038062283738
+    },
+    {
+      "token": "要",
+      "tfidf": 0.003273142796817971,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 328,
+      "doc_freq": 72,
+      "doc_ratio": 0.06228373702422145
+    },
+    {
+      "token": "完成",
+      "tfidf": 0.003255094009792739,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 258,
+      "doc_freq": 26,
+      "doc_ratio": 0.02249134948096886
+    },
+    {
+      "token": "库",
+      "tfidf": 0.003224539118248114,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 238,
+      "doc_freq": 18,
+      "doc_ratio": 0.015570934256055362
+    },
+    {
+      "token": "材料",
+      "tfidf": 0.0032156770512043547,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 338,
+      "doc_freq": 86,
+      "doc_ratio": 0.07439446366782007
+    },
+    {
+      "token": "及时",
+      "tfidf": 0.003195435976415417,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 368,
+      "doc_freq": 118,
+      "doc_ratio": 0.10207612456747404
+    },
+    {
+      "token": "至",
+      "tfidf": 0.003186724921170452,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 317,
+      "doc_freq": 70,
+      "doc_ratio": 0.06055363321799308
+    },
+    {
+      "token": "案件",
+      "tfidf": 0.0031706725911668254,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 257,
+      "doc_freq": 29,
+      "doc_ratio": 0.025086505190311418
+    },
+    {
+      "token": "总站",
+      "tfidf": 0.0031524103734645406,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 304,
+      "doc_freq": 62,
+      "doc_ratio": 0.05363321799307959
+    },
+    {
+      "token": "不予",
+      "tfidf": 0.0031520163063654223,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 287,
+      "doc_freq": 49,
+      "doc_ratio": 0.04238754325259515
+    },
+    {
+      "token": "审查",
+      "tfidf": 0.0031480376239646454,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 333,
+      "doc_freq": 88,
+      "doc_ratio": 0.07612456747404844
+    },
+    {
+      "token": "按规定",
+      "tfidf": 0.003143857997710516,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 293,
+      "doc_freq": 54,
+      "doc_ratio": 0.04671280276816609
+    },
+    {
+      "token": "代理",
+      "tfidf": 0.0031147723983917536,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 225,
+      "doc_freq": 16,
+      "doc_ratio": 0.01384083044982699
+    },
+    {
+      "token": "值班",
+      "tfidf": 0.0031102126566650724,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 264,
+      "doc_freq": 36,
+      "doc_ratio": 0.031141868512110725
+    },
+    {
+      "token": "若因",
+      "tfidf": 0.0031073446327683617,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 11,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "机长",
+      "tfidf": 0.0031073446327683617,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 11,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "气候",
+      "tfidf": 0.0031073446327683617,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 11,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "边境",
+      "tfidf": 0.0030876406075798324,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 277,
+      "doc_freq": 46,
+      "doc_ratio": 0.039792387543252594
+    },
+    {
+      "token": "措施",
+      "tfidf": 0.003076561597674989,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 346,
+      "doc_freq": 109,
+      "doc_ratio": 0.09429065743944637
+    },
+    {
+      "token": "同时",
+      "tfidf": 0.003073738773155676,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 321,
+      "doc_freq": 84,
+      "doc_ratio": 0.0726643598615917
+    },
+    {
+      "token": "种类",
+      "tfidf": 0.003073565062820803,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 289,
+      "doc_freq": 56,
+      "doc_ratio": 0.04844290657439446
+    },
+    {
+      "token": "违法行为",
+      "tfidf": 0.0030715517808236536,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 208,
+      "doc_freq": 11,
+      "doc_ratio": 0.009515570934256055
+    },
+    {
+      "token": "结果",
+      "tfidf": 0.003025692153955604,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 236,
+      "doc_freq": 24,
+      "doc_ratio": 0.020761245674740483
+    },
+    {
+      "token": "队",
+      "tfidf": 0.0030253453346703774,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 252,
+      "doc_freq": 33,
+      "doc_ratio": 0.028546712802768166
+    },
+    {
+      "token": "作出",
+      "tfidf": 0.0030067102017784495,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 314,
+      "doc_freq": 84,
+      "doc_ratio": 0.0726643598615917
+    },
+    {
+      "token": "有效期",
+      "tfidf": 0.003006509044953515,
+      "sources": [
+        "general",
+        "visa_free"
+      ],
+      "term_freq": 322,
+      "doc_freq": 92,
+      "doc_ratio": 0.07958477508650519
+    },
+    {
+      "token": "特殊",
+      "tfidf": 0.003000720161691422,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 294,
+      "doc_freq": 66,
+      "doc_ratio": 0.05709342560553633
+    },
+    {
+      "token": "本",
+      "tfidf": 0.0029977616732059916,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 259,
+      "doc_freq": 39,
+      "doc_ratio": 0.03373702422145329
+    },
+    {
+      "token": "状态",
+      "tfidf": 0.0029901815024560834,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 216,
+      "doc_freq": 16,
+      "doc_ratio": 0.01384083044982699
+    },
+    {
+      "token": "属于",
+      "tfidf": 0.0029889089889040595,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 264,
+      "doc_freq": 43,
+      "doc_ratio": 0.037197231833910036
+    },
+    {
+      "token": "后台",
+      "tfidf": 0.002988560339445054,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 276,
+      "doc_freq": 52,
+      "doc_ratio": 0.04498269896193772
+    },
+    {
+      "token": "读取",
+      "tfidf": 0.0029845648789705304,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 199,
+      "doc_freq": 10,
+      "doc_ratio": 0.00865051903114187
+    },
+    {
+      "token": "证据",
+      "tfidf": 0.0029761242670536944,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 287,
+      "doc_freq": 62,
+      "doc_ratio": 0.05363321799307959
+    },
+    {
+      "token": "过程",
+      "tfidf": 0.0029723578138604522,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 268,
+      "doc_freq": 47,
+      "doc_ratio": 0.04065743944636678
+    },
+    {
+      "token": "第二",
+      "tfidf": 0.00296711792813587,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 219,
+      "doc_freq": 18,
+      "doc_ratio": 0.015570934256055362
+    },
+    {
+      "token": "告知",
+      "tfidf": 0.002957703997057174,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 268,
+      "doc_freq": 48,
+      "doc_ratio": 0.04152249134948097
+    },
+    {
+      "token": "载运",
+      "tfidf": 0.002947807808732479,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 228,
+      "doc_freq": 23,
+      "doc_ratio": 0.019896193771626297
+    },
+    {
+      "token": "报备",
+      "tfidf": 0.0029402029308123164,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 269,
+      "doc_freq": 50,
+      "doc_ratio": 0.04325259515570934
+    },
+    {
+      "token": "生物",
+      "tfidf": 0.002932806902503308,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 236,
+      "doc_freq": 28,
+      "doc_ratio": 0.02422145328719723
+    },
+    {
+      "token": "第",
+      "tfidf": 0.002932363602089087,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 267,
+      "doc_freq": 49,
+      "doc_ratio": 0.04238754325259515
+    },
+    {
+      "token": "时间",
+      "tfidf": 0.002930159820044582,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 307,
+      "doc_freq": 85,
+      "doc_ratio": 0.07352941176470588
+    },
+    {
+      "token": "即",
+      "tfidf": 0.0029076987545250585,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 239,
+      "doc_freq": 31,
+      "doc_ratio": 0.026816608996539794
+    },
+    {
+      "token": "罚款",
+      "tfidf": 0.0028993755096852793,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 214,
+      "doc_freq": 18,
+      "doc_ratio": 0.015570934256055362
+    },
+    {
+      "token": "采取",
+      "tfidf": 0.0028948515752550666,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 271,
+      "doc_freq": 55,
+      "doc_ratio": 0.04757785467128028
+    },
+    {
+      "token": "不能",
+      "tfidf": 0.0028855523187154334,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 264,
+      "doc_freq": 50,
+      "doc_ratio": 0.04325259515570934
+    },
+    {
+      "token": "出",
+      "tfidf": 0.0028788193423950207,
+      "sources": [
+        "airline",
+        "general"
+      ],
+      "term_freq": 235,
+      "doc_freq": 30,
+      "doc_ratio": 0.025951557093425604
+    },
+    {
+      "token": "执法",
+      "tfidf": 0.002877222322726119,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 250,
+      "doc_freq": 40,
+      "doc_ratio": 0.03460207612456748
+    },
+    {
+      "token": "国务院",
+      "tfidf": 0.00286437111436639,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 253,
+      "doc_freq": 43,
+      "doc_ratio": 0.037197231833910036
+    },
+    {
+      "token": "件",
+      "tfidf": 0.002862502081126568,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 293,
+      "doc_freq": 78,
+      "doc_ratio": 0.06747404844290658
+    },
+    {
+      "token": "返回",
+      "tfidf": 0.0028622414052556556,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 232,
+      "doc_freq": 29,
+      "doc_ratio": 0.025086505190311418
+    },
+    {
+      "token": "分为",
+      "tfidf": 0.0028527619514573032,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 261,
+      "doc_freq": 50,
+      "doc_ratio": 0.04325259515570934
+    },
+    {
+      "token": "问",
+      "tfidf": 0.0028510626647573344,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 12,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "答",
+      "tfidf": 0.0028510626647573344,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 12,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "失效",
+      "tfidf": 0.0028510626647573344,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 12,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "类别",
+      "tfidf": 0.00283454808040355,
+      "sources": [
+        "general"
+      ],
+      "term_freq": 253,
+      "doc_freq": 45,
+      "doc_ratio": 0.03892733564013841
+    },
+    {
+      "token": "需在",
+      "tfidf": 0.002824858757062147,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 10,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "正式",
+      "tfidf": 0.002824858757062147,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 10,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "三十日",
+      "tfidf": 0.002824858757062147,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 10,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "未注明",
+      "tfidf": 0.0027121586077791153,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "指出",
+      "tfidf": 0.0027121586077791153,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "学习",
+      "tfidf": 0.00261347410936089,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 11,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "天气",
+      "tfidf": 0.002542372881355932,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "内不需",
+      "tfidf": 0.002542372881355932,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "含",
+      "tfidf": 0.002542372881355932,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 9,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "海港",
+      "tfidf": 0.002410807651359214,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "字样",
+      "tfidf": 0.002410807651359214,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "累计",
+      "tfidf": 0.002410807651359214,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "必须",
+      "tfidf": 0.002375885553964445,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 10,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "修订",
+      "tfidf": 0.0021094566949393123,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "加注",
+      "tfidf": 0.0021094566949393123,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "办妥",
+      "tfidf": 0.0019774011299435027,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "入",
+      "tfidf": 0.0019774011299435027,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "性别",
+      "tfidf": 0.0019774011299435027,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "职务",
+      "tfidf": 0.0019774011299435027,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "号码",
+      "tfidf": 0.0019774011299435027,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 7,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "俄罗斯",
+      "tfidf": 0.0019234841190662205,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 10,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "法国",
+      "tfidf": 0.0019007084431715562,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "所有",
+      "tfidf": 0.0018870891649630445,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 12,
+      "doc_freq": 4,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "指定",
+      "tfidf": 0.0018081057385194105,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "事由",
+      "tfidf": 0.0018081057385194105,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "持有人",
+      "tfidf": 0.0018081057385194105,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "爱尔兰",
+      "tfidf": 0.0017311357071595986,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 9,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "抵达",
+      "tfidf": 0.001694915254237288,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "改乘",
+      "tfidf": 0.001694915254237288,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "交通工具",
+      "tfidf": 0.001694915254237288,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "七天",
+      "tfidf": 0.001694915254237288,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 6,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "允许",
+      "tfidf": 0.0016631198877751117,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "海员",
+      "tfidf": 0.0016631198877751117,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "黑山",
+      "tfidf": 0.0015387872952529766,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "阿尔巴尼亚",
+      "tfidf": 0.0015387872952529766,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "白俄罗斯",
+      "tfidf": 0.0015387872952529766,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 8,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "哪些",
+      "tfidf": 0.0015067547820995085,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "待遇",
+      "tfidf": 0.0015067547820995085,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "2018.12",
+      "tfidf": 0.0015067547820995085,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "双方",
+      "tfidf": 0.0015067547820995085,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "核心",
+      "tfidf": 0.0014255313323786672,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "提前",
+      "tfidf": 0.0014255313323786672,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "问题解答",
+      "tfidf": 0.0014255313323786672,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "日内",
+      "tfidf": 0.0014124293785310734,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "外籍",
+      "tfidf": 0.0014124293785310734,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "领事",
+      "tfidf": 0.0014124293785310734,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 5,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "波兰",
+      "tfidf": 0.0013464388833463545,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "斯洛伐克",
+      "tfidf": 0.0013464388833463545,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "一个",
+      "tfidf": 0.001205403825679607,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "苏丹",
+      "tfidf": 0.001205403825679607,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "中方",
+      "tfidf": 0.001205403825679607,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "给予",
+      "tfidf": 0.001205403825679607,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "贴",
+      "tfidf": 0.001205403825679607,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "籍",
+      "tfidf": 0.001205403825679607,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "短期",
+      "tfidf": 0.0011879427769822225,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "享受",
+      "tfidf": 0.0011879427769822225,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "仅",
+      "tfidf": 0.0011879427769822225,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "匈牙利",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "立陶宛",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "马耳他",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "斯洛文尼亚",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "英国",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "塞浦路斯",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "保加利亚",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "罗马尼亚",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "塞尔维亚",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "克罗地亚",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "波黑",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "阿根廷",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "阿联酋",
+      "tfidf": 0.0011540904714397325,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 6,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "办",
+      "tfidf": 0.0011299435028248588,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "身份证",
+      "tfidf": 0.0011299435028248588,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "安排",
+      "tfidf": 0.0011299435028248588,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "澳门特别行政区",
+      "tfidf": 0.0011299435028248588,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "港澳同胞",
+      "tfidf": 0.0011299435028248588,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "回乡证",
+      "tfidf": 0.0011299435028248588,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "需向",
+      "tfidf": 0.0011299435028248588,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "当地",
+      "tfidf": 0.0011299435028248588,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "须于",
+      "tfidf": 0.0011299435028248588,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 4,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "访问",
+      "tfidf": 0.0011008020128951094,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 7,
+      "doc_freq": 4,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "从事",
+      "tfidf": 0.0009617420595331102,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "相应",
+      "tfidf": 0.0009617420595331102,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "北",
+      "tfidf": 0.0009617420595331102,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "马其顿",
+      "tfidf": 0.0009617420595331102,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "巴西",
+      "tfidf": 0.0009617420595331102,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "新加坡",
+      "tfidf": 0.0009617420595331102,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 5,
+      "doc_freq": 3,
+      "doc_ratio": 0.75
+    },
+    {
+      "token": "满足",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "例如",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "新闻",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "采访",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "欧洲",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "丹麦",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "意大利",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "大洋洲",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "亚洲",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "北京",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "上海",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "紧急",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "乌拉圭",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "随船",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "阿塞拜疆",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "泰国",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "类型",
+      "tfidf": 0.0009503542215857781,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 4,
+      "doc_freq": 2,
+      "doc_ratio": 0.5
+    },
+    {
+      "token": "联程",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "客票",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "第三国",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "A",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "个省",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "市",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "跨省",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "域",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "城市",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "朝鲜",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "airline",
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "2010.07",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "厄瓜多尔",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "2016.08",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "1994.02",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "2025.07",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "1994.07",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "2017.08",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "2016.01",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "2014.08",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "2016.02",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "南",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "标识",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "外交部",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "长期",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "用于",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "列表",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "签",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "落地",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "能否",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "单页",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "邀请",
+      "tfidf": 0.0009040528692597053,
+      "sources": [
+        "visa_free"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 0.25
+    },
+    {
+      "token": "韩国",
+      "tfidf": 0.000847457627118644,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "澳大利亚",
+      "tfidf": 0.000847457627118644,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    },
+    {
+      "token": "马来西亚",
+      "tfidf": 0.000847457627118644,
+      "sources": [
+        "airline"
+      ],
+      "term_freq": 3,
+      "doc_freq": 1,
+      "doc_ratio": 1.0
+    }
+  ]
+}

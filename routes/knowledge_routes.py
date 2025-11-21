@@ -6,17 +6,17 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context, g,
 from config import Settings
 from utils import format_sse_text, logger, generate_session_id, validate_session_ownership
 from utils.IP_helper import get_client_ip
+import time
 
 knowledge_bp = Blueprint('knowledge', __name__)
 
 
-# 🔥 添加认证钩子 - 在所有路由执行前验证 token
+#  添加认证钩子 - 在所有路由执行前验证 token
 @knowledge_bp.before_request
 def require_auth_for_knowledge():
     """知识库路由的认证钩子"""
     # 白名单路径(不需要认证的路由)
     whitelist_paths = [
-        '/api/knowledge_chat',
         '/api/test',
     ]
 
@@ -201,6 +201,8 @@ def knowledge_chat_conversation():
                 # 格式化为 SSE 消息
                 if prefix_type == 'THINK':
                     formatted_item = f"THINK:{content}"
+                    logger.debug(f"[DEBUG] THINK 原始数据: \"{content[:100]}...\" | 长度: {len(content)}")
+                    logger.debug(f"[DEBUG] THINK SSE格式化后: \"{formatted_item[:100]}...\"")
                 elif prefix_type == 'CONTENT':
                     formatted_item = f"CONTENT:{content}"
                 elif prefix_type == 'SOURCE':
@@ -811,3 +813,309 @@ def knowledge_chat():
         stream_with_context((format_sse_text(item) for item in generate())),
         mimetype='text/event-stream'
     )
+
+
+@knowledge_bp.route('/knowledge_chat_12367', methods=['POST'])
+def knowledge_chat_12367():
+    """
+    12367专用知识问答接口
+    使用通用知识库B，其他功能与原接口完全相同
+    """
+    # 检查通用知识库B是否启用
+    if not current_app.knowledge_handler_b:
+        return jsonify({
+            "type": "error",
+            "content": "通用知识库B未启用或初始化失败"
+        }), 503
+    
+    data = request.get_json()
+    if not data:
+        return jsonify({"type": "error", "content": "请求体必须是JSON格式"}), 400
+
+    # 参数解析（与原接口完全相同）
+    user_question = data.get('question', '').strip()
+    enable_thinking_str = data.get('thinking', 'false')
+    enable_thinking = str(enable_thinking_str).lower() == 'true'
+    requested_model_id = data.get('model_id', Settings.DEFAULT_LLM_ID)
+
+    # InsertBlock 模式参数
+    use_insert_block_str = data.get('use_insert_block', 'false')
+    use_insert_block = str(use_insert_block_str).lower() == 'true'
+    insert_block_llm_id = data.get('insert_block_llm_id', None)
+
+    # 验证 rerank_top_n
+    default_top_n = Settings.RERANK_TOP_N
+    MIN_RERANK_N = 0
+    MAX_RERANK_N = 30
+
+    custom_top_n = data.get('rerank_top_n', default_top_n)
+    try:
+        rerank_top_n = int(custom_top_n)
+        if not (MIN_RERANK_N <= rerank_top_n <= MAX_RERANK_N):
+            logger.warning(
+                f"[12367] rerank_top_n 值({rerank_top_n})超出范围"
+                f"[{MIN_RERANK_N}-{MAX_RERANK_N}]，重置为{default_top_n}"
+            )
+            rerank_top_n = default_top_n
+    except (ValueError, TypeError):
+        logger.warning(
+            f"[12367] rerank_top_n 值('{custom_top_n}')格式错误，"
+            f"重置为{default_top_n}"
+        )
+        rerank_top_n = default_top_n
+
+    # 验证问题非空
+    if not user_question:
+        def empty_stream():
+            yield "CONTENT:问题不能为空\n"
+            yield "DONE:问题不能为空\n"
+        return Response(
+            stream_with_context((format_sse_text(item) for item in empty_stream())),
+            mimetype='text/event-stream'
+        )
+
+    # 获取 LLM 客户端
+    llm_service = current_app.llm_service
+    try:
+        selected_llm = llm_service.get_client(requested_model_id)
+        logger.info(
+            f"[12367专用接口] 本次请求使用模型: '{requested_model_id}' | "
+            f"InsertBlock 模式: {use_insert_block}"
+        )
+    except Exception as e:
+        logger.error(f"[12367专用接口] 获取 LLM 客户端失败: {e}")
+        def error_stream():
+            yield "ERROR:模型服务异常"
+        return Response(
+            stream_with_context((format_sse_text(item) for item in error_stream())),
+            mimetype='text/event-stream'
+        )
+
+    # 获取客户端 IP
+    try:
+        client_ip = request.environ.get(
+            'HTTP_X_FORWARDED_FOR',
+            request.environ.get('REMOTE_ADDR', 'unknown')
+        )
+    except RuntimeError:
+        client_ip = 'unknown'
+
+    # 使用12367专用的knowledge_handler_b处理请求
+    def generate():
+        try:
+            logger.info(f"[12367专用接口] 收到问题: {user_question}")
+            logger.info(f"[12367专用接口] 使用通用知识库B | 模型: {requested_model_id} | 思考模式: {enable_thinking}")
+            logger.info(f"[12367专用接口] InsertBlock模式: {use_insert_block} | 重排序数量: {rerank_top_n}")
+            
+            # 调用12367专用handler的process方法
+            for item in current_app.knowledge_handler_b.process(
+                question=user_question,
+                enable_thinking=enable_thinking,
+                rerank_top_n=rerank_top_n,
+                llm=selected_llm,
+                client_ip=client_ip,
+                use_insert_block=use_insert_block,
+                insert_block_llm_id=insert_block_llm_id
+            ):
+                if isinstance(item, tuple):
+                    prefix_type, content = item
+                    if prefix_type == 'SOURCE':
+                        yield f"SOURCE:{content}"
+                    elif prefix_type == 'THINK':
+                        yield f"THINK:{content}"
+                    elif prefix_type == 'CONTENT':
+                        yield f"CONTENT:{content}"
+                    elif prefix_type == 'SUB_QUESTIONS':
+                        yield f"SUB_QUESTIONS:{json.dumps(content, ensure_ascii=False)}"
+                    elif prefix_type == 'DONE':
+                        yield f"DONE:{content}"
+                    else:
+                        yield f"{prefix_type}:{content}"
+                else:
+                    yield item
+                    
+        except Exception as e:
+            logger.error(f"[12367专用接口] 处理失败: {e}", exc_info=True)
+            yield f"CONTENT:抱歉，处理您的问题时出现错误: {str(e)}\n"
+            yield f"DONE:处理失败\n"
+
+    return Response(
+        stream_with_context((format_sse_text(item) for item in generate())),
+        mimetype='text/event-stream'
+    )
+
+
+@knowledge_bp.route('/api/data/trend_summary', methods=['POST'])
+def data_trend_summary():
+    """
+    数据趋势分析接口
+    
+    接收 Java 后端解析的统计数据，调用 LLM 生成趋势摘要
+    
+    请求体:
+    {
+        "code": 200,
+        "message": "success",
+        "data": {
+            "totalCount": 1000,
+            "entryCount": 600,
+            "exitCount": 400,
+            "maleCount": 550,
+            "femaleCount": 450,
+            "transportationToolStats": {...},
+            "countryRegionStats": {...},
+            "transportationModeStats": {...},
+            "personCategoryStats": {...},
+            "ethnicityStats": {...}
+        },
+        "model_id": "qwen2025",  // 可选，默认使用 Settings.DEFAULT_LLM_ID
+        "thinking": false,        // 可选，是否启用思考模式
+        "stream": true,           // 可选，是否使用 SSE 流式输出
+        "max_length": 250         // 可选，摘要最大字数，默认250字
+    }
+    
+    响应:
+    - stream=true: SSE 流式输出
+      * THINK: 思考内容（thinking=true 时）
+      * CONTENT: 正文内容
+      * META: 元数据 JSON {"model_id": "...", "elapsed_time": 2.5, "max_length": 250}
+      * ERROR: 错误信息
+      * DONE: 完成信号
+    - stream=false: JSON 格式 {"summary": "...", "model_id": "...", "elapsed_time": 2.5, "code": 200}
+    """
+    try:
+        # 1. 获取请求参数
+        request_data = request.get_json()
+        
+        if not request_data:
+            return jsonify({
+                "code": 400,
+                "message": "请求体不能为空",
+                "data": None
+            }), 400
+        
+        # 提取统计数据（支持两种格式）
+        # 格式1: {"data": {...}}
+        # 格式2: 直接传统计数据 {...}
+        if "data" in request_data and isinstance(request_data["data"], dict):
+            stats_data = request_data["data"]
+        else:
+            stats_data = request_data
+        
+        # 提取可选参数
+        model_id = request_data.get("model_id", Settings.DEFAULT_LLM_ID)
+        enable_thinking = request_data.get("thinking", False)
+        use_stream = request_data.get("stream", True)
+        max_length = request_data.get("max_length")  # 可选，默认使用配置
+        
+        logger.info(
+            f"收到数据趋势分析请求 | "
+            f"model_id: {model_id} | "
+            f"thinking: {enable_thinking} | "
+            f"stream: {use_stream} | "
+            f"totalCount: {stats_data.get('totalCount', 'N/A')}"
+        )
+        
+        # 记录开始时间
+        start_time = time.time()
+        
+        # 2. 获取 LLM 服务
+        llm_service = current_app.llm_service
+        if not llm_service:
+            logger.error("LLM 服务未初始化")
+            return jsonify({
+                "code": 500,
+                "message": "LLM 服务未初始化",
+                "data": None
+            }), 500
+        
+        # 3. 创建数据分析处理器
+        from api.data_analysis_handler import DataAnalysisHandler
+        handler = DataAnalysisHandler(llm_service)
+        
+        # 4. 调用分析方法
+        if use_stream:
+            # SSE 流式输出
+            def generate():
+                """生成 SSE 流"""
+                for msg_type, content in handler.analyze(
+                    stats=stats_data,
+                    llm_id=model_id,
+                    enable_thinking=enable_thinking,
+                    stream=True,
+                    max_length=max_length
+                ):
+                    # 转换为 SSE 格式
+                    if msg_type == 'THINK':
+                        yield f"THINK:{content}"
+                    elif msg_type == 'CONTENT':
+                        yield f"CONTENT:{content}"
+                    elif msg_type == 'ERROR':
+                        yield f"ERROR:{content}"
+                    elif msg_type == 'META':
+                        yield f"META:{content}"
+                    elif msg_type == 'DONE':
+                        yield "DONE:"
+            
+            return Response(
+                stream_with_context((format_sse_text(item) for item in generate())),
+                mimetype='text/event-stream'
+            )
+        else:
+            # JSON 同步输出
+            think_parts = []
+            content_parts = []
+            error_msg = None
+            
+            for msg_type, content in handler.analyze(
+                stats=stats_data,
+                llm_id=model_id,
+                enable_thinking=enable_thinking,
+                stream=False,
+                max_length=max_length
+            ):
+                if msg_type == 'THINK':
+                    think_parts.append(content)
+                elif msg_type == 'CONTENT':
+                    content_parts.append(content)
+                elif msg_type == 'ERROR':
+                    error_msg = content
+            
+            # 如果有错误，返回错误响应
+            if error_msg:
+                return jsonify({
+                    "code": 400,
+                    "message": error_msg,
+                    "data": None
+                }), 400
+            
+            # 构建响应
+            summary = ''.join(content_parts)
+            response_data = {
+                "summary": summary,
+                "model_id": model_id
+            }
+            
+            # 如果有思考内容，也包含进去
+            if think_parts:
+                response_data["thinking"] = ''.join(think_parts)
+            
+            # 添加耗时信息（在路由层计算）
+            elapsed_time = time.time() - start_time
+            response_data["elapsed_time"] = round(elapsed_time, 2)  # 秒，保留2位小数
+            
+            return jsonify({
+                "code": 200,
+                "message": "success",
+                "data": response_data
+            })
+    
+    except Exception as e:
+        error_msg = f"数据趋势分析失败: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return jsonify({
+            "code": 500,
+            "message": error_msg,
+            "data": None
+        }), 500
+

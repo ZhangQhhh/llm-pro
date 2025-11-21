@@ -176,6 +176,7 @@ class IntentClassifier:
             改写后的问题，如果不需要改写则返回 None
         """
         # 只对免签和航司相关问题进行改写
+        # both 类型也需要改写，因为涉及免签政策
         if intent not in ["visa_free", "airline_visa_free", "both"]:
             logger.info(f"[问题改写] 意图为 {intent}，无需改写")
             return None

@@ -29,15 +29,24 @@ class KnowledgeService:
 
     def __init__(self, llm):
         self.llm = llm
-        # 通用知识库
+        # 通用知识库A（原有）
         self.index = None
         self.all_nodes = None
         self.retriever = None
+        
+        # 通用知识库B（12367专用）
+        self.index_b = None
+        self.all_nodes_b = None
+        self.retriever_b = None
         
         # 免签知识库（完全独立）
         self.visa_free_index = None
         self.visa_free_nodes = None
         self.visa_free_retriever = None
+        
+        # Keyword Table 索引（可选）
+        self.keyword_index = None
+        self.keyword_retriever = None
         
         # 子问题分解器（可选）
         self.sub_question_decomposer = None
@@ -105,7 +114,7 @@ class KnowledgeService:
 
 
     def create_retriever(self):
-        """创建通用知识库混合检索器"""
+        """创建通用知识库A混合检索器"""
         if self.index is None or self.all_nodes is None:
             logger.error("索引或节点未初始化，无法创建检索器")
             return None
@@ -117,6 +126,53 @@ class KnowledgeService:
             AppSettings.RETRIEVAL_TOP_K_BM25
         )
         return self.retriever
+    
+    def build_or_load_index_b(self) -> Tuple[Optional[VectorStoreIndex], Optional[List[TextNode]]]:
+        """
+        构建或加载通用知识库B索引（12367专用）
+        
+        Returns:
+            (索引, 所有节点) 元组
+        """
+        storage_path = AppSettings.GENERAL_KB_B_STORAGE_PATH
+        kb_dir = AppSettings.GENERAL_KB_B_DIR
+        hashes_file = os.path.join(storage_path, "kb_hashes.json")
+
+        # 确保知识库目录存在
+        os.makedirs(kb_dir, exist_ok=True)
+
+        if not any(os.scandir(kb_dir)):
+            logger.warning("[通用知识库B] 知识库文件夹为空，无法构建索引")
+            return None, None
+
+        # 检查是否需要重建索引
+        if self._should_rebuild_index(storage_path, hashes_file, kb_dir, AppSettings.GENERAL_KB_B_COLLECTION):
+            logger.info("[通用知识库B] 检测到文件变化，重建索引...")
+            index, nodes = self._build_index(storage_path, kb_dir, hashes_file, AppSettings.GENERAL_KB_B_COLLECTION)
+        else:
+            logger.info("[通用知识库B] 文件未变化，从缓存加载索引...")
+            index, nodes = self._load_index(storage_path, AppSettings.GENERAL_KB_B_COLLECTION)
+
+        # 保存到实例变量
+        self.index_b = index
+        self.all_nodes_b = nodes
+        
+        return index, nodes
+    
+    def create_retriever_b(self):
+        """创建通用知识库B混合检索器"""
+        if self.index_b is None or self.all_nodes_b is None:
+            logger.error("[通用知识库B] 索引或节点未初始化，无法创建检索器")
+            return None
+
+        self.retriever_b = RetrieverFactory.create_hybrid_retriever(
+            self.index_b,
+            self.all_nodes_b,
+            AppSettings.GENERAL_KB_B_RETRIEVAL_TOP_K,
+            AppSettings.GENERAL_KB_B_RETRIEVAL_TOP_K_BM25
+        )
+        logger.info("[通用知识库B] 混合检索器创建成功")
+        return self.retriever_b
     
     def create_sub_question_decomposer(self, llm_service, reranker):
         """
@@ -290,7 +346,10 @@ class KnowledgeService:
             elif collection_name == AppSettings.AIRLINE_COLLECTION:
                 self.airline_index = index
                 self.airline_nodes = all_nodes
-            elif collection_name == AppSettings.RULES_COLLECTION:
+            elif collection_name == AppSettings.GENERAL_KB_B_COLLECTION:
+                self.index_b = index
+                self.all_nodes_b = all_nodes
+            elif hasattr(AppSettings, 'RULES_COLLECTION') and collection_name == AppSettings.RULES_COLLECTION:
                 self.rules_index = index
                 self.rules_nodes = all_nodes
             
@@ -601,3 +660,80 @@ class KnowledgeService:
         )
         logger.info("✓ 隐藏知识库检索器创建成功")
         return self.hidden_kb_retriever
+    
+    def load_keyword_table_index(self):
+        """
+        加载 Keyword Table 索引（可选功能）
+        
+        Returns:
+            KeywordTableIndex 实例或 None
+        """
+        if not AppSettings.ENABLE_KEYWORD_TABLE:
+            logger.info("Keyword Table 功能未启用，跳过加载")
+            return None
+        
+        from llama_index.core import StorageContext, load_index_from_storage
+        
+        # 将 Keyword Table 索引存储在向量知识库目录中
+        keyword_storage_dir = os.path.join(
+            AppSettings.STORAGE_PATH,
+            "vector_store",  # 与向量索引同级
+            "keyword_table"
+        )
+        
+        if not os.path.exists(keyword_storage_dir):
+            logger.warning(
+                f"Keyword Table 索引目录不存在: {keyword_storage_dir}\n"
+                f"请先运行: python scripts/build_keyword_index.py"
+            )
+            return None
+        
+        try:
+            logger.info(f"正在加载 Keyword Table 索引: {keyword_storage_dir}")
+            
+            # 禁用 LLM（Keyword Table 不需要 LLM）
+            from llama_index.core import Settings as LlamaSettings
+            LlamaSettings.llm = None
+            
+            # 禁用 NLTK stopwords（避免 NLTK 数据加载错误）
+            from llama_index.core.utils import globals_helper
+            globals_helper._stopwords = set()  # 使用空集合代替 NLTK stopwords
+            
+            storage_context = StorageContext.from_defaults(
+                persist_dir=keyword_storage_dir
+            )
+            keyword_index = load_index_from_storage(storage_context)
+            
+            self.keyword_index = keyword_index
+            logger.info(" Keyword Table 索引加载成功")
+            return keyword_index
+            
+        except Exception as e:
+            logger.error(f"加载 Keyword Table 索引失败: {e}", exc_info=True)
+            return None
+    
+    def create_keyword_table_retriever(self):
+        """
+        创建 Keyword Table 检索器
+        
+        Returns:
+            KeywordTableRetriever 实例或 None
+        """
+        if not AppSettings.ENABLE_KEYWORD_TABLE:
+            logger.info("Keyword Table 功能未启用，跳过检索器创建")
+            return None
+        
+        if self.keyword_index is None:
+            logger.error("Keyword Table 索引未加载，无法创建检索器")
+            return None
+        
+        from core.keyword_table_retriever import KeywordTableRetriever
+        
+        logger.info("创建 Keyword Table 检索器...")
+        self.keyword_retriever = KeywordTableRetriever(
+            keyword_index=self.keyword_index,
+            similarity_top_k=AppSettings.RETRIEVAL_TOP_K_KEYWORD,
+            min_score=AppSettings.KEYWORD_TABLE_MIN_SCORE
+        )
+        logger.info(" Keyword Table 检索器创建成功")
+        return self.keyword_retriever
