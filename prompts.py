@@ -110,17 +110,21 @@ def load_special_rules_from_files():
         str: 拼接后的特殊规定内容，每条规定带编号
     """
     import os
+    import logging
     from config.settings import Settings
     
+    logger = logging.getLogger(__name__)
     rules_dir = Settings.SPECIAL_RULES_DIR
     
     # 如果目录不存在，返回空字符串
     if not os.path.exists(rules_dir):
+        logger.warning(f"[特殊规定] 目录不存在: {rules_dir}")
         return ""
     
     # 读取所有文本文件
     rules_content = []
     rule_number = 1  # 全局编号计数器
+    files_processed = 0
     
     try:
         for filename in sorted(os.listdir(rules_dir)):
@@ -130,31 +134,40 @@ def load_special_rules_from_files():
                     with open(file_path, 'r', encoding='utf-8') as f:
                         content = f.read().strip()
                         if content:
+                            files_processed += 1
                             # 检查文件内容是否包含 ||| 分隔符
                             if '|||' in content:
                                 # 按 ||| 分割成多条规定
                                 individual_rules = content.split('|||')
+                                rules_in_file = 0
                                 for rule in individual_rules:
                                     rule = rule.strip()
                                     if rule:  # 跳过空规定
                                         numbered_rule = f"【特殊规定 {rule_number}】（来源：{filename}）\n{rule}"
                                         rules_content.append(numbered_rule)
                                         rule_number += 1
+                                        rules_in_file += 1
+                                logger.info(f"[特殊规定] 从文件 {filename} 加载了 {rules_in_file} 条规定")
                             else:
                                 # 整个文件是一条规定
                                 numbered_rule = f"【特殊规定 {rule_number}】（来源：{filename}）\n{content}"
                                 rules_content.append(numbered_rule)
                                 rule_number += 1
+                                logger.info(f"[特殊规定] 从文件 {filename} 加载了 1 条规定")
                 except Exception as e:
                     # 单个文件读取失败不影响其他文件
+                    logger.error(f"[特殊规定] 读取文件 {filename} 失败: {str(e)}")
                     continue
     except Exception as e:
         # 目录读取失败返回空
+        logger.error(f"[特殊规定] 读取目录 {rules_dir} 失败: {str(e)}")
         return ""
     
     if rules_content:
+        logger.info(f"[特殊规定] 成功加载 {len(rules_content)} 条特殊规定（来自 {files_processed} 个文件）")
         return "\n\n".join(rules_content)
     else:
+        logger.warning(f"[特殊规定] 目录 {rules_dir} 中没有找到有效的特殊规定")
         return ""
 
 
@@ -306,15 +319,18 @@ def get_knowledge_user_rag_simple():
 
 def get_knowledge_user_rag_advanced():
     """知识问答RAG高级模式用户提示词"""
-
     base_user_prompt = ["{question}",
             "",
             "业务规定如下：",
             "{context}"]
+    
+    # 加载特殊规定（在模块初始化时执行一次）
     special_rules = load_special_rules_from_files()
     if special_rules:
-        base_user_prompt.append("特殊规定如下：\n")
+        base_user_prompt.append("")
+        base_user_prompt.append("特殊规定如下：")
         base_user_prompt.append(special_rules)
+    
     return base_user_prompt
 
 
