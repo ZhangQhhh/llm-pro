@@ -523,7 +523,9 @@ def mcq_upload_parse(file_storage) -> Dict[str, Any]:
 def bank_list() -> Dict[str, Any]:
     with _BANK_LOCK:
         bank = _load_bank()
-        return {"ok": True, "count": len(bank["items"]), "items": bank["items"]}
+        # 默认不返回已删除的题目
+        items = [it for it in bank.get("items", []) if not it.get("deleted")]
+        return {"ok": True, "count": len(items), "items": items}
 
 def bank_bulk_upsert(data: Dict[str, Any]) -> Dict[str, Any]:
     items = data.get("items") or []
@@ -637,6 +639,225 @@ def bank_bulk_reject(data: Dict[str, Any]) -> Dict[str, Any]:
 
     return {"ok": True, "count": len(updated), "items": updated}
 
+def bank_delete_questions(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    软删除题目（移到回收站）
+    data: {"ids": ["qid1", "qid2", ...], "user": "username", "permanent": false}
+    """
+    ids = data.get("ids") or []
+    if not ids and isinstance(data.get("items"), list):
+        ids = [str(it.get("id")) for it in (data.get("items") or []) if it.get("id")]
+    ids = [str(x).strip() for x in ids if str(x).strip()]
+    if not ids:
+        return {"ok": False, "msg": "ids 不能为空"}
+
+    user = data.get("user", "unknown")
+    permanent = data.get("permanent", False)
+    now = _now_iso()
+    deleted = []
+    
+    with _BANK_LOCK:
+        bank = _load_bank()
+        items = bank.get("items", [])
+        idx = _index_by_id(items)
+        
+        if permanent:
+            # 永久删除：直接从列表中移除
+            for _id in ids:
+                j = idx.get(_id)
+                if j is not None:
+                    deleted.append(items[j])
+            
+            bank["items"] = [it for it in items if str(it.get("id")) not in ids]
+            _log_deletion(ids, user, "permanent", deleted)
+        else:
+            # 软删除：标记为已删除
+            for _id in ids:
+                j = idx.get(_id)
+                if j is None:
+                    continue
+                rec = dict(bank["items"][j])
+                rec["deleted"] = True
+                rec["deleted_at"] = now
+                rec["deleted_by"] = user
+                bank["items"][j] = rec
+                deleted.append(rec)
+            
+            _log_deletion(ids, user, "soft", deleted)
+        
+        _atomic_save_bank(bank)
+
+    return {"ok": True, "count": len(deleted), "deleted": deleted}
+
+def bank_list_deleted() -> Dict[str, Any]:
+    """列出回收站中的题目"""
+    with _BANK_LOCK:
+        bank = _load_bank()
+        items = bank.get("items", [])
+        deleted_items = [it for it in items if it.get("deleted") == True]
+        return {"ok": True, "count": len(deleted_items), "items": deleted_items}
+
+def bank_restore_questions(data: Dict[str, Any]) -> Dict[str, Any]:
+    """从回收站恢复题目"""
+    ids = data.get("ids") or []
+    if not ids and isinstance(data.get("items"), list):
+        ids = [str(it.get("id")) for it in (data.get("items") or []) if it.get("id")]
+    ids = [str(x).strip() for x in ids if str(x).strip()]
+    if not ids:
+        return {"ok": False, "msg": "ids 不能为空"}
+
+    user = data.get("user", "unknown")
+    now = _now_iso()
+    restored = []
+    
+    with _BANK_LOCK:
+        bank = _load_bank()
+        items = bank.get("items", [])
+        idx = _index_by_id(items)
+        
+        for _id in ids:
+            j = idx.get(_id)
+            if j is None:
+                continue
+            rec = dict(bank["items"][j])
+            if rec.get("deleted") == True:
+                rec["deleted"] = False
+                rec["restored_at"] = now
+                rec["restored_by"] = user
+                # 移除删除相关字段
+                rec.pop("deleted_at", None)
+                rec.pop("deleted_by", None)
+                bank["items"][j] = rec
+                restored.append(rec)
+        
+        _atomic_save_bank(bank)
+        _log_restoration(ids, user, restored)
+
+    return {"ok": True, "count": len(restored), "restored": restored}
+
+def bank_clear_deleted(data: Dict[str, Any]) -> Dict[str, Any]:
+    """清空回收站（永久删除所有已删除的题目）"""
+    user = data.get("user", "unknown")
+    days = data.get("days", 30)  # 默认删除30天前的
+    now_ts = time.time()
+    cutoff_ts = now_ts - (days * 24 * 3600)
+    
+    with _BANK_LOCK:
+        bank = _load_bank()
+        items = bank.get("items", [])
+        
+        to_remove = []
+        for it in items:
+            if it.get("deleted") != True:
+                continue
+            deleted_at = it.get("deleted_at", "")
+            if not deleted_at:
+                continue
+            # 解析时间
+            try:
+                dt = time.strptime(deleted_at, "%Y-%m-%dT%H:%M:%S")
+                ts = time.mktime(dt)
+                if ts < cutoff_ts:
+                    to_remove.append(str(it.get("id")))
+            except:
+                continue
+        
+        if to_remove:
+            removed_items = [it for it in items if str(it.get("id")) in to_remove]
+            bank["items"] = [it for it in items if str(it.get("id")) not in to_remove]
+            _atomic_save_bank(bank)
+            _log_deletion(to_remove, user, "auto_clear", removed_items)
+            return {"ok": True, "count": len(to_remove), "removed": removed_items}
+        
+    return {"ok": True, "count": 0, "removed": []}
+
+def _log_deletion(ids: List[str], user: str, action: str, items: List[Dict]) -> None:
+    """记录删除日志"""
+    try:
+        log_dir = "./data/logs"
+        _ensure_dir(log_dir)
+        log_file = os.path.join(log_dir, "deletion_log.json")
+        
+        log_entry = {
+            "timestamp": _now_iso(),
+            "user": user,
+            "action": action,  # soft, permanent, auto_clear
+            "ids": ids,
+            "count": len(ids),
+            "items": [{"id": it.get("id"), "stem": it.get("stem", "")[:50]} for it in items]
+        }
+        
+        logs = []
+        if os.path.exists(log_file):
+            try:
+                with open(log_file, "r", encoding="utf-8") as f:
+                    logs = json.load(f)
+            except:
+                logs = []
+        
+        logs.append(log_entry)
+        
+        # 只保留最近1000条日志
+        if len(logs) > 1000:
+            logs = logs[-1000:]
+        
+        with open(log_file, "w", encoding="utf-8") as f:
+            json.dump(logs, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.error(f"[MCQ] 记录删除日志失败: {e}")
+
+def _log_restoration(ids: List[str], user: str, items: List[Dict]) -> None:
+    """记录恢复日志"""
+    try:
+        log_dir = "./data/logs"
+        _ensure_dir(log_dir)
+        log_file = os.path.join(log_dir, "deletion_log.json")
+        
+        log_entry = {
+            "timestamp": _now_iso(),
+            "user": user,
+            "action": "restore",
+            "ids": ids,
+            "count": len(ids),
+            "items": [{"id": it.get("id"), "stem": it.get("stem", "")[:50]} for it in items]
+        }
+        
+        logs = []
+        if os.path.exists(log_file):
+            try:
+                with open(log_file, "r", encoding="utf-8") as f:
+                    logs = json.load(f)
+            except:
+                logs = []
+        
+        logs.append(log_entry)
+        
+        if len(logs) > 1000:
+            logs = logs[-1000:]
+        
+        with open(log_file, "w", encoding="utf-8") as f:
+            json.dump(logs, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.error(f"[MCQ] 记录恢复日志失败: {e}")
+
+def bank_get_deletion_logs(limit: int = 100) -> Dict[str, Any]:
+    """获取删除日志"""
+    try:
+        log_file = "./data/logs/deletion_log.json"
+        if not os.path.exists(log_file):
+            return {"ok": True, "logs": []}
+        
+        with open(log_file, "r", encoding="utf-8") as f:
+            logs = json.load(f)
+        
+        # 返回最近的N条
+        logs = logs[-limit:] if len(logs) > limit else logs
+        logs.reverse()  # 最新的在前
+        
+        return {"ok": True, "logs": logs, "count": len(logs)}
+    except Exception as e:
+        return {"ok": False, "msg": f"读取日志失败: {e}"}
+
 # 导入导出/试卷（保持不变）
 def bank_export_docx() -> Tuple[str, str]:
     try:
@@ -712,6 +933,17 @@ def bank_generate_paper(name: str) -> Tuple[Optional[str], str]:
         for k in "ABCDEFGH":
             if k in opts and opts[k]:
                 doc.add_paragraph(f"{k}. {opts[k]}")
+        
+        # 添加答案
+        ans = (it.get("answer") or "").upper()
+        if ans:
+            doc.add_paragraph(f"答案：{ans}")
+        
+        # 添加解析
+        exp = (it.get("explain") or "").strip()
+        if exp:
+            doc.add_paragraph(f"解析：{exp}")
+        
         doc.add_paragraph("")
     _ensure_dir("./data/papers")
     path = f"./data/papers/{name}_{int(time.time())}.docx"

@@ -741,6 +741,29 @@ def get_history_compression_user(conversation_history: list):
     prompt_parts.append("\n请输出压缩后的摘要（不超过200字）。")
     return "\n".join(prompt_parts)
 
+# ==================== Writer Prompts ====================
+def get_writer_system():
+    """写作系统提示词（来源：writer_handler 内联内容）"""
+    return (
+        "你是一个中文写作智能体。请根据【用户意图】并结合【参考资料】进行写作，要求：\n"
+        "1) 先明确目标与受众；2) 结构清晰（含小标题）；3) 观点有据可循；\n"
+        "4) 语言自然流畅、专业准确；5) 对来自参考资料的事实点，按出现位置以 [来源#编号] 注释；\n"
+        "6)对于事实内容，需要参照【用户意图】中的内容编写，不能偏离【用户意图】中的事实，不要给出【用户意图】中不存在的统计信息\n"
+        "7) 若无明确字数要求，默认约 2000~3000 字。\n"
+        "8) 最后给出“参考资料”清单（按 [编号] 文件名 排列）。"
+    )
+
+def get_writer_assistant_context_prefix():
+    """写作对话上下文前缀"""
+    return "以下是与用户本次写作相关的最近对话（用于保持上下文与风格一致）：\n"
+
+def get_writer_user():
+    """写作用户提示词模板（占位符：{instruction} / {context_block}）"""
+    return (
+        "【用户意图】\n{instruction}\n\n"
+        "【参考资料】（已按相关性排序，编号从1开始）\n{context_block}\n\n"
+        "请严格基于以上资料写作；如资料不足以支持某些断言，请明确假设并尽量保持客观。"
+    )
 
 # ==================== PROMPTS 字典（保持向后兼容）====================
 PROMPTS = {
@@ -800,6 +823,11 @@ PROMPTS = {
             "rag_query": get_conversation_user_rag_query(),
             "general_query": get_conversation_user_general_query()
         }
+    },
+    "writer": {
+        "system": get_writer_system(),
+        "assistant_context_prefix": get_writer_assistant_context_prefix(),
+        "user": get_writer_user(),
     }
 }
 

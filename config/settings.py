@@ -28,7 +28,7 @@ class Settings:
     RERANKER_MODEL_PATH = "/yuanjing/bge-reranker-large"
     STORAGE_PATH = "/opt/rag_final_project/storage"
     LOG_DIR = "/opt/rag_final_project/qa_logs"
-
+    
     # Prompt 配置文件候选路径 (修复: 去掉 cls 未定义的引用)
     PROMPT_CONFIG_CANDIDATES = [
         os.path.join(BASE_DIR, 'prompts.py'),            # Python 配置（优先）
